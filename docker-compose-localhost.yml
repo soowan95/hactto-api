@@ -1,0 +1,30 @@
+services:
+  mysql:
+    image: mariadb:10.6
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 1q2w3e4r # 원하는 루트 비밀번호
+      MYSQL_DATABASE: ht_db # 생성할 기본 DB 이름
+      MYSQL_USER: ht_user # 사용자명
+      MYSQL_PASSWORD: ht_password # 사용자 비밀번호
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+  nestjs:
+    build:
+      context: .
+      dockerfile: Dockerfile-localhost
+    restart: always
+    image: nestjs:local
+    container_name: nestjs
+    ports:
+      - "1324:1324"
+    env_file:
+      - .env.localhost
+    depends_on:
+      - mysql
+
+volumes:
+  mariadb_data:
