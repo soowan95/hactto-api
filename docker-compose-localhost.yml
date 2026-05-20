@@ -20,7 +20,7 @@ services:
     image: nestjs:local
     container_name: nestjs
     ports:
-      - "1324:1324"
+      - "3000:3000"
     env_file:
       - .env.localhost
     depends_on:
