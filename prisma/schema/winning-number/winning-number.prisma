@@ -1,13 +1,15 @@
 model WinningNumber {
   id Int @id @default(autoincrement())
 
-  round Int // 로또 회차
+  round Int @unique // 로또 회차
 
   first  Int // 첫번째 당첨번호
   second Int // 두번째 당첨번호
   third  Int // 세번째 당첨번호
   fourth Int // 네번째 당첨번호
   fifth  Int // 다섯번째 당첨번호
+  sixth  Int // 여섯번째 당첨번호
+  bonus  Int // 보너스 당첨번호
 
   @@map("winning_number")
 }

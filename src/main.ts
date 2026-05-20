@@ -46,6 +46,7 @@ async function bootstrap() {
       .setTitle('로또 분석 백엔드 API')
       .setDescription('로또 분석 백엔드 API description')
       .setVersion('1.0.0')
+      .addTag('- Winning Number', 'Winning Number API Documentation')
       .build();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('swagger', app, document);
