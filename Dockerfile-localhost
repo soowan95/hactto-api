@@ -20,8 +20,8 @@ RUN npx prisma generate --schema=./prisma/schema/
 # 애플리케이션 빌드 (NestJS 빌드 스크립트에 따라 조정)
 RUN npm run build
 
-# 애플리케이션이 사용하는 포트 노출 (예: 1323)
-EXPOSE 1323
+# 애플리케이션이 사용하는 포트 노출 (예: 1324)
+EXPOSE 3000
 
 # 애플리케이션 실행
 CMD ["node", "dist/main.js"]
