@@ -15,7 +15,7 @@ COPY . .
 ENV NODE_ENV=localhost
 
 # Prisma 클라이언트 생성 (Prisma Schema에 따라 자동으로 생성)
-RUN npx prisma generate --schema ./prisma/schema
+RUN npx prisma generate --schema=./prisma/schema/
 
 # 애플리케이션 빌드 (NestJS 빌드 스크립트에 따라 조정)
 RUN npm run build

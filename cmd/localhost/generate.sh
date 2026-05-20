@@ -1,0 +1,1 @@
+npx dotenv -e .env.localhost -- npx prisma generate --schema=./prisma/schema/

@@ -8,4 +8,6 @@ model WinningNumber {
   third  Int // 세번째 당첨번호
   fourth Int // 네번째 당첨번호
   fifth  Int // 다섯번째 당첨번호
+
+  @@map("winning_number")
 }
