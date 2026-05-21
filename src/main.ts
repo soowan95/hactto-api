@@ -16,7 +16,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: loggerLevel,
   });
-  app.setGlobalPrefix('hactto');
+  app.setGlobalPrefix('hactto/v1');
 
   const reflector: Reflector = new Reflector();
 
@@ -47,6 +47,7 @@ async function bootstrap() {
       .setDescription('로또 분석 백엔드 API description')
       .setVersion('1.0.0')
       .addTag('- Winning Number', 'Winning Number API Documentation')
+      .addTag('- Allowed Client', 'Managing allowed IPs, master keys')
       .build();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('swagger', app, document);
