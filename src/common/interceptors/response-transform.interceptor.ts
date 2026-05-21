@@ -30,7 +30,7 @@ export class ResponseTransformInterceptor<T> implements NestInterceptor<
     );
     return next.handle().pipe(
       map((data) => ({
-        message: message || data.message || '',
+        message: message || data?.message || '',
         statusCode: context.switchToHttp().getResponse().statusCode,
         data: data?.data || data,
       })),

@@ -1,7 +1,5 @@
 model WinningNumber {
-  id Int @id @default(autoincrement())
-
-  round Int @unique // 로또 회차
+  episode Int @id // 로또 회차
 
   first  Int // 첫번째 당첨번호
   second Int // 두번째 당첨번호
