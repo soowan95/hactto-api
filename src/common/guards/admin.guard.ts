@@ -30,18 +30,6 @@ export class AdminGuard implements CanActivate {
       return true;
     }
 
-    const ip =
-      (request.headers['x-forwarded-for'] as string) ||
-      request.socket.remoteAddress;
-    const clientIp = ip.includes(',') ? ip.split(',')[0].trim() : ip;
-
-    const isAllowedIp = await this.redisService.isMemberOfSet(
-      'allowed:ips',
-      clientIp,
-    );
-    if (!isAllowedIp)
-      throw new ForbiddenException('Access denied from this IP address.');
-
-    return true;
+    return false;
   }
 }
