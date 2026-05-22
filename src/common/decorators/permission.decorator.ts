@@ -1,14 +1,14 @@
 import { applyDecorators, UseGuards } from '@nestjs/common';
-import { AdminGuard } from '../guards/admin.guard';
 import { ApiQuery } from '@nestjs/swagger';
+import { AdminOrAllowedClientGuard } from '../guards/admin-or-allowed-client.guard';
 
-export function CheckAdmin() {
+export function Permission() {
   return applyDecorators(
     ApiQuery({
       name: 'mk',
       required: false,
       description: 'Master Key for Admin Authentication',
     }),
-    UseGuards(AdminGuard),
+    UseGuards(AdminOrAllowedClientGuard),
   );
 }

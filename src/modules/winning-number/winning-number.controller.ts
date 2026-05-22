@@ -11,7 +11,7 @@ import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 import { plainToInstance } from 'class-transformer';
 import { WinningNumberShowResponseDto } from './dtos/responses/winning-number-show-response.dto';
-import { CheckAdmin } from 'src/common/decorators/check-admin.decorator';
+import { Admin } from 'src/common/decorators/admin.decorator';
 
 @ApiTags('- Winning Number')
 @Controller()
@@ -41,7 +41,7 @@ export class WinningNumberController {
     summary: 'Fetch all winning numbers from 동행복권',
   })
   @ApiQuery({ name: 'le', required: true })
-  @CheckAdmin()
+  @Admin()
   @ResponseMessage('success.fetch.all')
   @Post('api/wn/all')
   async fetch(@Query('le') lastestEpisode: number): Promise<void> {
