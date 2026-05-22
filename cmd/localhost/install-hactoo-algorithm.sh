@@ -1,0 +1,1 @@
+yalc add @hactto/algorithm
