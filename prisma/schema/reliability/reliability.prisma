@@ -1,0 +1,12 @@
+/**
+ * 신뢰도
+ */
+model Reliability {
+  id        Int    @id @default(autoincrement())
+  algorithm String // @hactto/algorithm 에 정의된 알고리즘 명
+  episode   Int // 로또 회차
+
+  winningNumber WinningNumber @relation(fields: [episode], references: [episode])
+
+  @@map("reliability")
+}
