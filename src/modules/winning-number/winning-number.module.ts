@@ -12,5 +12,6 @@ import { HttpModule } from '@nestjs/axios';
   ],
   controllers: [WinningNumberController],
   providers: [WinningNumberService],
+  exports: [WinningNumberService],
 })
 export class WinningNumberModule {}
