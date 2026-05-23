@@ -1,1 +1,1 @@
-npx dotenv -e .env.localhost -- npx prisma migrate dev --schema=./prisma/schema/
+npx dotenv -e .env.migrate.localhost -- npx prisma migrate dev --schema=./prisma/schema/

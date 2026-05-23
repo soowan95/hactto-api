@@ -6,7 +6,9 @@ WORKDIR /app
 
 # 패키지 파일들 복사 및 의존성 설치
 COPY package.json package-lock.json .env.localhost ./
-RUN npm install --production
+COPY yalc.lock ./
+COPY .yalc ./.yalc
+RUN npm install
 
 # 전체 소스 코드 복사
 COPY . .
