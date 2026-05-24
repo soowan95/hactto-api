@@ -1,14 +1,26 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { WinningNumberService } from '../../modules/winning-number/winning-number.service';
 import { Cron } from '@nestjs/schedule';
 import { HacttoCronExpression } from './hactto-cron-expression.enum';
+import { ReliabilityService } from '../../modules/reliability/reliability.service';
 
 @Injectable()
 export class TaskService {
-  constructor(private readonly winningNumberService: WinningNumberService) {}
+  private readonly logger = new Logger(TaskService.name);
 
-  @Cron(HacttoCronExpression.SATURDAY_AT_9PM)
+  constructor(
+    private readonly winningNumberService: WinningNumberService,
+    private readonly reliabilityService: ReliabilityService,
+  ) {}
+
+  @Cron(HacttoCronExpression.SATURDAY_AT_9PM, {
+    timeZone: 'Asia/Seoul',
+  })
   async fetchRecentWinningNumbers() {
+    this.logger.debug('🚀 Fetching recent winning numbers...');
     await this.winningNumberService.fetchRecentOne();
+    this.logger.debug('🚀 Analyzing non reliability algorithm results...');
+    await this.reliabilityService.analyze();
+    this.logger.debug('🏁 All tasks completed.');
   }
 }

@@ -1,3 +1,6 @@
+/**
+ * 당첨번호
+ */
 model WinningNumber {
   episode Int @id // 로또 회차
 
@@ -8,6 +11,8 @@ model WinningNumber {
   fifth  Int // 다섯번째 당첨번호
   sixth  Int // 여섯번째 당첨번호
   bonus  Int // 보너스 당첨번호
+
+  algorithmResult AlgorithmResult[] // 회차 별 각 알고리즘에 대한 결과
 
   @@map("winning_number")
 }
