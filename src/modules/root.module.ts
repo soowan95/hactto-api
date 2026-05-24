@@ -5,6 +5,6 @@ import { AlgorithmModule } from './algorithm/algorithm.module';
 
 @Module({
   imports: [WinningNumberModule, ReliabilityModule, AlgorithmModule],
-  exports: [WinningNumberModule],
+  exports: [WinningNumberModule, ReliabilityModule],
 })
 export class RootModule {}

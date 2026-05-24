@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { AlgorithmController } from './algorithm.controller';
 import { AlgorithmService } from './algorithm.service';
-import { AdminGuard } from '../../common/guards/admin.guard';
-import { AllowedClientGuard } from '../../common/guards/allowed-client.guard';
+import { WinningNumberModule } from '../winning-number/winning-number.module';
 
 @Module({
+  imports: [WinningNumberModule],
   controllers: [AlgorithmController],
-  providers: [AlgorithmService, AdminGuard, AllowedClientGuard],
+  providers: [AlgorithmService],
+  exports: [AlgorithmService],
 })
 export class AlgorithmModule {}

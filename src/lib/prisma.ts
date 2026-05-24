@@ -1,6 +1,10 @@
 import 'dotenv/config';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
-import { PrismaClient } from '../generated/prisma/client';
+import {
+  PrismaClient,
+  WinningNumber as OriginalWinningNumber,
+  AlgorithmResult as OriginalAlgorithmResult,
+} from '../generated/prisma/client';
 
 const adapter = new PrismaMariaDb({
   host: process.env.DATABASE_HOST,
@@ -9,6 +13,85 @@ const adapter = new PrismaMariaDb({
   database: process.env.DATABASE_NAME,
   connectionLimit: 5,
 });
-const prisma = new PrismaClient({ adapter });
+const basePrisma = new PrismaClient({ adapter });
+
+const createNumberArrayGetter = (obj: {
+  first: number;
+  second: number;
+  third: number;
+  fourth: number;
+  fifth: number;
+  sixth: number;
+  bonus: number;
+}) => {
+  return () => [
+    obj.first,
+    obj.second,
+    obj.third,
+    obj.fourth,
+    obj.fifth,
+    obj.sixth,
+    obj.bonus,
+  ];
+};
+
+const validateNumberArray = (obj: {
+  first: number;
+  second: number;
+  third: number;
+  fourth: number;
+  fifth: number;
+  sixth: number;
+  bonus: number;
+}) => {
+  return () =>
+    obj.first >= 0 &&
+    obj.second >= 0 &&
+    obj.third >= 0 &&
+    obj.fourth >= 0 &&
+    obj.fifth >= 0 &&
+    obj.sixth >= 0 &&
+    obj.bonus >= 0;
+};
+
+const needsFields = {
+  first: true,
+  second: true,
+  third: true,
+  fourth: true,
+  fifth: true,
+  sixth: true,
+  bonus: true,
+} as const;
+
+const prisma = basePrisma.$extends({
+  result: {
+    winningNumber: {
+      getNumberArray: {
+        needs: needsFields,
+        compute: createNumberArrayGetter,
+      },
+      isNonZero: {
+        needs: needsFields,
+        compute: validateNumberArray,
+      },
+    },
+    algorithmResult: {
+      getNumberArray: {
+        needs: needsFields,
+        compute: createNumberArrayGetter,
+      },
+    },
+  },
+});
+
+export type WinningNumber = OriginalWinningNumber & {
+  getNumberArray: () => number[];
+  isNonZero: () => boolean;
+};
+
+export type AlgorithmResult = OriginalAlgorithmResult & {
+  getNumberArray: () => number[];
+};
 
 export { prisma };

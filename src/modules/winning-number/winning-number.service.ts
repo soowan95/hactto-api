@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { prisma } from '../../lib/prisma';
-import { WinningNumber } from '../../generated/prisma/client';
+import { prisma, WinningNumber } from '../../lib/prisma';
 import { firstValueFrom } from 'rxjs';
 import { Lt365, Lt365ResponseDto } from './dtos/responses/lt365-response.dto';
 
@@ -53,6 +52,18 @@ export class WinningNumberService {
 
     const lt365: Lt365 = response.data.data.list.pop()!;
     await this.upsert(lt365);
+    await prisma.winningNumber.create({
+      data: {
+        episode: lt365.ltEpsd + 1,
+        first: 0,
+        second: 0,
+        third: 0,
+        fourth: 0,
+        fifth: 0,
+        sixth: 0,
+        bonus: 0,
+      },
+    });
   }
 
   private async upsert(lt365: Lt365): Promise<void> {
@@ -83,7 +94,8 @@ export class WinningNumberService {
   /**
    * Find all winning numbers from the WINNING_NUMBER table.
    */
-  async findAll(): Promise<WinningNumber[]> {
+  async findAll(options?: any): Promise<WinningNumber[]> {
+    if (options) return prisma.winningNumber.findMany(options);
     return prisma.winningNumber.findMany();
   }
 

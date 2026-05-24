@@ -12,7 +12,7 @@ model WinningNumber {
   sixth  Int // 여섯번째 당첨번호
   bonus  Int // 보너스 당첨번호
 
-  reliabilities Reliability[] // 회차 별 각 알고리즘에 대한 신뢰도
+  algorithmResult AlgorithmResult[] // 회차 별 각 알고리즘에 대한 결과
 
   @@map("winning_number")
 }

@@ -1,0 +1,22 @@
+/**
+ * 알고리즘으로 생성된 당첨 번호
+ */
+model AlgorithmResult {
+  id Int @id @default(autoincrement())
+
+  algorithm String // @hactto/algorithm 에 정의된 알고리즘 명
+  episode   Int // 로또 회차
+  first     Int
+  second    Int
+  third     Int
+  fourth    Int
+  fifth     Int
+  sixth     Int
+  bonus     Int
+
+  winningNumber WinningNumber @relation(fields: [episode], references: [episode])
+
+  reliability Reliability?
+
+  @@map("algorithm_result")
+}
