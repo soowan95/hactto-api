@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { prisma } from '../../lib/prisma';
-import { WinningNumber } from '../../generated/prisma/client';
+import { prisma, WinningNumber } from '../../lib/prisma';
 import { firstValueFrom } from 'rxjs';
 import { Lt365, Lt365ResponseDto } from './dtos/responses/lt365-response.dto';
 
@@ -83,7 +82,8 @@ export class WinningNumberService {
   /**
    * Find all winning numbers from the WINNING_NUMBER table.
    */
-  async findAll(): Promise<WinningNumber[]> {
+  async findAll(options?: any): Promise<WinningNumber[]> {
+    if (options) return prisma.winningNumber.findMany(options);
     return prisma.winningNumber.findMany();
   }
 

@@ -1,0 +1,18 @@
+/**
+ * 알고리즘으로 생성된 당첨 번호
+ */
+model AlgorithmResult {
+  id Int @id @default(autoincrement())
+
+  first  Int
+  second Int
+  third  Int
+  fourth Int
+  fifth  Int
+  sixth  Int
+  bonus  Int
+
+  reliability Reliability?
+
+  @@map("algorithm_result")
+}
