@@ -4,6 +4,7 @@ import { LogLevel, ValidationPipe } from '@nestjs/common';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { ResponseTransformInterceptor } from './common/interceptors/response-transform.interceptor';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
   let corsOrigin = ['https://hactto.com'],
@@ -13,9 +14,11 @@ async function bootstrap() {
     loggerLevel = ['error', 'warn', 'log', 'debug', 'verbose'];
   }
 
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: loggerLevel,
   });
+  app.set('trust proxy', true);
+
   app.setGlobalPrefix('hactto/v1');
 
   const reflector: Reflector = new Reflector();
@@ -36,7 +39,7 @@ async function bootstrap() {
   // CORS
   app.enableCors({
     origin: corsOrigin,
-    method: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
   });
 

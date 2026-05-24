@@ -3,6 +3,7 @@ import { AlgorithmService } from '../algorithm/algorithm.service';
 import { AlgorithmType } from '@hactto/algorithm';
 import { WinningNumberService } from '../winning-number/winning-number.service';
 import { AlgorithmResult, prisma, WinningNumber } from '../../lib/prisma';
+import { ReliabilityAverageResponseDto } from './dtos/responses/reliability-average-response.dto';
 
 @Injectable()
 export class ReliabilityService {
@@ -53,6 +54,19 @@ export class ReliabilityService {
         skipDuplicates: true,
       });
     }
+  }
+
+  async getAverageScore(
+    type?: AlgorithmType,
+  ): Promise<ReliabilityAverageResponseDto> {
+    const averageScore = await prisma.reliability.aggregate({
+      _avg: { score: true },
+      where: { algorithm: type },
+    });
+    return {
+      type: type!,
+      average: averageScore._avg.score || 0,
+    };
   }
 
   private async calculateReliability(
