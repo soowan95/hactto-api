@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AlgorithmService } from '../algorithm/algorithm.service';
 import { AlgorithmType } from '@hactto/algorithm';
-import { WinningNumberService } from '../winning-number/winning-number.service';
 import { AlgorithmResult, prisma, WinningNumber } from '../../lib/prisma';
 import { ReliabilityAverageResponseDto } from './dtos/responses/reliability-average-response.dto';
 
@@ -9,43 +8,39 @@ import { ReliabilityAverageResponseDto } from './dtos/responses/reliability-aver
 export class ReliabilityService {
   private readonly log = new Logger(ReliabilityService.name);
 
-  constructor(
-    private readonly algorithmService: AlgorithmService,
-    private readonly winningNumberService: WinningNumberService,
-  ) {}
+  constructor(private readonly algorithmService: AlgorithmService) {}
 
-  async analyze(type?: string): Promise<void> {
-    let types: AlgorithmType[] = [];
-    if (type) types.push(type as AlgorithmType);
-    else types = this.algorithmService.allAlgorithmTypes();
+  async analyze(): Promise<void> {
+    const isExistAtLeastOneAlgorithmResult: boolean =
+      (await prisma.algorithmResult.count()) > 0;
 
-    const winningNumbers: WinningNumber[] =
-      await this.winningNumberService.findAll({
-        orderBy: { episode: 'asc' },
+    if (!isExistAtLeastOneAlgorithmResult)
+      await this.algorithmService.initialize();
+
+    const targetAlgorithmResults: AlgorithmResult[] =
+      await prisma.algorithmResult.findMany({
+        where: {
+          reliability: undefined,
+        },
       });
-    const data: number[][] = winningNumbers.map((winningNumber) =>
-      winningNumber.getNumberArray(),
-    );
 
     const reliabilityDataList: any[] = [];
 
-    for (const type of types) {
-      for (let i = 1; i < data.length; i++) {
-        const subData: number[][] = data.slice(0, i);
-        const result: AlgorithmResult =
-          await this.algorithmService.executeAlgorithm(type, subData);
-        const reliability: number = await this.calculateReliability(
-          data[i],
-          result.getNumberArray(),
-        );
-
-        reliabilityDataList.push({
-          id: result.id,
-          algorithm: type,
-          episode: i + 1,
-          score: reliability,
+    for (const result of targetAlgorithmResults) {
+      const winningNumber: WinningNumber =
+        await prisma.winningNumber.findFirstOrThrow({
+          where: { episode: result.episode },
         });
-      }
+      if (!winningNumber.isNonZero()) continue;
+      const reliability: number = await this.calculateReliability(
+        winningNumber.getNumberArray(),
+        result.getNumberArray(),
+      );
+
+      reliabilityDataList.push({
+        id: result.id,
+        score: reliability,
+      });
     }
 
     if (reliabilityDataList.length > 0) {
@@ -61,7 +56,7 @@ export class ReliabilityService {
   ): Promise<ReliabilityAverageResponseDto> {
     const averageScore = await prisma.reliability.aggregate({
       _avg: { score: true },
-      where: { algorithm: type },
+      where: { algorithmResult: { algorithm: type } },
     });
     return {
       type: type!,

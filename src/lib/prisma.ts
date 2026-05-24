@@ -35,6 +35,25 @@ const createNumberArrayGetter = (obj: {
   ];
 };
 
+const validateNumberArray = (obj: {
+  first: number;
+  second: number;
+  third: number;
+  fourth: number;
+  fifth: number;
+  sixth: number;
+  bonus: number;
+}) => {
+  return () =>
+    obj.first >= 0 &&
+    obj.second >= 0 &&
+    obj.third >= 0 &&
+    obj.fourth >= 0 &&
+    obj.fifth >= 0 &&
+    obj.sixth >= 0 &&
+    obj.bonus >= 0;
+};
+
 const needsFields = {
   first: true,
   second: true,
@@ -52,6 +71,10 @@ const prisma = basePrisma.$extends({
         needs: needsFields,
         compute: createNumberArrayGetter,
       },
+      isNonZero: {
+        needs: needsFields,
+        compute: validateNumberArray,
+      },
     },
     algorithmResult: {
       getNumberArray: {
@@ -64,6 +87,7 @@ const prisma = basePrisma.$extends({
 
 export type WinningNumber = OriginalWinningNumber & {
   getNumberArray: () => number[];
+  isNonZero: () => boolean;
 };
 
 export type AlgorithmResult = OriginalAlgorithmResult & {

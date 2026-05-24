@@ -52,6 +52,18 @@ export class WinningNumberService {
 
     const lt365: Lt365 = response.data.data.list.pop()!;
     await this.upsert(lt365);
+    await prisma.winningNumber.create({
+      data: {
+        episode: lt365.ltEpsd + 1,
+        first: 0,
+        second: 0,
+        third: 0,
+        fourth: 0,
+        fifth: 0,
+        sixth: 0,
+        bonus: 0,
+      },
+    });
   }
 
   private async upsert(lt365: Lt365): Promise<void> {
