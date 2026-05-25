@@ -3,11 +3,14 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
+  Logger,
 } from '@nestjs/common';
 import { RedisService } from '../../helpers/redis/redis.service';
 
 @Injectable()
 export class AllowedClientGuard implements CanActivate {
+  private readonly logger = new Logger(AllowedClientGuard.name);
+
   constructor(private readonly redisService: RedisService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -29,16 +32,45 @@ export class AllowedClientGuard implements CanActivate {
       ip = ip.replace('::ffff:', '');
     }
 
-    console.log('최종 추출된 Client IP:', ip);
-
     const isAllowedIp = await this.redisService.isMemberOfSet(
       'allowed:ips',
       ip,
     );
 
-    if (!isAllowedIp)
-      throw new ForbiddenException('Access denied from this IP address.');
+    if (isAllowedIp) {
+      return true;
+    }
 
-    return true;
+    const cookieHeader = request.headers.cookie;
+    const cookies = this.parseCookies(cookieHeader);
+    const token = cookies['allowed_token'];
+
+    if (token) {
+      const isValidToken = await this.redisService.verifyAccessPayload(token);
+      if (isValidToken) {
+        this.logger.log(
+          `Cookie authentication successful: automatically registering new IP (${ip}) to Redis whitelist.`,
+        );
+        await this.redisService.addToSet('allowed:ips', ip);
+        return true;
+      }
+    }
+
+    this.logger.warn(`Access denied for IP: ${ip}`);
+    throw new ForbiddenException('Access denied from this IP address.');
+  }
+
+  private parseCookies(cookieHeader?: string): Record<string, string> {
+    if (!cookieHeader) return {};
+    const list: Record<string, string> = {};
+    cookieHeader.split(';').forEach((cookie) => {
+      const parts = cookie.split('=');
+      const name = parts.shift()?.trim();
+      const value = parts.join('=').trim();
+      if (name) {
+        list[name] = decodeURIComponent(value);
+      }
+    });
+    return list;
   }
 }

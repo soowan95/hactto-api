@@ -54,6 +54,58 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return await this.redisClient.smembers(key);
   }
 
+  async getCookieSecret(): Promise<string> {
+    let secret = await this.redisClient.get('config:cookie_secret');
+    if (!secret) {
+      secret = crypto.randomBytes(32).toString('hex');
+      await this.redisClient.set('config:cookie_secret', secret);
+    }
+    return secret;
+  }
+
+  async signAccessPayload(): Promise<string> {
+    const payload = JSON.stringify({
+      allowed: true,
+      exp: Date.now() + 7 * 24 * 60 * 60 * 1000,
+    });
+    const base64Payload = Buffer.from(payload).toString('base64url');
+    const secret = await this.getCookieSecret();
+    const signature = crypto
+      .createHmac('sha256', secret)
+      .update(base64Payload)
+      .digest('base64url');
+    return `${base64Payload}.${signature}`;
+  }
+
+  async verifyAccessPayload(token: string): Promise<boolean> {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 2) return false;
+      const [base64Payload, signature] = parts;
+      const secret = await this.getCookieSecret();
+      const expectedSignature = crypto
+        .createHmac('sha256', secret)
+        .update(base64Payload)
+        .digest('base64url');
+
+      const isSignatureValid = crypto.timingSafeEqual(
+        Buffer.from(signature),
+        Buffer.from(expectedSignature),
+      );
+      if (!isSignatureValid) return false;
+
+      const payloadStr = Buffer.from(base64Payload, 'base64url').toString(
+        'utf8',
+      );
+      const payload = JSON.parse(payloadStr);
+
+      if (!payload.allowed || typeof payload.exp !== 'number') return false;
+      return Date.now() <= payload.exp;
+    } catch {
+      return false;
+    }
+  }
+
   private async getManagerKey(): Promise<string> {
     const keys: string[] = await this.redisClient.smembers('manager:k');
     return keys[0];

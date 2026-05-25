@@ -10,7 +10,7 @@ async function bootstrap() {
   let corsOrigin = ['https://hactto.com'],
     loggerLevel: LogLevel[] = ['error', 'warn'];
   if (process.env.NODE_ENV === 'localhost') {
-    corsOrigin = ['http://localhost:3000'];
+    corsOrigin = ['http://localhost:3000', 'http://localhost:5173'];
     loggerLevel = ['error', 'warn', 'log', 'debug', 'verbose'];
   }
 
