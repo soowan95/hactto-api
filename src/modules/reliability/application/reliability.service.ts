@@ -1,37 +1,51 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { AlgorithmService } from '../algorithm/algorithm.service';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { AlgorithmService } from '../../algorithm/application/algorithm.service';
 import { AlgorithmType } from '@hactto/algorithm';
-import { AlgorithmResult, prisma, WinningNumber } from '../../lib/prisma';
-import { ReliabilityAverageResponseDto } from './dtos/responses/reliability-average-response.dto';
+import { AlgorithmResult, WinningNumber } from '../../../lib/prisma';
+import { ReliabilityAverageResponseDto } from '../presentation/dtos/responses/reliability-average-response.dto';
+import {
+  IWinningNumberRepository,
+  WINNING_NUMBER_REPOSITORY_TOKEN,
+} from '../../winning-number/domain/ports/winning-number.repository.interface';
+import {
+  IAlgorithmResultRepository,
+  ALGORITHM_RESULT_REPOSITORY_TOKEN,
+} from '../../algorithm/domain/ports/algorithm-result.repository.interface';
+import {
+  IReliabilityRepository,
+  RELIABILITY_REPOSITORY_TOKEN,
+} from '../domain/ports/reliability.repository.interface';
 
 @Injectable()
 export class ReliabilityService {
   private readonly log = new Logger(ReliabilityService.name);
 
-  constructor(private readonly algorithmService: AlgorithmService) {}
+  constructor(
+    private readonly algorithmService: AlgorithmService,
+    @Inject(WINNING_NUMBER_REPOSITORY_TOKEN)
+    private readonly winningNumberRepository: IWinningNumberRepository,
+    @Inject(ALGORITHM_RESULT_REPOSITORY_TOKEN)
+    private readonly algorithmResultRepository: IAlgorithmResultRepository,
+    @Inject(RELIABILITY_REPOSITORY_TOKEN)
+    private readonly reliabilityRepository: IReliabilityRepository,
+  ) {}
 
   async analyze(): Promise<void> {
     const isExistAtLeastOneAlgorithmResult: boolean =
-      (await prisma.algorithmResult.count()) > 0;
+      (await this.algorithmResultRepository.count()) > 0;
 
     if (!isExistAtLeastOneAlgorithmResult)
       await this.algorithmService.initialize();
 
     const targetAlgorithmResults: AlgorithmResult[] =
-      await prisma.algorithmResult.findMany({
-        where: {
-          reliability: undefined,
-        },
-      });
+      await this.algorithmResultRepository.findWithoutReliability();
 
     const reliabilityDataList: any[] = [];
 
     for (const result of targetAlgorithmResults) {
-      const winningNumber: WinningNumber =
-        await prisma.winningNumber.findFirstOrThrow({
-          where: { episode: result.episode },
-        });
-      if (!winningNumber.isNonZero()) continue;
+      const winningNumber: WinningNumber | null =
+        await this.winningNumberRepository.findByEpisode(result.episode);
+      if (!winningNumber || !winningNumber.isNonZero()) continue;
       const reliability: number = await this.calculateReliability(
         winningNumber.getNumberArray(),
         result.getNumberArray(),
@@ -44,23 +58,17 @@ export class ReliabilityService {
     }
 
     if (reliabilityDataList.length > 0) {
-      await prisma.reliability.createMany({
-        data: reliabilityDataList,
-        skipDuplicates: true,
-      });
+      await this.reliabilityRepository.createMany(reliabilityDataList);
     }
   }
 
   async getAverageScore(
     type?: AlgorithmType,
   ): Promise<ReliabilityAverageResponseDto> {
-    const averageScore = await prisma.reliability.aggregate({
-      _avg: { score: true },
-      where: { algorithmResult: { algorithm: type } },
-    });
+    const average = await this.reliabilityRepository.getAverageScore(type);
     return {
       type: type!,
-      average: averageScore._avg.score || 0,
+      average: average,
     };
   }
 
