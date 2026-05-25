@@ -9,6 +9,8 @@ This project uses persistent workspace directives. Antigravity and all subsequen
 ## 2. Automated Session Specification
 * **Auto-Documentation**: Whenever a chat session is about to end or a major milestone is completed, the agent must document the planning and architectural changes in `docs/antigravity/YYYY-MM-DD/{feature_name}.md` in Korean.
 * **Proactive Behavior**: Do not wait for the user to remind you of this guideline. Perform this documentation automatically.
+* **README.md Maintenance**: When changes or new additions are introduced to the project that require updates in `README.md` (e.g., new features, new scripts, config changes, etc.), the agent must proactively update the `README.md` file in Korean.
+
 
 ## 3. Local Deploy & Execution Directives
 * **Backend (hactto-api)**: To run the backend locally, DO NOT execute `docker compose` or NestJS start scripts directly. You MUST assign execution permissions (`chmod +x`) and run the script `./cmd/localhost/deploy.sh` from the backend root.
