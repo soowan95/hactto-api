@@ -20,3 +20,7 @@ This project uses persistent workspace directives. Antigravity and all subsequen
 ## 5. GitHub CLI (gh) Usage Directive
 * When using GitHub CLI (`gh`) for creating/editing Pull Requests, DO NOT run pre-checks such as version checks (`gh --version`) or authentication status checks (`gh auth status`). Execute the target `gh` commands directly.
 
+## 6. Project Cleanup Trigger
+* If the user says "오늘 프로젝트는 마무리하자" (or equivalent cleanup phrase), immediately terminate the frontend dev server (kill port 5173) and stop/clean up the backend Docker containers by running `docker-compose -f docker-compose-localhost.yml down` from the backend root.
+
+
