@@ -1,0 +1,151 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { ReliabilityService } from './reliability.service';
+import { AlgorithmService } from '../../algorithm/application/algorithm.service';
+import { WINNING_NUMBER_REPOSITORY_TOKEN } from '../../winning-number/domain/ports/winning-number.repository.interface';
+import { ALGORITHM_RESULT_REPOSITORY_TOKEN } from '../../algorithm/domain/ports/algorithm-result.repository.interface';
+import { RELIABILITY_REPOSITORY_TOKEN } from '../domain/ports/reliability.repository.interface';
+import { AlgorithmType } from '@hactto/algorithm';
+
+describe('ReliabilityService', () => {
+  let service: ReliabilityService;
+  let mockAlgorithmService: any;
+  let mockWinningNumberRepository: any;
+  let mockAlgorithmResultRepository: any;
+  let mockReliabilityRepository: any;
+
+  beforeEach(async () => {
+    mockAlgorithmService = {
+      initialize: jest.fn(),
+    };
+
+    mockWinningNumberRepository = {
+      findByEpisode: jest.fn(),
+    };
+
+    mockAlgorithmResultRepository = {
+      count: jest.fn(),
+      findWithoutReliability: jest.fn(),
+    };
+
+    mockReliabilityRepository = {
+      createMany: jest.fn(),
+      getAverageScore: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        ReliabilityService,
+        {
+          provide: AlgorithmService,
+          useValue: mockAlgorithmService,
+        },
+        {
+          provide: WINNING_NUMBER_REPOSITORY_TOKEN,
+          useValue: mockWinningNumberRepository,
+        },
+        {
+          provide: ALGORITHM_RESULT_REPOSITORY_TOKEN,
+          useValue: mockAlgorithmResultRepository,
+        },
+        {
+          provide: RELIABILITY_REPOSITORY_TOKEN,
+          useValue: mockReliabilityRepository,
+        },
+      ],
+    }).compile();
+
+    service = module.get<ReliabilityService>(ReliabilityService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  describe('analyze', () => {
+    it('should initialize algorithms if no predictions exist', async () => {
+      mockAlgorithmResultRepository.count.mockResolvedValue(0);
+      mockAlgorithmResultRepository.findWithoutReliability.mockResolvedValue(
+        [],
+      );
+
+      await service.analyze();
+
+      expect(mockAlgorithmService.initialize).toHaveBeenCalled();
+    });
+
+    it('should calculate reliability for targets and save results', async () => {
+      mockAlgorithmResultRepository.count.mockResolvedValue(10);
+
+      const mockResult = {
+        id: 5,
+        episode: 100,
+        getNumberArray: () => [1, 2, 3, 4, 5, 6, 7], // generated numbers
+      };
+      mockAlgorithmResultRepository.findWithoutReliability.mockResolvedValue([
+        mockResult,
+      ]);
+
+      const mockWinningNumber = {
+        episode: 100,
+        isNonZero: () => true,
+        getNumberArray: () => [1, 2, 3, 4, 5, 6, 7], // actual numbers (perfect match)
+      };
+      mockWinningNumberRepository.findByEpisode.mockResolvedValue(
+        mockWinningNumber,
+      );
+
+      await service.analyze();
+
+      expect(mockAlgorithmService.initialize).not.toHaveBeenCalled();
+      expect(mockWinningNumberRepository.findByEpisode).toHaveBeenCalledWith(
+        100,
+      );
+
+      // Since it's a perfect match, reliability score should be 100.
+      expect(mockReliabilityRepository.createMany).toHaveBeenCalledWith([
+        { id: 5, score: 100 },
+      ]);
+    });
+
+    it('should skip calculation if winning number is all zeros (placeholder)', async () => {
+      mockAlgorithmResultRepository.count.mockResolvedValue(10);
+
+      const mockResult = {
+        id: 5,
+        episode: 100,
+        getNumberArray: () => [1, 2, 3, 4, 5, 6, 7],
+      };
+      mockAlgorithmResultRepository.findWithoutReliability.mockResolvedValue([
+        mockResult,
+      ]);
+
+      const mockWinningNumber = {
+        episode: 100,
+        isNonZero: () => false, // all zeros
+      };
+      mockWinningNumberRepository.findByEpisode.mockResolvedValue(
+        mockWinningNumber,
+      );
+
+      await service.analyze();
+
+      expect(mockReliabilityRepository.createMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getAverageScore', () => {
+    it('should fetch average reliability score for specific algorithm', async () => {
+      mockReliabilityRepository.getAverageScore.mockResolvedValue(75.5);
+
+      const result = await service.getAverageScore(AlgorithmType.MIN_COUNT);
+
+      expect(mockReliabilityRepository.getAverageScore).toHaveBeenCalledWith(
+        AlgorithmType.MIN_COUNT,
+      );
+      expect(result).toEqual({
+        type: AlgorithmType.MIN_COUNT,
+        average: 75.5,
+      });
+    });
+  });
+});

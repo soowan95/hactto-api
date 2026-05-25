@@ -1,16 +1,16 @@
-import { Controller, Get, Post, Query } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { AlgorithmService } from './algorithm.service';
+import { Controller, Get, Param, ParseEnumPipe, Post } from '@nestjs/common';
+import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { AlgorithmService } from '../application/algorithm.service';
 import { AllAlgorithmTypesResponsesDto } from './dtos/responses/all-algorithm-types-responses.dto';
 import { plainToInstance } from 'class-transformer';
-import { Permission } from '../../common/decorators/permission.decorator';
-import { ResponseMessage } from '../../common/decorators/response-message.decorator';
-import { GenerateWinningNumberRequestDto } from './dtos/requests/generate-winning-number-request.dto';
+import { Permission } from '../../../common/decorators/permission.decorator';
+import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
 import { GenerateWinningNumberResponseDto } from './dtos/responses/generate-winning-number-response.dto';
-import { AlgorithmResult } from '../../lib/prisma';
+import { AlgorithmResult } from '../../../lib/prisma';
+import { AlgorithmType } from '@hactto/algorithm';
 
 @ApiTags('- Algorithm')
-@Controller('api/algo')
+@Controller('algorithms')
 export class AlgorithmController {
   constructor(private readonly algorithmService: AlgorithmService) {}
 
@@ -19,7 +19,7 @@ export class AlgorithmController {
   })
   @Permission()
   @ResponseMessage('success.read')
-  @Get('all')
+  @Get()
   async getAllAlgorithmTypes(): Promise<AllAlgorithmTypesResponsesDto[]> {
     const allAlgorithmTypes: string[] =
       this.algorithmService.allAlgorithmTypes();
@@ -29,15 +29,14 @@ export class AlgorithmController {
   @ApiOperation({
     summary: 'Generate winning number',
   })
+  @ApiParam({ name: 'type', enum: AlgorithmType, description: '알고리즘 타입' })
   @Permission()
   @ResponseMessage('success.generate')
-  @Post('generate')
+  @Post(':type/generate')
   async generateWinningNumber(
-    @Query() request: GenerateWinningNumberRequestDto,
+    @Param('type', new ParseEnumPipe(AlgorithmType)) type: AlgorithmType,
   ): Promise<GenerateWinningNumberResponseDto> {
-    const result: AlgorithmResult = await this.algorithmService.generate(
-      request.t,
-    );
+    const result: AlgorithmResult = await this.algorithmService.generate(type);
     return plainToInstance(GenerateWinningNumberResponseDto, result);
   }
 }

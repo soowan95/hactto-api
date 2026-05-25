@@ -1,12 +1,23 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { prisma, WinningNumber } from '../../lib/prisma';
+import { WinningNumber } from '../../../lib/prisma';
 import { firstValueFrom } from 'rxjs';
-import { Lt365, Lt365ResponseDto } from './dtos/responses/lt365-response.dto';
+import {
+  Lt365,
+  Lt365ResponseDto,
+} from '../presentation/dtos/responses/lt365-response.dto';
+import {
+  IWinningNumberRepository,
+  WINNING_NUMBER_REPOSITORY_TOKEN,
+} from '../domain/ports/winning-number.repository.interface';
 
 @Injectable()
 export class WinningNumberService {
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    @Inject(WINNING_NUMBER_REPOSITORY_TOKEN)
+    private readonly winningNumberRepository: IWinningNumberRepository,
+  ) {}
 
   async fetch(lastestEpisode: number): Promise<void> {
     const lt365Map = new Map<number, Lt365>();
@@ -37,7 +48,7 @@ export class WinningNumberService {
     const lt365List: Lt365[] = Array.from(lt365Map.values());
 
     for (const lt365 of lt365List) {
-      await this.upsert(lt365);
+      await this.winningNumberRepository.upsert(lt365);
     }
 
     await this.fetchRecentOne();
@@ -51,60 +62,21 @@ export class WinningNumberService {
     );
 
     const lt365: Lt365 = response.data.data.list.pop()!;
-    await this.upsert(lt365);
-    await prisma.winningNumber.create({
-      data: {
-        episode: lt365.ltEpsd + 1,
-        first: 0,
-        second: 0,
-        third: 0,
-        fourth: 0,
-        fifth: 0,
-        sixth: 0,
-        bonus: 0,
-      },
-    });
-  }
-
-  private async upsert(lt365: Lt365): Promise<void> {
-    await prisma.winningNumber.upsert({
-      where: { episode: lt365.ltEpsd },
-      update: {
-        first: lt365.tm1WnNo,
-        second: lt365.tm2WnNo,
-        third: lt365.tm3WnNo,
-        fourth: lt365.tm4WnNo,
-        fifth: lt365.tm5WnNo,
-        sixth: lt365.tm6WnNo,
-        bonus: lt365.bnsWnNo,
-      },
-      create: {
-        episode: lt365.ltEpsd,
-        first: lt365.tm1WnNo,
-        second: lt365.tm2WnNo,
-        third: lt365.tm3WnNo,
-        fourth: lt365.tm4WnNo,
-        fifth: lt365.tm5WnNo,
-        sixth: lt365.tm6WnNo,
-        bonus: lt365.bnsWnNo,
-      },
-    });
+    await this.winningNumberRepository.upsert(lt365);
+    await this.winningNumberRepository.createPlaceholder(lt365.ltEpsd + 1);
   }
 
   /**
    * Find all winning numbers from the WINNING_NUMBER table.
    */
   async findAll(options?: any): Promise<WinningNumber[]> {
-    if (options) return prisma.winningNumber.findMany(options);
-    return prisma.winningNumber.findMany();
+    return this.winningNumberRepository.findAll(options);
   }
 
   /**
    * Find one winning number from the WINNING_NUMBER table by episode.
    */
   async findByEpisode(episode: number): Promise<WinningNumber | null> {
-    return prisma.winningNumber.findUnique({
-      where: { episode: episode },
-    });
+    return this.winningNumberRepository.findByEpisode(episode);
   }
 }

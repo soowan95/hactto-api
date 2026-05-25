@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { WinningNumberService } from '../../modules/winning-number/winning-number.service';
+import { WinningNumberService } from '../../modules/winning-number/application/winning-number.service';
 import { Cron } from '@nestjs/schedule';
 import { HacttoCronExpression } from './hactto-cron-expression.enum';
-import { ReliabilityService } from '../../modules/reliability/reliability.service';
+import { ReliabilityService } from '../../modules/reliability/application/reliability.service';
 
 @Injectable()
 export class TaskService {

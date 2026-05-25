@@ -1,15 +1,20 @@
-import { Controller, Get, Post, Query } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ReliabilityService } from './reliability.service';
-import { Admin } from '../../common/decorators/admin.decorator';
-import { ResponseMessage } from '../../common/decorators/response-message.decorator';
-import { Permission } from '../../common/decorators/permission.decorator';
-import { ReliabilityAverageRequestDto } from './dtos/requests/reliability-average-request.dto';
+import { Controller, Get, Post, Query, ParseEnumPipe } from '@nestjs/common';
+import {
+  ApiOkResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
+import { ReliabilityService } from '../application/reliability.service';
+import { Admin } from '../../../common/decorators/admin.decorator';
+import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
+import { Permission } from '../../../common/decorators/permission.decorator';
 import { ReliabilityAverageResponseDto } from './dtos/responses/reliability-average-response.dto';
 import { plainToInstance } from 'class-transformer';
+import { AlgorithmType } from '@hactto/algorithm';
 
 @ApiTags('- Reliability')
-@Controller('api/rb')
+@Controller('reliability')
 export class ReliabilityController {
   constructor(private readonly reliabilityService: ReliabilityService) {}
 
@@ -27,14 +32,21 @@ export class ReliabilityController {
     summary: 'Get the average reliability of the algorithm',
   })
   @ApiOkResponse({ type: ReliabilityAverageResponseDto })
+  @ApiQuery({
+    name: 'algorithm',
+    enum: AlgorithmType,
+    required: false,
+    description: '알고리즘 타입',
+  })
   @Permission()
   @ResponseMessage('success.read')
-  @Get('avg')
+  @Get('average')
   async getAverage(
-    @Query() request: ReliabilityAverageRequestDto,
+    @Query('algorithm', new ParseEnumPipe(AlgorithmType, { optional: true }))
+    algorithm?: AlgorithmType,
   ): Promise<ReliabilityAverageResponseDto> {
     const result: ReliabilityAverageResponseDto =
-      await this.reliabilityService.getAverageScore(request.t);
+      await this.reliabilityService.getAverageScore(algorithm);
     return plainToInstance(ReliabilityAverageResponseDto, result);
   }
 }

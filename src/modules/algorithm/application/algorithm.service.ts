@@ -1,11 +1,23 @@
 import { getAlgorithm, AlgorithmType, hacttoExecute } from '@hactto/algorithm';
-import { AlgorithmResult, prisma, WinningNumber } from '../../lib/prisma';
-import { Injectable } from '@nestjs/common';
-import { WinningNumberService } from '../winning-number/winning-number.service';
+import { AlgorithmResult, WinningNumber } from '../../../lib/prisma';
+import { Inject, Injectable } from '@nestjs/common';
+import {
+  IWinningNumberRepository,
+  WINNING_NUMBER_REPOSITORY_TOKEN,
+} from '../../winning-number/domain/ports/winning-number.repository.interface';
+import {
+  IAlgorithmResultRepository,
+  ALGORITHM_RESULT_REPOSITORY_TOKEN,
+} from '../domain/ports/algorithm-result.repository.interface';
 
 @Injectable()
 export class AlgorithmService {
-  constructor(private readonly winningNumberService: WinningNumberService) {}
+  constructor(
+    @Inject(WINNING_NUMBER_REPOSITORY_TOKEN)
+    private readonly winningNumberRepository: IWinningNumberRepository,
+    @Inject(ALGORITHM_RESULT_REPOSITORY_TOKEN)
+    private readonly algorithmResultRepository: IAlgorithmResultRepository,
+  ) {}
 
   allAlgorithmTypes(): AlgorithmType[] {
     return getAlgorithm();
@@ -14,7 +26,7 @@ export class AlgorithmService {
   async initialize(): Promise<void> {
     const types: AlgorithmType[] = this.allAlgorithmTypes();
     const winningNumbers: WinningNumber[] =
-      await this.winningNumberService.findAll();
+      await this.winningNumberRepository.findAll();
     const data: number[][] = winningNumbers.map((winningNumber) =>
       winningNumber.getNumberArray(),
     );
@@ -29,12 +41,9 @@ export class AlgorithmService {
 
   async generate(type: AlgorithmType): Promise<AlgorithmResult> {
     const winningNumbers: WinningNumber[] =
-      await prisma.winningNumber.findMany();
+      await this.winningNumberRepository.findAll();
     const lastestWinningNumber: WinningNumber =
-      await prisma.winningNumber.findFirstOrThrow({
-        where: { first: { not: 0 } },
-        orderBy: { episode: 'desc' },
-      });
+      await this.winningNumberRepository.findLatestWithWinningNumber();
     const lastestEpisode: number = lastestWinningNumber.episode;
     return this.executeAlgorithm(
       type,
@@ -49,18 +58,16 @@ export class AlgorithmService {
     data: number[][],
   ): Promise<AlgorithmResult> {
     const result: number[] = await hacttoExecute(type, data);
-    return prisma.algorithmResult.create({
-      data: {
-        algorithm: type,
-        episode: episode,
-        first: result[0],
-        second: result[1],
-        third: result[2],
-        fourth: result[3],
-        fifth: result[4],
-        sixth: result[5],
-        bonus: result[6],
-      },
+    return this.algorithmResultRepository.create({
+      algorithm: type,
+      episode: episode,
+      first: result[0],
+      second: result[1],
+      third: result[2],
+      fourth: result[3],
+      fifth: result[4],
+      sixth: result[5],
+      bonus: result[6],
     });
   }
 }
