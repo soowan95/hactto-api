@@ -16,3 +16,7 @@ This project uses persistent workspace directives. Antigravity and all subsequen
 
 ## 4. Git Branching Convention (CRITICAL)
 * **Branch Name Format**: All git branch names created for tasks, features, or fixes MUST follow the strict naming convention: `anti/v1/{type}/{branch_name}` (e.g., `anti/v1/feature/manual-approval-ip`, `anti/v1/fix/cors-origin`).
+
+## 5. GitHub CLI (gh) Usage Directive
+* When using GitHub CLI (`gh`) for creating/editing Pull Requests, DO NOT run pre-checks such as version checks (`gh --version`) or authentication status checks (`gh auth status`). Execute the target `gh` commands directly.
+
