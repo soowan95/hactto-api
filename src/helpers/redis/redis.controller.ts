@@ -67,6 +67,7 @@ export class RedisController {
   @ResponseMessage('success.remove.ip')
   async removeIp(@Param('ip') ip: string): Promise<void> {
     await this.redisService.removeFromSet('allowed:ips', ip);
+    await this.redisService.removeFromSet('pending:ips', ip);
   }
 
   @ApiOperation({ summary: 'Remove allowed master key' })
@@ -99,13 +100,14 @@ export class RedisController {
   @ResponseMessage('success.check.ip')
   async checkIp(
     @Req() request: Request,
-  ): Promise<{ allowed: boolean; ip: string }> {
+    @Query('mk') queryMk?: string,
+  ): Promise<{ allowed: boolean; pending: boolean; ip: string }> {
     let ip =
       (request.headers['x-forwarded-for'] as string) ||
       request.socket.remoteAddress;
 
     if (!ip) {
-      return { allowed: false, ip: 'unknown' };
+      return { allowed: false, pending: false, ip: 'unknown' };
     }
 
     if (ip.includes(',')) {
@@ -116,13 +118,30 @@ export class RedisController {
       ip = ip.replace('::ffff:', '');
     }
 
+    // 마스터 키(?mk=키) 유효성 검증 우선 처리
+    if (queryMk) {
+      let isValidMasterKey = await this.redisService.isMemberOfSet(
+        'allowed:mks',
+        queryMk,
+      );
+      if (!isValidMasterKey) {
+        isValidMasterKey = await this.redisService.isMemberOfSet(
+          'manager:k',
+          queryMk,
+        );
+      }
+      if (isValidMasterKey) {
+        return { allowed: true, pending: false, ip };
+      }
+    }
+
     const isAllowedIp = await this.redisService.isMemberOfSet(
       'allowed:ips',
       ip,
     );
 
     if (isAllowedIp) {
-      return { allowed: true, ip };
+      return { allowed: true, pending: false, ip };
     }
 
     const cookieHeader = request.headers.cookie;
@@ -133,11 +152,16 @@ export class RedisController {
       const isValidToken = await this.redisService.verifyAccessPayload(token);
       if (isValidToken) {
         await this.redisService.addToSet('allowed:ips', ip);
-        return { allowed: true, ip };
+        return { allowed: true, pending: false, ip };
       }
     }
 
-    return { allowed: false, ip };
+    const isPendingIp = await this.redisService.isMemberOfSet(
+      'pending:ips',
+      ip,
+    );
+
+    return { allowed: false, pending: isPendingIp, ip };
   }
 
   private parseCookies(cookieHeader?: string): Record<string, string> {
@@ -159,7 +183,6 @@ export class RedisController {
   @ResponseMessage('success.request.access')
   async requestAccess(
     @Req() request: Request,
-    @Res({ passthrough: true }) response: Response,
   ): Promise<void> {
     let ip =
       (request.headers['x-forwarded-for'] as string) ||
@@ -190,19 +213,42 @@ export class RedisController {
       }
     }
 
-    // Redis 화이트리스트에 IP 추가
-    await this.redisService.addToSet('allowed:ips', ip);
+    // Redis 승인 대기열에 IP 추가 (수동 승인용)
+    await this.redisService.addToSet('pending:ips', ip);
     this.logger.log(
-      `Access granted: registered IP (${ip}) to Redis and issued session cookie.`,
+      `Access requested: registered IP (${ip}) to Redis pending:ips queue.`,
     );
+  }
 
-    // 모바일 지원용 세션 쿠키 토큰 발급
-    const token = await this.redisService.signAccessPayload();
-    response.cookie('allowed_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV !== 'localhost',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
-    });
+  @ApiOperation({ summary: 'Get pending access requests' })
+  @RedisManager()
+  @Get('admin/whitelist/pending')
+  @ResponseMessage('success.read.pending')
+  async getPendingIps(): Promise<string[]> {
+    return await this.redisService.getFromSet('pending:ips');
+  }
+
+  @ApiOperation({ summary: 'Approve pending IP request' })
+  @RedisManager()
+  @Post('admin/whitelist/approve')
+  @ResponseMessage('success.approve.ip')
+  async approveIp(@Body() body: CreateAllowedIpRequestDto): Promise<void> {
+    const { ip } = body;
+    // 대기열에서 삭제
+    await this.redisService.removeFromSet('pending:ips', ip);
+    // 화이트리스트에 추가
+    await this.redisService.addToSet('allowed:ips', ip);
+    this.logger.log(`IP ${ip} approved by administrator.`);
+  }
+
+  @ApiOperation({ summary: 'Reject pending IP request' })
+  @RedisManager()
+  @Post('admin/whitelist/reject')
+  @ResponseMessage('success.reject.ip')
+  async rejectIp(@Body() body: CreateAllowedIpRequestDto): Promise<void> {
+    const { ip } = body;
+    // 대기열에서만 삭제
+    await this.redisService.removeFromSet('pending:ips', ip);
+    this.logger.log(`IP ${ip} rejected by administrator.`);
   }
 }
