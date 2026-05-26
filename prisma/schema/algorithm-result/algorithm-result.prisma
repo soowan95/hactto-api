@@ -8,6 +8,9 @@ model AlgorithmResult {
   episode   Int // 로또 회차
   numbers   String // 당첨번호 SET
 
+  ip        String?
+  visitorId String? @map("visitor_id")
+
   winningNumber WinningNumber @relation(fields: [episode], references: [episode])
 
   reliability Reliability?

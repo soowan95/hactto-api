@@ -53,11 +53,13 @@ export class WinningNumberService {
     const winningNumber = await this.winningNumberRepository.findByEpisode(
       data.episode,
     );
-    winningNumber.draw(data.numbers);
-    await this.winningNumberRepository.upsert(winningNumber);
-    await this.winningNumberRepository.createPlaceholder(
-      WinningNumber.placeholder(data.episode + 1),
-    );
+    if (!winningNumber.isDrawn) {
+      winningNumber.draw(data.numbers);
+      await this.winningNumberRepository.upsert(winningNumber);
+      await this.winningNumberRepository.createPlaceholder(
+        WinningNumber.placeholder(data.episode + 1),
+      );
+    }
   }
 
   /**
@@ -80,6 +82,19 @@ export class WinningNumberService {
    */
   async findByEpisode(episode: number): Promise<WinningNumberShowResponseDto> {
     const entity = await this.winningNumberRepository.findByEpisode(episode);
+    return plainToInstance(WinningNumberShowResponseDto, {
+      episode: entity.episode,
+      numbers: entity.getNumberArray(),
+    });
+  }
+
+  /**
+   * Find the latest winning number.
+   */
+  async findLatest(): Promise<WinningNumberShowResponseDto | null> {
+    const entity =
+      await this.winningNumberRepository.findLatestWithWinningNumber();
+    if (!entity) return null;
     return plainToInstance(WinningNumberShowResponseDto, {
       episode: entity.episode,
       numbers: entity.getNumberArray(),

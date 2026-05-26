@@ -29,6 +29,30 @@ export class InfraAlgorithmResultRepository implements IAlgorithmResultRepositor
     );
   }
 
+  async findByUser(
+    ip?: string,
+    visitorId?: string,
+  ): Promise<EntityAlgorithmResult[]> {
+    if (!ip && !visitorId) return [];
+
+    const conditions: any[] = [];
+    if (ip) conditions.push({ ip });
+    if (visitorId) conditions.push({ visitorId });
+
+    const results = await prisma.algorithmResult.findMany({
+      where: {
+        OR: conditions,
+      },
+      orderBy: {
+        id: 'desc',
+      },
+    });
+
+    return results.map((algorithmResult) =>
+      InfraAlgorithmResultMapper.toEntity(algorithmResult),
+    );
+  }
+
   async count(): Promise<number> {
     return prisma.algorithmResult.count();
   }
