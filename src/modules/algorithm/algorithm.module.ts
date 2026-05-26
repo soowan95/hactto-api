@@ -3,7 +3,7 @@ import { AlgorithmController } from './presentation/algorithm.controller';
 import { AlgorithmService } from './application/algorithm.service';
 import { WinningNumberModule } from '../winning-number/winning-number.module';
 import { ALGORITHM_RESULT_REPOSITORY_TOKEN } from './domain/ports/algorithm-result.repository.interface';
-import { PrismaAlgorithmResultRepository } from './infrastructure/adapters/prisma-algorithm-result.repository';
+import { InfraAlgorithmResultRepository } from './infrastructure/adapters/infra-algorithm-result.repository';
 
 @Module({
   imports: [WinningNumberModule],
@@ -12,7 +12,7 @@ import { PrismaAlgorithmResultRepository } from './infrastructure/adapters/prism
     AlgorithmService,
     {
       provide: ALGORITHM_RESULT_REPOSITORY_TOKEN,
-      useClass: PrismaAlgorithmResultRepository,
+      useClass: InfraAlgorithmResultRepository,
     },
   ],
   exports: [AlgorithmService, ALGORITHM_RESULT_REPOSITORY_TOKEN],

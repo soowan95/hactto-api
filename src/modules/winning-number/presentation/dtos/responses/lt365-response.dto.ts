@@ -100,6 +100,18 @@ export class Lt365 {
 
   @ApiProperty({ description: '엑셀 순위 정보', example: '1등' })
   excelRnk: string;
+
+  getWinningNumber(): number[] {
+    return [
+      this.tm1WnNo,
+      this.tm2WnNo,
+      this.tm3WnNo,
+      this.tm4WnNo,
+      this.tm5WnNo,
+      this.tm6WnNo,
+      this.bnsWnNo,
+    ];
+  }
 }
 
 export class Lt365Data {

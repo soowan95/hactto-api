@@ -1,8 +1,9 @@
 import { AlgorithmType } from '@hactto/algorithm';
+import { Reliability } from '../entities/reliability.entity';
 
 export const RELIABILITY_REPOSITORY_TOKEN = 'IReliabilityRepository';
 
 export interface IReliabilityRepository {
-  createMany(dataList: { id: number; score: number }[]): Promise<void>;
+  createMany(dataList: Reliability[]): Promise<void>;
   getAverageScore(algorithm?: AlgorithmType): Promise<number>;
 }

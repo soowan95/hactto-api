@@ -3,7 +3,7 @@ import { WinningNumberService } from './application/winning-number.service';
 import { WinningNumberController } from './presentation/winning-number.controller';
 import { HttpModule } from '@nestjs/axios';
 import { WINNING_NUMBER_REPOSITORY_TOKEN } from './domain/ports/winning-number.repository.interface';
-import { PrismaWinningNumberRepository } from './infrastructure/adapters/prisma-winning-number.repository';
+import { InfraWinningNumberRepository } from './infrastructure/adapters/infra-winning-number.repository';
 
 @Module({
   imports: [
@@ -17,7 +17,7 @@ import { PrismaWinningNumberRepository } from './infrastructure/adapters/prisma-
     WinningNumberService,
     {
       provide: WINNING_NUMBER_REPOSITORY_TOKEN,
-      useClass: PrismaWinningNumberRepository,
+      useClass: InfraWinningNumberRepository,
     },
   ],
   exports: [WinningNumberService, WINNING_NUMBER_REPOSITORY_TOKEN],
