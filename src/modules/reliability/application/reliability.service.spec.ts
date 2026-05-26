@@ -5,6 +5,9 @@ import { WINNING_NUMBER_REPOSITORY_TOKEN } from '../../winning-number/domain/por
 import { ALGORITHM_RESULT_REPOSITORY_TOKEN } from '../../algorithm/domain/ports/algorithm-result.repository.interface';
 import { RELIABILITY_REPOSITORY_TOKEN } from '../domain/ports/reliability.repository.interface';
 import { AlgorithmType } from '@hactto/algorithm';
+import { AlgorithmResult } from '../../algorithm/domain/entities/algorithm-result.entity';
+import { WinningNumber } from '../../winning-number/domain/entities/winning-number.entity';
+import { Reliability } from '../domain/entities/reliability.entity';
 
 describe('ReliabilityService', () => {
   let service: ReliabilityService;
@@ -76,20 +79,21 @@ describe('ReliabilityService', () => {
     it('should calculate reliability for targets and save results', async () => {
       mockAlgorithmResultRepository.count.mockResolvedValue(10);
 
-      const mockResult = {
-        id: 5,
-        episode: 100,
-        getNumberArray: () => [1, 2, 3, 4, 5, 6, 7], // generated numbers
-      };
+      const mockResult = new AlgorithmResult(
+        AlgorithmType.MIN_COUNT,
+        100,
+        [1, 2, 3, 4, 5, 6, 7],
+        5,
+      );
       mockAlgorithmResultRepository.findWithoutReliability.mockResolvedValue([
         mockResult,
       ]);
 
-      const mockWinningNumber = {
-        episode: 100,
-        isNonZero: () => true,
-        getNumberArray: () => [1, 2, 3, 4, 5, 6, 7], // actual numbers (perfect match)
-      };
+      const mockWinningNumber = new WinningNumber(
+        100,
+        [1, 2, 3, 4, 5, 6, 7],
+        true,
+      );
       mockWinningNumberRepository.findByEpisode.mockResolvedValue(
         mockWinningNumber,
       );
@@ -103,26 +107,24 @@ describe('ReliabilityService', () => {
 
       // Since it's a perfect match, reliability score should be 100.
       expect(mockReliabilityRepository.createMany).toHaveBeenCalledWith([
-        { id: 5, score: 100 },
+        new Reliability(5, 100),
       ]);
     });
 
     it('should skip calculation if winning number is all zeros (placeholder)', async () => {
       mockAlgorithmResultRepository.count.mockResolvedValue(10);
 
-      const mockResult = {
-        id: 5,
-        episode: 100,
-        getNumberArray: () => [1, 2, 3, 4, 5, 6, 7],
-      };
+      const mockResult = new AlgorithmResult(
+        AlgorithmType.MIN_COUNT,
+        100,
+        [1, 2, 3, 4, 5, 6, 7],
+        5,
+      );
       mockAlgorithmResultRepository.findWithoutReliability.mockResolvedValue([
         mockResult,
       ]);
 
-      const mockWinningNumber = {
-        episode: 100,
-        isNonZero: () => false, // all zeros
-      };
+      const mockWinningNumber = WinningNumber.placeholder(100);
       mockWinningNumberRepository.findByEpisode.mockResolvedValue(
         mockWinningNumber,
       );
