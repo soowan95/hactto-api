@@ -10,14 +10,13 @@ import {
   Post,
   Query,
   Req,
-  Res,
 } from '@nestjs/common';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 import { RedisManager } from '../../common/decorators/redis-manager.decorator';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { CreateAllowedIpRequestDto } from './dtos/requests/create-allowed-ip-request.dto';
 import { CreateMasterKeyRequestDto } from './dtos/requests/create-master-key-request.dto';
-import { Request, Response } from 'express';
+import { Request } from 'express';
 
 @ApiTags('- Allowed Client')
 @Controller()
@@ -181,9 +180,7 @@ export class RedisController {
   @ApiOperation({ summary: 'Request access permission' })
   @Post('request-access')
   @ResponseMessage('success.request.access')
-  async requestAccess(
-    @Req() request: Request,
-  ): Promise<void> {
+  async requestAccess(@Req() request: Request): Promise<void> {
     let ip =
       (request.headers['x-forwarded-for'] as string) ||
       request.socket.remoteAddress;

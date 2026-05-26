@@ -67,75 +67,48 @@ describe('RedisController', () => {
       process.env.NODE_ENV = originalEnv;
     });
 
-    it('localhost 환경에서는 국가 검증을 무시하고 IP 등록 및 쿠키를 발급해야 한다', async () => {
+    it('localhost 환경에서는 국가 검증을 무시하고 대기열(pending:ips)에 IP를 등록해야 한다', async () => {
       process.env.NODE_ENV = 'localhost';
-      const { req, res } = createMockReqRes('127.0.0.1');
-      redisService.signAccessPayload.mockResolvedValue(
-        'signed-token-localhost',
-      );
+      const { req } = createMockReqRes('127.0.0.1');
 
-      await controller.requestAccess(req, res);
+      await controller.requestAccess(req);
 
       expect(redisService.addToSet).toHaveBeenCalledWith(
-        'allowed:ips',
+        'pending:ips',
         '127.0.0.1',
-      );
-      expect(redisService.signAccessPayload).toHaveBeenCalled();
-      expect(res.cookie).toHaveBeenCalledWith(
-        'allowed_token',
-        'signed-token-localhost',
-        {
-          httpOnly: true,
-          secure: false,
-          sameSite: 'lax',
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-        },
       );
     });
 
-    it('프로덕션 환경에서 대한민국(KR) IP이면 등록 및 쿠키를 발급해야 한다', async () => {
+    it('프로덕션 환경에서 대한민국(KR) IP이면 대기열(pending:ips)에 IP를 등록해야 한다', async () => {
       process.env.NODE_ENV = 'production';
-      const { req, res } = createMockReqRes('1.2.3.4', 'KR');
-      redisService.signAccessPayload.mockResolvedValue('signed-token-kr');
+      const { req } = createMockReqRes('1.2.3.4', 'KR');
 
-      await controller.requestAccess(req, res);
+      await controller.requestAccess(req);
 
       expect(redisService.addToSet).toHaveBeenCalledWith(
-        'allowed:ips',
+        'pending:ips',
         '1.2.3.4',
-      );
-      expect(res.cookie).toHaveBeenCalledWith(
-        'allowed_token',
-        'signed-token-kr',
-        {
-          httpOnly: true,
-          secure: true,
-          sameSite: 'lax',
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-        },
       );
     });
 
     it('프로덕션 환경에서 대한민국 IP가 아니면(예: US) ForbiddenException을 발생시켜야 한다', async () => {
       process.env.NODE_ENV = 'production';
-      const { req, res } = createMockReqRes('1.2.3.4', 'US');
+      const { req } = createMockReqRes('1.2.3.4', 'US');
 
-      await expect(controller.requestAccess(req, res)).rejects.toThrow(
+      await expect(controller.requestAccess(req)).rejects.toThrow(
         ForbiddenException,
       );
       expect(redisService.addToSet).not.toHaveBeenCalled();
-      expect(res.cookie).not.toHaveBeenCalled();
     });
 
     it('프로덕션 환경에서 국가 헤더가 누락되면 ForbiddenException을 발생시켜야 한다', async () => {
       process.env.NODE_ENV = 'production';
-      const { req, res } = createMockReqRes('1.2.3.4');
+      const { req } = createMockReqRes('1.2.3.4');
 
-      await expect(controller.requestAccess(req, res)).rejects.toThrow(
+      await expect(controller.requestAccess(req)).rejects.toThrow(
         ForbiddenException,
       );
       expect(redisService.addToSet).not.toHaveBeenCalled();
-      expect(res.cookie).not.toHaveBeenCalled();
     });
   });
 });

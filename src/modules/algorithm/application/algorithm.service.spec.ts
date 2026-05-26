@@ -3,6 +3,9 @@ import { AlgorithmService } from './algorithm.service';
 import { WINNING_NUMBER_REPOSITORY_TOKEN } from '../../winning-number/domain/ports/winning-number.repository.interface';
 import { ALGORITHM_RESULT_REPOSITORY_TOKEN } from '../domain/ports/algorithm-result.repository.interface';
 import { AlgorithmType, hacttoExecute } from '@hactto/algorithm';
+import { AlgorithmResult } from '../domain/entities/algorithm-result.entity';
+import { GenerateWinningNumberResponseDto } from '../presentation/dtos/responses/generate-winning-number-response.dto';
+import { plainToInstance } from 'class-transformer';
 
 jest.mock('@hactto/algorithm', () => {
   const original = jest.requireActual('@hactto/algorithm');
@@ -98,9 +101,9 @@ describe('AlgorithmService', () => {
 
       const mockPrediction = [10, 11, 12, 13, 14, 15, 16];
       (hacttoExecute as jest.Mock).mockResolvedValue(mockPrediction);
-      mockAlgorithmResultRepository.create.mockResolvedValue({
-        id: 100,
-      } as any);
+      mockAlgorithmResultRepository.create.mockResolvedValue(
+        new AlgorithmResult(AlgorithmType.MIN_COUNT, 11, mockPrediction, 100),
+      );
 
       const result = await service.generate(AlgorithmType.MIN_COUNT);
 
@@ -111,18 +114,14 @@ describe('AlgorithmService', () => {
       expect(hacttoExecute).toHaveBeenCalledWith(AlgorithmType.MIN_COUNT, [
         [1, 2, 3, 4, 5, 6, 7],
       ]);
-      expect(mockAlgorithmResultRepository.create).toHaveBeenCalledWith({
-        algorithm: AlgorithmType.MIN_COUNT,
-        episode: 11,
-        first: 10,
-        second: 11,
-        third: 12,
-        fourth: 13,
-        fifth: 14,
-        sixth: 15,
-        bonus: 16,
-      });
-      expect(result).toEqual({ id: 100 });
+      expect(mockAlgorithmResultRepository.create).toHaveBeenCalledWith(
+        new AlgorithmResult(AlgorithmType.MIN_COUNT, 11, mockPrediction),
+      );
+      expect(result).toEqual(
+        plainToInstance(GenerateWinningNumberResponseDto, {
+          numbers: mockPrediction,
+        }),
+      );
     });
   });
 });

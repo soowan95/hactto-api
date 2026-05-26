@@ -6,7 +6,6 @@ import { plainToInstance } from 'class-transformer';
 import { Permission } from '../../../common/decorators/permission.decorator';
 import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
 import { GenerateWinningNumberResponseDto } from './dtos/responses/generate-winning-number-response.dto';
-import { AlgorithmResult } from '../domain/entities/algorithm-result.entity';
 import { AlgorithmType } from '@hactto/algorithm';
 
 @ApiTags('- Algorithm')
