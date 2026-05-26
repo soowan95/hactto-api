@@ -9,7 +9,7 @@ import { ReliabilityService } from '../application/reliability.service';
 import { Admin } from '../../../common/decorators/admin.decorator';
 import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
 import { Permission } from '../../../common/decorators/permission.decorator';
-import { ReliabilityAverageResponseDto } from './dtos/responses/reliability-average-response.dto';
+import { ReliabilityAverageResponseDto } from '../application/dtos/reliability-average-response.dto';
 import { plainToInstance } from 'class-transformer';
 import { AlgorithmType } from '@hactto/algorithm';
 

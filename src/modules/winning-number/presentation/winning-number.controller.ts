@@ -9,7 +9,7 @@ import {
 import { WinningNumberService } from '../application/winning-number.service';
 import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
-import { WinningNumberShowResponseDto } from './dtos/responses/winning-number-show-response.dto';
+import { WinningNumberShowResponseDto } from '../application/dtos/winning-number-show-response.dto';
 import { Admin } from '../../../common/decorators/admin.decorator';
 
 @ApiTags('- Winning Number')
