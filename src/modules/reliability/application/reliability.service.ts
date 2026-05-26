@@ -3,7 +3,7 @@ import { AlgorithmService } from '../../algorithm/application/algorithm.service'
 import { AlgorithmType } from '@hactto/algorithm';
 import { AlgorithmResult } from '../../algorithm/domain/entities/algorithm-result.entity';
 import { WinningNumber } from '../../winning-number/domain/entities/winning-number.entity';
-import { ReliabilityAverageResponseDto } from '../presentation/dtos/responses/reliability-average-response.dto';
+import { ReliabilityAverageResponseDto } from './dtos/reliability-average-response.dto';
 import {
   IWinningNumberRepository,
   WINNING_NUMBER_REPOSITORY_TOKEN,
