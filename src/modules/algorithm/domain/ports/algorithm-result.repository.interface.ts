@@ -1,20 +1,9 @@
-import { AlgorithmResult } from '../../../../lib/prisma';
-import { AlgorithmType } from '@hactto/algorithm';
+import { AlgorithmResult } from '../entities/algorithm-result.entity';
 
 export const ALGORITHM_RESULT_REPOSITORY_TOKEN = 'IAlgorithmResultRepository';
 
 export interface IAlgorithmResultRepository {
-  create(data: {
-    algorithm: AlgorithmType;
-    episode: number;
-    first: number;
-    second: number;
-    third: number;
-    fourth: number;
-    fifth: number;
-    sixth: number;
-    bonus: number;
-  }): Promise<AlgorithmResult>;
+  create(data: AlgorithmResult): Promise<AlgorithmResult>;
   findWithoutReliability(): Promise<AlgorithmResult[]>;
   count(): Promise<number>;
 }

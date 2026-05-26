@@ -6,13 +6,7 @@ model AlgorithmResult {
 
   algorithm String // @hactto/algorithm 에 정의된 알고리즘 명
   episode   Int // 로또 회차
-  first     Int
-  second    Int
-  third     Int
-  fourth    Int
-  fifth     Int
-  sixth     Int
-  bonus     Int
+  numbers   String // 당첨번호 SET
 
   winningNumber WinningNumber @relation(fields: [episode], references: [episode])
 

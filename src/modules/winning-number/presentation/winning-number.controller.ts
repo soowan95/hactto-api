@@ -9,7 +9,6 @@ import {
 import { WinningNumberService } from '../application/winning-number.service';
 import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
-import { plainToInstance } from 'class-transformer';
 import { WinningNumberShowResponseDto } from './dtos/responses/winning-number-show-response.dto';
 import { Admin } from '../../../common/decorators/admin.decorator';
 
@@ -23,9 +22,8 @@ export class WinningNumberController {
   })
   @ResponseMessage('success.read')
   @Get()
-  async findAll(): Promise<any> {
-    const result = await this.winningNumberService.findAll();
-    return plainToInstance(WinningNumberShowResponseDto, result);
+  async findAll(): Promise<WinningNumberShowResponseDto[]> {
+    return this.winningNumberService.findAll();
   }
 
   @ApiOperation({
@@ -36,9 +34,8 @@ export class WinningNumberController {
   @Get(':episode')
   async findByEpisode(
     @Param('episode', ParseIntPipe) episode: number,
-  ): Promise<any> {
-    const result = await this.winningNumberService.findByEpisode(episode);
-    return plainToInstance(WinningNumberShowResponseDto, result);
+  ): Promise<WinningNumberShowResponseDto> {
+    return this.winningNumberService.findByEpisode(episode);
   }
 
   @ApiOperation({
