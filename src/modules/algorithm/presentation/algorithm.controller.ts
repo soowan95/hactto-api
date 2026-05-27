@@ -1,7 +1,6 @@
 import {
   Controller,
   Get,
-  Ip,
   Param,
   ParseEnumPipe,
   Post,
@@ -46,11 +45,10 @@ export class AlgorithmController {
   @Post(':type/generate')
   async generateWinningNumber(
     @Param('type', new ParseEnumPipe(AlgorithmType)) type: AlgorithmType,
-    @Ip() ip: string,
     @Query('visitorId') visitorId?: string,
   ): Promise<GenerateWinningNumberResponseDto> {
     const generated: DomainAlgorithmResult =
-      await this.algorithmService.generate(type, ip, visitorId);
+      await this.algorithmService.generate(type, visitorId);
     return plainToInstance(GenerateWinningNumberResponseDto, {
       numbers: generated.getNumberArray(),
     });
@@ -63,10 +61,9 @@ export class AlgorithmController {
   @ResponseMessage('success.read')
   @Get('history')
   async getHistory(
-    @Ip() ip: string,
     @Query('visitorId') visitorId?: string,
   ): Promise<AlgorithmHistoryResponseDto[]> {
-    const results = await this.algorithmService.getHistory(ip, visitorId);
+    const results = await this.algorithmService.getHistory(visitorId);
     return plainToInstance(AlgorithmHistoryResponseDto, results);
   }
 }

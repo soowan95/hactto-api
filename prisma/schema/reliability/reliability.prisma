@@ -2,8 +2,8 @@
  * 신뢰도
  */
 model Reliability {
-  id    Int @id
-  score Int // 신뢰도 점수
+  id    Int  @id
+  score Int  // 신뢰도 점수
 
   algorithmResult AlgorithmResult @relation(fields: [id], references: [id])
 

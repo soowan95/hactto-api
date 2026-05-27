@@ -7,6 +7,7 @@ export interface IAlgorithmResultRepository {
     algorithmResult: DomainAlgorithmResult,
   ): Promise<DomainAlgorithmResult>;
   findWithoutReliability(): Promise<DomainAlgorithmResult[]>;
-  findByUser(ip?: string, visitorId?: string): Promise<DomainAlgorithmResult[]>;
+  findByUser(visitorId?: string): Promise<DomainAlgorithmResult[]>;
   count(): Promise<number>;
+  updatePersonalWeight(id: number, personalWeightId: number): Promise<void>;
 }

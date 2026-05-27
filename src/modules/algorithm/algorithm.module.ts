@@ -4,9 +4,11 @@ import { AlgorithmService } from './application/algorithm.service';
 import { WinningNumberModule } from '../winning-number/winning-number.module';
 import { ALGORITHM_RESULT_REPOSITORY_TOKEN } from './domain/ports/algorithm-result.repository.interface';
 import { InfraAlgorithmResultRepository } from './infrastructure/adapters/infra-algorithm-result.repository';
+import { PersonalWeightModule } from '../personal-weight/personal-weight.module';
+import { forwardRef } from '@nestjs/common';
 
 @Module({
-  imports: [WinningNumberModule],
+  imports: [WinningNumberModule, forwardRef(() => PersonalWeightModule)],
   controllers: [AlgorithmController],
   providers: [
     AlgorithmService,

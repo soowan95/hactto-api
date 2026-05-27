@@ -4,14 +4,14 @@
 model AlgorithmResult {
   id Int @id @default(autoincrement())
 
-  algorithm String // @hactto/algorithm 에 정의된 알고리즘 명
-  episode   Int // 로또 회차
-  numbers   String // 당첨번호 SET
+  algorithm        String // @hactto/algorithm 에 정의된 알고리즘 명
+  episode          Int // 로또 회차
+  numbers          String // 당첨번호 SET
+  visitorId        String? @map("visitor_id")
+  personalWeightId Int?    @map("personal_weight_id")
 
-  ip        String?
-  visitorId String? @map("visitor_id")
-
-  winningNumber WinningNumber @relation(fields: [episode], references: [episode])
+  winningNumber  WinningNumber   @relation(fields: [episode], references: [episode])
+  personalWeight PersonalWeight? @relation(fields: [personalWeightId], references: [id])
 
   reliability Reliability?
 

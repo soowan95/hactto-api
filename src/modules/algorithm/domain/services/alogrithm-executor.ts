@@ -6,8 +6,8 @@ export class AlgorithmExecutor {
     type: AlgorithmType,
     episode: number,
     data: number[][],
-    ip?: string,
     visitorId?: string,
+    personalWeightId?: number,
   ) {
     const result: number[] = await hacttoExecute(type, data);
     return new DomainAlgorithmResult(
@@ -15,8 +15,8 @@ export class AlgorithmExecutor {
       episode,
       result,
       undefined,
-      ip,
       visitorId,
+      personalWeightId,
     );
   }
 }

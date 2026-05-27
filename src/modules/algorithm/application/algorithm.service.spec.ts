@@ -13,10 +13,13 @@ jest.mock('@hactto/algorithm', () => {
   };
 });
 
+import { PersonalWeightService } from '../../personal-weight/application/personal-weight.service';
+
 describe('AlgorithmService', () => {
   let service: AlgorithmService;
   let mockWinningNumberRepository: any;
   let mockAlgorithmResultRepository: any;
+  let mockPersonalWeightService: any;
 
   beforeEach(async () => {
     mockWinningNumberRepository = {
@@ -33,6 +36,10 @@ describe('AlgorithmService', () => {
       count: jest.fn(),
     };
 
+    mockPersonalWeightService = {
+      getWeights: jest.fn().mockResolvedValue(null),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AlgorithmService,
@@ -43,6 +50,10 @@ describe('AlgorithmService', () => {
         {
           provide: ALGORITHM_RESULT_REPOSITORY_TOKEN,
           useValue: mockAlgorithmResultRepository,
+        },
+        {
+          provide: PersonalWeightService,
+          useValue: mockPersonalWeightService,
         },
       ],
     }).compile();
@@ -79,9 +90,9 @@ describe('AlgorithmService', () => {
 
       expect(mockWinningNumberRepository.findAll).toHaveBeenCalled();
       // Loop: for (let i = 1; i < data.length; i++) -> i = 1, i = 2 (2 iterations)
-      // For each algorithm type (MIN_COUNT, TOTAL_MIN_COUNT) -> total 4 executions.
-      expect(hacttoExecute).toHaveBeenCalledTimes(4);
-      expect(mockAlgorithmResultRepository.create).toHaveBeenCalledTimes(4);
+      // For each algorithm type (MIN_COUNT, TOTAL_MIN_COUNT, MAX_COUNT) -> total 6 executions.
+      expect(hacttoExecute).toHaveBeenCalledTimes(6);
+      expect(mockAlgorithmResultRepository.create).toHaveBeenCalledTimes(6);
     });
   });
 

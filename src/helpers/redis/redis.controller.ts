@@ -11,6 +11,7 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 import { RedisManager } from '../../common/decorators/redis-manager.decorator';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
@@ -100,13 +101,13 @@ export class RedisController {
   async checkIp(
     @Req() request: Request,
     @Query('mk') queryMk?: string,
-  ): Promise<{ allowed: boolean; pending: boolean; ip: string }> {
+  ): Promise<{ allowed: boolean; pending: boolean; ip: string; visitorId: string }> {
     let ip =
       (request.headers['x-forwarded-for'] as string) ||
       request.socket.remoteAddress;
 
     if (!ip) {
-      return { allowed: false, pending: false, ip: 'unknown' };
+      return { allowed: false, pending: false, ip: 'unknown', visitorId: '' };
     }
 
     if (ip.includes(',')) {
@@ -116,6 +117,12 @@ export class RedisController {
     if (ip.startsWith('::ffff:')) {
       ip = ip.replace('::ffff:', '');
     }
+
+    const visitorId = crypto
+      .createHash('sha256')
+      .update(ip)
+      .digest('hex')
+      .substring(0, 16);
 
     // 마스터 키(?mk=키) 유효성 검증 우선 처리
     if (queryMk) {
@@ -130,7 +137,7 @@ export class RedisController {
         );
       }
       if (isValidMasterKey) {
-        return { allowed: true, pending: false, ip };
+        return { allowed: true, pending: false, ip, visitorId };
       }
     }
 
@@ -140,7 +147,7 @@ export class RedisController {
     );
 
     if (isAllowedIp) {
-      return { allowed: true, pending: false, ip };
+      return { allowed: true, pending: false, ip, visitorId };
     }
 
     const cookieHeader = request.headers.cookie;
@@ -151,7 +158,7 @@ export class RedisController {
       const isValidToken = await this.redisService.verifyAccessPayload(token);
       if (isValidToken) {
         await this.redisService.addToSet('allowed:ips', ip);
-        return { allowed: true, pending: false, ip };
+        return { allowed: true, pending: false, ip, visitorId };
       }
     }
 
@@ -160,7 +167,7 @@ export class RedisController {
       ip,
     );
 
-    return { allowed: false, pending: isPendingIp, ip };
+    return { allowed: false, pending: isPendingIp, ip, visitorId };
   }
 
   private parseCookies(cookieHeader?: string): Record<string, string> {
