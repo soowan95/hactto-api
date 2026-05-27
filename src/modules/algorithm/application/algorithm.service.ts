@@ -1,7 +1,7 @@
 import { AlgorithmType, getAlgorithm } from '@hactto/algorithm';
 import { DomainAlgorithmResult } from '../domain/entities/algorithm-result.entity';
 import { DomainWinningNumber } from '../../winning-number/domain/entities/winning-number.entity';
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import {
   IWinningNumberRepository,
   WINNING_NUMBER_REPOSITORY_TOKEN,
@@ -11,6 +11,7 @@ import {
   IAlgorithmResultRepository,
 } from '../domain/ports/algorithm-result.repository.interface';
 import { AlgorithmExecutor } from '../domain/services/alogrithm-executor';
+import { PersonalWeightService } from '../../personal-weight/application/personal-weight.service';
 
 @Injectable()
 export class AlgorithmService {
@@ -21,6 +22,8 @@ export class AlgorithmService {
     private readonly winningNumberRepository: IWinningNumberRepository,
     @Inject(ALGORITHM_RESULT_REPOSITORY_TOKEN)
     private readonly algorithmResultRepository: IAlgorithmResultRepository,
+    @Inject(forwardRef(() => PersonalWeightService))
+    private readonly personalWeightService: PersonalWeightService,
   ) {}
 
   allAlgorithmTypes(): AlgorithmType[] {
@@ -50,7 +53,6 @@ export class AlgorithmService {
 
   async generate(
     type: AlgorithmType,
-    ip?: string,
     visitorId?: string,
   ): Promise<DomainAlgorithmResult> {
     const winningNumbers: DomainWinningNumber[] =
@@ -59,22 +61,31 @@ export class AlgorithmService {
       await this.winningNumberRepository.findLatestWithWinningNumber();
     if (!lastestWinningNumber) throw new Error('Not exists any winning number');
     const lastestEpisode: number = lastestWinningNumber.episode;
+
+    let personalWeightId: number | undefined = undefined;
+    if (visitorId) {
+      const personalWeight = await this.personalWeightService.getWeights(
+        visitorId,
+        type,
+      );
+      if (personalWeight) {
+        personalWeightId = personalWeight.id;
+      }
+    }
+
     return await this.algorithmResultRepository.create(
       await AlgorithmExecutor.execute(
         type,
         lastestEpisode + 1,
         winningNumbers.map((winningNumber) => winningNumber.getNumberArray()),
-        ip,
         visitorId,
+        personalWeightId,
       ),
     );
   }
 
-  async getHistory(ip?: string, visitorId?: string): Promise<any[]> {
-    const results = await this.algorithmResultRepository.findByUser(
-      ip,
-      visitorId,
-    );
+  async getHistory(visitorId?: string): Promise<any[]> {
+    const results = await this.algorithmResultRepository.findByUser(visitorId);
     if (results.length === 0) return [];
 
     const episodes = Array.from(new Set(results.map((r) => r.episode)));
@@ -106,7 +117,7 @@ export class AlgorithmService {
           winningMain.includes(n),
         );
         const matchCount = matchedNumbers.length;
-        const bonusMatch = predictedMain.includes(winningBonus);
+        const bonusMatch = predictedNumbers[6] === winningBonus;
 
         let rank = 0; // 0 means no prize
         if (matchCount === 6) rank = 1;

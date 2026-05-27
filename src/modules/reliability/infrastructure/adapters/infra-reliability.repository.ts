@@ -21,10 +21,33 @@ export class InfraReliabilityRepository implements IReliabilityRepository {
   }
 
   async getAverageScore(algorithm?: AlgorithmType): Promise<number> {
+    const whereClause: any = {};
+    if (algorithm) {
+      whereClause.algorithmResult = {
+        algorithm: algorithm,
+      };
+    }
+
     const averageScore = await prisma.reliability.aggregate({
       _avg: { score: true },
-      where: { algorithmResult: { algorithm: algorithm } },
+      where: whereClause,
     });
     return averageScore._avg.score || 0;
+  }
+
+  async upsert(reliability: DomainReliability): Promise<void> {
+    const data = InfraReliabilityMapper.toPersistence(reliability);
+    await prisma.reliability.upsert({
+      where: {
+        id: data.id,
+      },
+      update: {
+        score: data.score,
+      },
+      create: {
+        id: data.id,
+        score: data.score,
+      },
+    });
   }
 }

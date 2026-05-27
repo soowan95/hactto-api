@@ -29,8 +29,8 @@ export class InfraAlgorithmResultMapper {
       raw.episode,
       numbersArray,
       raw.id,
-      raw.ip ?? undefined,
       raw.visitorId ?? undefined,
+      raw.personalWeightId ?? undefined,
     );
   }
 
@@ -50,8 +50,8 @@ export class InfraAlgorithmResultMapper {
       episode: entity.episode,
       numbers: JSON.stringify(mappedObject),
       id: entity.id as number,
-      ip: entity.ip ?? null,
       visitorId: entity.visitorId ?? null,
+      personalWeightId: entity.personalWeightId ?? null,
     };
   }
 }

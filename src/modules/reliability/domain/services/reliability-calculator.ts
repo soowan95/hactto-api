@@ -6,10 +6,11 @@ export class ReliabilityCalculator {
   static calculate(
     winningNumber: DomainWinningNumber,
     result: DomainAlgorithmResult,
+    customWeights?: number[],
   ): DomainReliability {
     if (!result.isNonZero()) return new DomainReliability(result.getId(), -1);
 
-    const WEIGHTS = [25, 20, 15, 15, 10, 10, 5];
+    const WEIGHTS = customWeights || [25, 20, 15, 15, 10, 10, 5];
     const maxScore = WEIGHTS.reduce((sum, weight) => sum + weight, 0);
     let score = 0;
 

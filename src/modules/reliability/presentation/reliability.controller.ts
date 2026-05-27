@@ -45,8 +45,9 @@ export class ReliabilityController {
     @Query('algorithm', new ParseEnumPipe(AlgorithmType, { optional: true }))
     algorithm?: AlgorithmType,
   ): Promise<ReliabilityAverageResponseDto> {
-    const result: number =
-      await this.reliabilityService.getAverageScore(algorithm);
+    const result: number = await this.reliabilityService.getAverageScore(
+      algorithm,
+    );
     return plainToInstance(ReliabilityAverageResponseDto, {
       type: algorithm,
       average: result,

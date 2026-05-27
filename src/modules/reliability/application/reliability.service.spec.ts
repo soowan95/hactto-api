@@ -10,12 +10,15 @@ import { DomainWinningNumber } from '../../winning-number/domain/entities/winnin
 import { DomainReliability } from '../domain/entities/reliability.entity';
 import { WinningNumberDrawer } from '../../winning-number/domain/services/winning-number-drawer';
 
+import { PersonalWeightService } from '../../personal-weight/application/personal-weight.service';
+
 describe('ReliabilityService', () => {
   let service: ReliabilityService;
   let mockAlgorithmService: any;
   let mockWinningNumberRepository: any;
   let mockAlgorithmResultRepository: any;
   let mockReliabilityRepository: any;
+  let mockPersonalWeightService: any;
 
   beforeEach(async () => {
     mockAlgorithmService = {
@@ -29,11 +32,19 @@ describe('ReliabilityService', () => {
     mockAlgorithmResultRepository = {
       count: jest.fn(),
       findWithoutReliability: jest.fn(),
+      updatePersonalWeight: jest.fn().mockResolvedValue(undefined),
+      findByUser: jest.fn().mockResolvedValue([]),
     };
 
     mockReliabilityRepository = {
       createMany: jest.fn(),
       getAverageScore: jest.fn(),
+      upsert: jest.fn(),
+    };
+
+    mockPersonalWeightService = {
+      getWeights: jest.fn().mockResolvedValue(null),
+      findById: jest.fn().mockResolvedValue(null),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -54,6 +65,10 @@ describe('ReliabilityService', () => {
         {
           provide: RELIABILITY_REPOSITORY_TOKEN,
           useValue: mockReliabilityRepository,
+        },
+        {
+          provide: PersonalWeightService,
+          useValue: mockPersonalWeightService,
         },
       ],
     }).compile();

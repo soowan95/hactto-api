@@ -1,13 +1,18 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ReliabilityController } from './presentation/reliability.controller';
 import { ReliabilityService } from './application/reliability.service';
 import { AlgorithmModule } from '../algorithm/algorithm.module';
 import { WinningNumberModule } from '../winning-number/winning-number.module';
 import { RELIABILITY_REPOSITORY_TOKEN } from './domain/ports/reliability.repository.interface';
 import { InfraReliabilityRepository } from './infrastructure/adapters/infra-reliability.repository';
+import { PersonalWeightModule } from '../personal-weight/personal-weight.module';
 
 @Module({
-  imports: [AlgorithmModule, WinningNumberModule],
+  imports: [
+    AlgorithmModule,
+    WinningNumberModule,
+    forwardRef(() => PersonalWeightModule),
+  ],
   controllers: [ReliabilityController],
   providers: [
     ReliabilityService,

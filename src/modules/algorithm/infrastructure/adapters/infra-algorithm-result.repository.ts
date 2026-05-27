@@ -28,19 +28,12 @@ export class InfraAlgorithmResultRepository implements IAlgorithmResultRepositor
     );
   }
 
-  async findByUser(
-    ip?: string,
-    visitorId?: string,
-  ): Promise<DomainAlgorithmResult[]> {
-    if (!ip && !visitorId) return [];
-
-    const conditions: any[] = [];
-    if (ip) conditions.push({ ip });
-    if (visitorId) conditions.push({ visitorId });
+  async findByUser(visitorId?: string): Promise<DomainAlgorithmResult[]> {
+    if (!visitorId) return [];
 
     const results = await prisma.algorithmResult.findMany({
       where: {
-        OR: conditions,
+        visitorId,
       },
       orderBy: {
         id: 'desc',
@@ -54,5 +47,16 @@ export class InfraAlgorithmResultRepository implements IAlgorithmResultRepositor
 
   async count(): Promise<number> {
     return prisma.algorithmResult.count();
+  }
+
+  async updatePersonalWeight(id: number, personalWeightId: number): Promise<void> {
+    await prisma.algorithmResult.update({
+      where: {
+        id,
+      },
+      data: {
+        personalWeightId,
+      },
+    });
   }
 }
