@@ -27,6 +27,15 @@ export class WinningNumberController {
   }
 
   @ApiOperation({
+    summary: 'Get the latest winning number',
+  })
+  @ResponseMessage('success.read')
+  @Get('latest')
+  async findLatest(): Promise<WinningNumberShowResponseDto | null> {
+    return this.winningNumberService.findLatest();
+  }
+
+  @ApiOperation({
     summary: 'Get the winning number by episode',
   })
   @ApiParam({ name: 'episode', required: true, description: '회차 번호' })

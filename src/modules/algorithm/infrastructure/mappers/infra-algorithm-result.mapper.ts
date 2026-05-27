@@ -4,21 +4,33 @@ import { AlgorithmType } from '@hactto/algorithm';
 
 export class InfraAlgorithmResultMapper {
   static toEntity(raw: InfraAlgorithmResult): EntityAlgorithmResult {
-    const parsed = JSON.parse(raw.numbers);
-    const numbersArray = [
-      parsed['1st'],
-      parsed['2nd'],
-      parsed['3rd'],
-      parsed['4th'],
-      parsed['5th'],
-      parsed['6th'],
-      parsed['bns'],
-    ];
+    let numbersArray = [0, 0, 0, 0, 0, 0, 0];
+    try {
+      if (raw.numbers) {
+        const parsed = JSON.parse(raw.numbers);
+        numbersArray = [
+          parsed['1st'] ?? 0,
+          parsed['2nd'] ?? 0,
+          parsed['3rd'] ?? 0,
+          parsed['4th'] ?? 0,
+          parsed['5th'] ?? 0,
+          parsed['6th'] ?? 0,
+          parsed['bns'] ?? 0,
+        ];
+      }
+    } catch (e) {
+      console.warn(
+        `Failed to parse algorithm result numbers for id ${raw.id}:`,
+        e,
+      );
+    }
     return new EntityAlgorithmResult(
       raw.algorithm as AlgorithmType,
       raw.episode,
       numbersArray,
       raw.id,
+      raw.ip ?? undefined,
+      raw.visitorId ?? undefined,
     );
   }
 
@@ -38,6 +50,8 @@ export class InfraAlgorithmResultMapper {
       episode: entity.episode,
       numbers: JSON.stringify(mappedObject),
       id: entity.id as number,
+      ip: entity.ip ?? null,
+      visitorId: entity.visitorId ?? null,
     };
   }
 }
