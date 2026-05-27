@@ -5,6 +5,7 @@ export class WinningNumberResponseConvertor {
     return {
       episode: winningNumber.episode,
       numbers: winningNumber.getNumberArray(),
+      isDrawn: winningNumber.isDrawn,
     };
   }
 }
