@@ -5,8 +5,9 @@ import {
   Prisma,
   WinningNumber as InfraWinningNumber,
 } from '../../../../generated/prisma/client';
-import { WinningNumber as EntityWinningNumber } from '../../domain/entities/winning-number.entity';
+import { DomainWinningNumber as EntityWinningNumber } from '../../domain/entities/winning-number.entity';
 import { InfraWinningNumberMapper } from '../mappers/infra-winning-number.mapper';
+import { WinningNumberDrawer } from '../../domain/services/winning-number-drawer';
 
 @Injectable()
 export class InfraWinningNumberRepository implements IWinningNumberRepository {
@@ -24,7 +25,7 @@ export class InfraWinningNumberRepository implements IWinningNumberRepository {
       await prisma.winningNumber.findUnique({
         where: { episode: episode },
       });
-    if (!winningNumber) return EntityWinningNumber.placeholder(episode);
+    if (!winningNumber) return WinningNumberDrawer.drawPlaceholder(episode);
     return InfraWinningNumberMapper.toEntity(winningNumber);
   }
 
@@ -44,13 +45,6 @@ export class InfraWinningNumberRepository implements IWinningNumberRepository {
       where: { episode: winningNumber.episode },
       update: data,
       create: data,
-    });
-  }
-
-  async createPlaceholder(winningNumber: EntityWinningNumber): Promise<void> {
-    const data = InfraWinningNumberMapper.toPersistence(winningNumber);
-    await prisma.winningNumber.create({
-      data: data,
     });
   }
 }

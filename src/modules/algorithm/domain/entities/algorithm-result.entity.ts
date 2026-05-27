@@ -1,7 +1,7 @@
-import { AlgorithmType, hacttoExecute } from '@hactto/algorithm';
+import { AlgorithmType } from '@hactto/algorithm';
 import { LottoNumberSet } from '../../../winning-number/domain/vos/lotto-number-set.vo';
 
-export class AlgorithmResult {
+export class DomainAlgorithmResult {
   public readonly algorithm: AlgorithmType;
   public readonly episode: number;
   public readonly numberSet: LottoNumberSet;
@@ -35,16 +35,5 @@ export class AlgorithmResult {
 
   getNumberArray(): number[] {
     return this.numberSet.toValues();
-  }
-
-  static async generate(
-    type: AlgorithmType,
-    episode: number,
-    data: number[][],
-    ip?: string,
-    visitorId?: string,
-  ): Promise<AlgorithmResult> {
-    const result: number[] = await hacttoExecute(type, data);
-    return new AlgorithmResult(type, episode, result, undefined, ip, visitorId);
   }
 }

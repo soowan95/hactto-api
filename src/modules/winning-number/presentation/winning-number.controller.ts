@@ -9,8 +9,11 @@ import {
 import { WinningNumberService } from '../application/winning-number.service';
 import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
-import { WinningNumberShowResponseDto } from '../application/dtos/winning-number-show-response.dto';
+import { WinningNumberShowResponseDto } from './dtos/responses/winning-number-show-response.dto';
 import { Admin } from '../../../common/decorators/admin.decorator';
+import { DomainWinningNumber } from '../domain/entities/winning-number.entity';
+import { plainToInstance } from 'class-transformer';
+import { WinningNumberResponseConvertor } from '../domain/services/winning-number-response-convertor';
 
 @ApiTags('- Winning Number')
 @Controller('winning-numbers')
@@ -23,7 +26,14 @@ export class WinningNumberController {
   @ResponseMessage('success.read')
   @Get()
   async findAll(): Promise<WinningNumberShowResponseDto[]> {
-    return this.winningNumberService.findAll();
+    const winningNumbers: DomainWinningNumber[] =
+      await this.winningNumberService.findAll();
+    return plainToInstance(
+      WinningNumberShowResponseDto,
+      winningNumbers.map((winningNumber) =>
+        WinningNumberResponseConvertor.convertForShow(winningNumber),
+      ),
+    );
   }
 
   @ApiOperation({
@@ -32,7 +42,14 @@ export class WinningNumberController {
   @ResponseMessage('success.read')
   @Get('latest')
   async findLatest(): Promise<WinningNumberShowResponseDto | null> {
-    return this.winningNumberService.findLatest();
+    const winningNumber: DomainWinningNumber | null =
+      await this.winningNumberService.findLatest();
+    if (!winningNumber) return null;
+    else
+      return plainToInstance(
+        WinningNumberShowResponseDto,
+        WinningNumberResponseConvertor.convertForShow(winningNumber),
+      );
   }
 
   @ApiOperation({
@@ -44,7 +61,12 @@ export class WinningNumberController {
   async findByEpisode(
     @Param('episode', ParseIntPipe) episode: number,
   ): Promise<WinningNumberShowResponseDto> {
-    return this.winningNumberService.findByEpisode(episode);
+    const winningNumber: DomainWinningNumber =
+      await this.winningNumberService.findByEpisode(episode);
+    return plainToInstance(
+      WinningNumberShowResponseDto,
+      WinningNumberResponseConvertor.convertForShow(winningNumber),
+    );
   }
 
   @ApiOperation({

@@ -1,8 +1,8 @@
-import { WinningNumber as InfraWinningNumber } from '../../../../generated/prisma/client';
-import { WinningNumber as EntityWinningNumber } from '../../domain/entities/winning-number.entity';
+import { WinningNumber } from '../../../../generated/prisma/client';
+import { DomainWinningNumber } from '../../domain/entities/winning-number.entity';
 
 export class InfraWinningNumberMapper {
-  static toEntity(raw: InfraWinningNumber): EntityWinningNumber {
+  static toEntity(raw: WinningNumber): DomainWinningNumber {
     let numbersArray = [0, 0, 0, 0, 0, 0, 0];
     try {
       if (raw.numbers) {
@@ -20,10 +20,10 @@ export class InfraWinningNumberMapper {
     } catch (e) {
       console.warn(`Failed to parse numbers for episode ${raw.episode}:`, e);
     }
-    return new EntityWinningNumber(raw.episode, numbersArray, raw.isDrawn);
+    return new DomainWinningNumber(raw.episode, numbersArray, raw.isDrawn);
   }
 
-  static toPersistence(entity: EntityWinningNumber): InfraWinningNumber {
+  static toPersistence(entity: DomainWinningNumber): WinningNumber {
     const rawNumbers: number[] = entity.getNumberArray();
     const mappedObject = {
       '1st': rawNumbers[0],

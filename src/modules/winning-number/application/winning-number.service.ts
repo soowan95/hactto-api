@@ -1,16 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { WinningNumber } from '../domain/entities/winning-number.entity';
+import { DomainWinningNumber } from '../domain/entities/winning-number.entity';
 import {
   IWinningNumberRepository,
   WINNING_NUMBER_REPOSITORY_TOKEN,
 } from '../domain/ports/winning-number.repository.interface';
 import {
+  ExternalLotteryData,
   IWinningNumberFetcher,
   WINNING_NUMBER_FETCHER_TOKEN,
-  ExternalLotteryData,
 } from '../domain/ports/winning-number-fetcher.interface';
-import { plainToInstance } from 'class-transformer';
-import { WinningNumberShowResponseDto } from './dtos/winning-number-show-response.dto';
+import { WinningNumberDrawer } from '../domain/services/winning-number-drawer';
 
 @Injectable()
 export class WinningNumberService {
@@ -41,7 +40,11 @@ export class WinningNumberService {
     const dataList = Array.from(dataMap.values());
 
     for (const data of dataList) {
-      const winningNumber = new WinningNumber(data.episode, data.numbers, true);
+      const winningNumber = new DomainWinningNumber(
+        data.episode,
+        data.numbers,
+        true,
+      );
       await this.winningNumberRepository.upsert(winningNumber);
     }
 
@@ -56,8 +59,8 @@ export class WinningNumberService {
     if (!winningNumber.isDrawn) {
       winningNumber.draw(data.numbers);
       await this.winningNumberRepository.upsert(winningNumber);
-      await this.winningNumberRepository.createPlaceholder(
-        WinningNumber.placeholder(data.episode + 1),
+      await this.winningNumberRepository.upsert(
+        WinningNumberDrawer.drawPlaceholder(data.episode + 1),
       );
     }
   }
@@ -65,39 +68,24 @@ export class WinningNumberService {
   /**
    * Find all winning numbers from the WINNING_NUMBER table.
    */
-  async findAll(options?: any): Promise<WinningNumberShowResponseDto[]> {
-    const entities: WinningNumber[] =
-      await this.winningNumberRepository.findAll(options);
-    return plainToInstance(
-      WinningNumberShowResponseDto,
-      entities.map((entity) => ({
-        episode: entity.episode,
-        numbers: entity.getNumberArray(),
-      })),
-    );
+  async findAll(options?: any): Promise<DomainWinningNumber[]> {
+    return this.winningNumberRepository.findAll(options);
   }
 
   /**
    * Find one winning number from the WINNING_NUMBER table by episode.
    */
-  async findByEpisode(episode: number): Promise<WinningNumberShowResponseDto> {
-    const entity = await this.winningNumberRepository.findByEpisode(episode);
-    return plainToInstance(WinningNumberShowResponseDto, {
-      episode: entity.episode,
-      numbers: entity.getNumberArray(),
-    });
+  async findByEpisode(episode: number): Promise<DomainWinningNumber> {
+    return this.winningNumberRepository.findByEpisode(episode);
   }
 
   /**
    * Find the latest winning number.
    */
-  async findLatest(): Promise<WinningNumberShowResponseDto | null> {
+  async findLatest(): Promise<DomainWinningNumber | null> {
     const entity =
       await this.winningNumberRepository.findLatestWithWinningNumber();
     if (!entity) return null;
-    return plainToInstance(WinningNumberShowResponseDto, {
-      episode: entity.episode,
-      numbers: entity.getNumberArray(),
-    });
+    else return entity;
   }
 }

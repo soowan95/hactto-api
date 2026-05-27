@@ -1,13 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { WinningNumberService } from './winning-number.service';
 import { WINNING_NUMBER_REPOSITORY_TOKEN } from '../domain/ports/winning-number.repository.interface';
-import {
-  WINNING_NUMBER_FETCHER_TOKEN,
-  IWinningNumberFetcher,
-} from '../domain/ports/winning-number-fetcher.interface';
-import { WinningNumber } from '../domain/entities/winning-number.entity';
-import { plainToInstance } from 'class-transformer';
-import { WinningNumberShowResponseDto } from './dtos/winning-number-show-response.dto';
+import { WINNING_NUMBER_FETCHER_TOKEN } from '../domain/ports/winning-number-fetcher.interface';
+import { DomainWinningNumber } from '../domain/entities/winning-number.entity';
+import { WinningNumberDrawer } from '../domain/services/winning-number-drawer';
 
 describe('WinningNumberService', () => {
   let service: WinningNumberService;
@@ -51,27 +47,22 @@ describe('WinningNumberService', () => {
 
   describe('findAll', () => {
     it('should delegate execution to repository', async () => {
-      const mockResult = [new WinningNumber(1, [1, 2, 3, 4, 5, 6, 7], true)];
+      const mockResult = [
+        new DomainWinningNumber(1, [1, 2, 3, 4, 5, 6, 7], true),
+      ];
       mockRepository.findAll.mockResolvedValue(mockResult);
 
       const result = await service.findAll();
 
       expect(mockRepository.findAll).toHaveBeenCalled();
-      expect(result).toEqual(
-        plainToInstance(WinningNumberShowResponseDto, [
-          {
-            episode: 1,
-            numbers: [1, 2, 3, 4, 5, 6, 7],
-          },
-        ]),
-      );
+      expect(result).toEqual(mockResult);
     });
   });
 
   describe('findByEpisode', () => {
     it('should delegate execution to repository with episode', async () => {
       const episode = 100;
-      const mockResult = new WinningNumber(
+      const mockResult = new DomainWinningNumber(
         episode,
         [1, 2, 3, 4, 5, 6, 7],
         true,
@@ -81,12 +72,7 @@ describe('WinningNumberService', () => {
       const result = await service.findByEpisode(episode);
 
       expect(mockRepository.findByEpisode).toHaveBeenCalledWith(episode);
-      expect(result).toEqual(
-        plainToInstance(WinningNumberShowResponseDto, {
-          episode,
-          numbers: [1, 2, 3, 4, 5, 6, 7],
-        }),
-      );
+      expect(result).toEqual(mockResult);
     });
   });
 
@@ -97,21 +83,21 @@ describe('WinningNumberService', () => {
         numbers: [1, 2, 3, 4, 5, 6, 7],
       });
 
-      const existingWinningNumber = WinningNumber.placeholder(1000);
+      const existingWinningNumber = WinningNumberDrawer.drawPlaceholder(1000);
       mockRepository.findByEpisode.mockResolvedValue(existingWinningNumber);
 
       await service.fetchRecentOne();
 
       expect(mockFetcher.fetchRecentOne).toHaveBeenCalled();
 
-      const expectedWinningNumber = new WinningNumber(
+      const expectedWinningNumber = new DomainWinningNumber(
         1000,
         [1, 2, 3, 4, 5, 6, 7],
         true,
       );
       expect(mockRepository.upsert).toHaveBeenCalledWith(expectedWinningNumber);
-      expect(mockRepository.createPlaceholder).toHaveBeenCalledWith(
-        WinningNumber.placeholder(1001),
+      expect(mockRepository.upsert).toHaveBeenCalledWith(
+        WinningNumberDrawer.drawPlaceholder(1001),
       );
     });
   });
@@ -142,7 +128,7 @@ describe('WinningNumberService', () => {
         numbers: [15, 16, 17, 18, 19, 20, 21],
       });
 
-      const recentPlaceholder = WinningNumber.placeholder(15);
+      const recentPlaceholder = WinningNumberDrawer.drawPlaceholder(15);
       mockRepository.findByEpisode.mockResolvedValue(recentPlaceholder);
 
       await service.fetch(15);
@@ -151,17 +137,17 @@ describe('WinningNumberService', () => {
       expect(mockFetcher.fetchByEpisode).toHaveBeenCalledWith(15);
       expect(mockFetcher.fetchRecentOne).toHaveBeenCalled();
 
-      const expectedWinningNumber1 = new WinningNumber(
+      const expectedWinningNumber1 = new DomainWinningNumber(
         1,
         [1, 2, 3, 4, 5, 6, 7],
         true,
       );
-      const expectedWinningNumber2 = new WinningNumber(
+      const expectedWinningNumber2 = new DomainWinningNumber(
         11,
         [11, 12, 13, 14, 15, 16, 17],
         true,
       );
-      const expectedWinningNumberRecent = new WinningNumber(
+      const expectedWinningNumberRecent = new DomainWinningNumber(
         15,
         [15, 16, 17, 18, 19, 20, 21],
         true,
@@ -176,8 +162,8 @@ describe('WinningNumberService', () => {
       expect(mockRepository.upsert).toHaveBeenCalledWith(
         expectedWinningNumberRecent,
       );
-      expect(mockRepository.createPlaceholder).toHaveBeenCalledWith(
-        WinningNumber.placeholder(16),
+      expect(mockRepository.upsert).toHaveBeenCalledWith(
+        WinningNumberDrawer.drawPlaceholder(16),
       );
     });
   });
