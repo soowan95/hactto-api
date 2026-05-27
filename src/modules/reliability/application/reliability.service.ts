@@ -1,9 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { AlgorithmService } from '../../algorithm/application/algorithm.service';
 import { AlgorithmType } from '@hactto/algorithm';
-import { AlgorithmResult } from '../../algorithm/domain/entities/algorithm-result.entity';
-import { WinningNumber } from '../../winning-number/domain/entities/winning-number.entity';
-import { ReliabilityAverageResponseDto } from './dtos/reliability-average-response.dto';
+import { DomainAlgorithmResult } from '../../algorithm/domain/entities/algorithm-result.entity';
+import { DomainWinningNumber } from '../../winning-number/domain/entities/winning-number.entity';
 import {
   IWinningNumberRepository,
   WINNING_NUMBER_REPOSITORY_TOKEN,
@@ -16,7 +15,8 @@ import {
   IReliabilityRepository,
   RELIABILITY_REPOSITORY_TOKEN,
 } from '../domain/ports/reliability.repository.interface';
-import { Reliability } from '../domain/entities/reliability.entity';
+import { DomainReliability } from '../domain/entities/reliability.entity';
+import { ReliabilityCalculator } from '../domain/services/reliability-calculator';
 
 @Injectable()
 export class ReliabilityService {
@@ -44,17 +44,19 @@ export class ReliabilityService {
     if (!isExistAtLeastOneAlgorithmResult)
       await this.algorithmService.initialize();
 
-    const targetAlgorithmResults: AlgorithmResult[] =
+    const targetAlgorithmResults: DomainAlgorithmResult[] =
       await this.algorithmResultRepository.findWithoutReliability();
 
-    const reliabilityDataList: Reliability[] = [];
+    const reliabilityDataList: DomainReliability[] = [];
 
     for (const result of targetAlgorithmResults) {
-      const winningNumber: WinningNumber =
+      const winningNumber: DomainWinningNumber =
         await this.winningNumberRepository.findByEpisode(result.episode);
       if (!winningNumber || !winningNumber.isDrawn) continue;
 
-      reliabilityDataList.push(Reliability.calculate(winningNumber, result));
+      reliabilityDataList.push(
+        ReliabilityCalculator.calculate(winningNumber, result),
+      );
     }
 
     if (reliabilityDataList.length > 0) {
@@ -62,13 +64,7 @@ export class ReliabilityService {
     }
   }
 
-  async getAverageScore(
-    type?: AlgorithmType,
-  ): Promise<ReliabilityAverageResponseDto> {
-    const average = await this.reliabilityRepository.getAverageScore(type);
-    return {
-      type: type!,
-      average: average,
-    };
+  async getAverageScore(type?: AlgorithmType): Promise<number> {
+    return this.reliabilityRepository.getAverageScore(type);
   }
 }

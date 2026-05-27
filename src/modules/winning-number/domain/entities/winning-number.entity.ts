@@ -1,6 +1,6 @@
 import { LottoNumberSet } from '../vos/lotto-number-set.vo';
 
-export class WinningNumber {
+export class DomainWinningNumber {
   public readonly episode: number;
   public numberSet: LottoNumberSet;
   public isDrawn: boolean;
@@ -19,9 +19,5 @@ export class WinningNumber {
 
   getNumberArray(): number[] {
     return this.numberSet.toValues();
-  }
-
-  static placeholder(episode: number): WinningNumber {
-    return new WinningNumber(episode, [0, 0, 0, 0, 0, 0, 0], false);
   }
 }

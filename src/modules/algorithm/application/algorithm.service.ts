@@ -1,6 +1,6 @@
 import { AlgorithmType, getAlgorithm } from '@hactto/algorithm';
-import { AlgorithmResult } from '../domain/entities/algorithm-result.entity';
-import { WinningNumber } from '../../winning-number/domain/entities/winning-number.entity';
+import { DomainAlgorithmResult } from '../domain/entities/algorithm-result.entity';
+import { DomainWinningNumber } from '../../winning-number/domain/entities/winning-number.entity';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   IWinningNumberRepository,
@@ -10,8 +10,7 @@ import {
   ALGORITHM_RESULT_REPOSITORY_TOKEN,
   IAlgorithmResultRepository,
 } from '../domain/ports/algorithm-result.repository.interface';
-import { GenerateWinningNumberResponseDto } from '../presentation/dtos/responses/generate-winning-number-response.dto';
-import { plainToInstance } from 'class-transformer';
+import { AlgorithmExecutor } from '../domain/services/alogrithm-executor';
 
 @Injectable()
 export class AlgorithmService {
@@ -32,7 +31,7 @@ export class AlgorithmService {
     this.logger.debug(`Algorithm Service Initialized.`);
     const types: AlgorithmType[] = this.allAlgorithmTypes();
     this.logger.debug(`Algorithm types.`, types);
-    const winningNumbers: WinningNumber[] =
+    const winningNumbers: DomainWinningNumber[] =
       await this.winningNumberRepository.findAll();
     const data: number[][] = winningNumbers.map((winningNumber) =>
       winningNumber.getNumberArray(),
@@ -43,7 +42,7 @@ export class AlgorithmService {
       for (let i = 1; i < data.length; i++) {
         const subData: number[][] = data.slice(0, i);
         await this.algorithmResultRepository.create(
-          await AlgorithmResult.generate(type, i + 1, subData),
+          await AlgorithmExecutor.execute(type, i + 1, subData),
         );
       }
     }
@@ -53,15 +52,15 @@ export class AlgorithmService {
     type: AlgorithmType,
     ip?: string,
     visitorId?: string,
-  ): Promise<GenerateWinningNumberResponseDto> {
-    const winningNumbers: WinningNumber[] =
+  ): Promise<DomainAlgorithmResult> {
+    const winningNumbers: DomainWinningNumber[] =
       await this.winningNumberRepository.findAll();
-    const lastestWinningNumber: WinningNumber | null =
+    const lastestWinningNumber: DomainWinningNumber | null =
       await this.winningNumberRepository.findLatestWithWinningNumber();
     if (!lastestWinningNumber) throw new Error('Not exists any winning number');
     const lastestEpisode: number = lastestWinningNumber.episode;
-    const entity: AlgorithmResult = await this.algorithmResultRepository.create(
-      await AlgorithmResult.generate(
+    return await this.algorithmResultRepository.create(
+      await AlgorithmExecutor.execute(
         type,
         lastestEpisode + 1,
         winningNumbers.map((winningNumber) => winningNumber.getNumberArray()),
@@ -69,9 +68,6 @@ export class AlgorithmService {
         visitorId,
       ),
     );
-    return plainToInstance(GenerateWinningNumberResponseDto, {
-      numbers: entity.getNumberArray(),
-    });
   }
 
   async getHistory(ip?: string, visitorId?: string): Promise<any[]> {
@@ -88,7 +84,7 @@ export class AlgorithmService {
       },
     });
 
-    const winningNumbersMap = new Map<number, WinningNumber>();
+    const winningNumbersMap = new Map<number, DomainWinningNumber>();
     for (const wn of winningNumbers) {
       winningNumbersMap.set(wn.episode, wn);
     }

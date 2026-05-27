@@ -5,9 +5,10 @@ import { WINNING_NUMBER_REPOSITORY_TOKEN } from '../../winning-number/domain/por
 import { ALGORITHM_RESULT_REPOSITORY_TOKEN } from '../../algorithm/domain/ports/algorithm-result.repository.interface';
 import { RELIABILITY_REPOSITORY_TOKEN } from '../domain/ports/reliability.repository.interface';
 import { AlgorithmType } from '@hactto/algorithm';
-import { AlgorithmResult } from '../../algorithm/domain/entities/algorithm-result.entity';
-import { WinningNumber } from '../../winning-number/domain/entities/winning-number.entity';
-import { Reliability } from '../domain/entities/reliability.entity';
+import { DomainAlgorithmResult } from '../../algorithm/domain/entities/algorithm-result.entity';
+import { DomainWinningNumber } from '../../winning-number/domain/entities/winning-number.entity';
+import { DomainReliability } from '../domain/entities/reliability.entity';
+import { WinningNumberDrawer } from '../../winning-number/domain/services/winning-number-drawer';
 
 describe('ReliabilityService', () => {
   let service: ReliabilityService;
@@ -79,7 +80,7 @@ describe('ReliabilityService', () => {
     it('should calculate reliability for targets and save results', async () => {
       mockAlgorithmResultRepository.count.mockResolvedValue(10);
 
-      const mockResult = new AlgorithmResult(
+      const mockResult = new DomainAlgorithmResult(
         AlgorithmType.MIN_COUNT,
         100,
         [1, 2, 3, 4, 5, 6, 7],
@@ -89,7 +90,7 @@ describe('ReliabilityService', () => {
         mockResult,
       ]);
 
-      const mockWinningNumber = new WinningNumber(
+      const mockWinningNumber = new DomainWinningNumber(
         100,
         [1, 2, 3, 4, 5, 6, 7],
         true,
@@ -107,14 +108,14 @@ describe('ReliabilityService', () => {
 
       // Since it's a perfect match, reliability score should be 100.
       expect(mockReliabilityRepository.createMany).toHaveBeenCalledWith([
-        new Reliability(5, 100),
+        new DomainReliability(5, 100),
       ]);
     });
 
     it('should skip calculation if winning number is all zeros (placeholder)', async () => {
       mockAlgorithmResultRepository.count.mockResolvedValue(10);
 
-      const mockResult = new AlgorithmResult(
+      const mockResult = new DomainAlgorithmResult(
         AlgorithmType.MIN_COUNT,
         100,
         [1, 2, 3, 4, 5, 6, 7],
@@ -124,7 +125,7 @@ describe('ReliabilityService', () => {
         mockResult,
       ]);
 
-      const mockWinningNumber = WinningNumber.placeholder(100);
+      const mockWinningNumber = WinningNumberDrawer.drawPlaceholder(100);
       mockWinningNumberRepository.findByEpisode.mockResolvedValue(
         mockWinningNumber,
       );
@@ -144,10 +145,7 @@ describe('ReliabilityService', () => {
       expect(mockReliabilityRepository.getAverageScore).toHaveBeenCalledWith(
         AlgorithmType.MIN_COUNT,
       );
-      expect(result).toEqual({
-        type: AlgorithmType.MIN_COUNT,
-        average: 75.5,
-      });
+      expect(result).toEqual(75.5);
     });
   });
 });

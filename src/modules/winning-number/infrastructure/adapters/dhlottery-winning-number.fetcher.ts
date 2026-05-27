@@ -6,7 +6,10 @@ import {
   ExternalLotteryData,
   IWinningNumberFetcher,
 } from '../../domain/ports/winning-number-fetcher.interface';
-import { Lt365, Lt365ResponseDto } from '../dtos/lt365-response.dto';
+import {
+  Lt365,
+  Lt365ResponseDto,
+} from '../../presentation/dtos/responses/lt365-response.dto';
 
 @Injectable()
 export class DhlotteryWinningNumberFetcher implements IWinningNumberFetcher {

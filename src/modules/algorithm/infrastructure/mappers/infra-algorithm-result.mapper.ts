@@ -1,9 +1,9 @@
-import { AlgorithmResult as InfraAlgorithmResult } from '../../../../generated/prisma/client';
-import { AlgorithmResult as EntityAlgorithmResult } from '../../domain/entities/algorithm-result.entity';
+import { AlgorithmResult } from '../../../../generated/prisma/client';
+import { DomainAlgorithmResult } from '../../domain/entities/algorithm-result.entity';
 import { AlgorithmType } from '@hactto/algorithm';
 
 export class InfraAlgorithmResultMapper {
-  static toEntity(raw: InfraAlgorithmResult): EntityAlgorithmResult {
+  static toEntity(raw: AlgorithmResult): DomainAlgorithmResult {
     let numbersArray = [0, 0, 0, 0, 0, 0, 0];
     try {
       if (raw.numbers) {
@@ -24,7 +24,7 @@ export class InfraAlgorithmResultMapper {
         e,
       );
     }
-    return new EntityAlgorithmResult(
+    return new DomainAlgorithmResult(
       raw.algorithm as AlgorithmType,
       raw.episode,
       numbersArray,
@@ -34,7 +34,7 @@ export class InfraAlgorithmResultMapper {
     );
   }
 
-  static toPersistence(entity: EntityAlgorithmResult): InfraAlgorithmResult {
+  static toPersistence(entity: DomainAlgorithmResult): AlgorithmResult {
     const rawNumbers: number[] = entity.getNumberArray();
     const mappedObject = {
       '1st': rawNumbers[0],

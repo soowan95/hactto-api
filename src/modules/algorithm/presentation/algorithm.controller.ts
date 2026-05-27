@@ -1,10 +1,10 @@
 import {
   Controller,
   Get,
+  Ip,
   Param,
   ParseEnumPipe,
   Post,
-  Ip,
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
@@ -16,6 +16,7 @@ import { ResponseMessage } from '../../../common/decorators/response-message.dec
 import { GenerateWinningNumberResponseDto } from './dtos/responses/generate-winning-number-response.dto';
 import { AlgorithmType } from '@hactto/algorithm';
 import { AlgorithmHistoryResponseDto } from './dtos/responses/algorithm-history-response.dto';
+import { DomainAlgorithmResult } from '../domain/entities/algorithm-result.entity';
 
 @ApiTags('- Algorithm')
 @Controller('algorithms')
@@ -48,7 +49,11 @@ export class AlgorithmController {
     @Ip() ip: string,
     @Query('visitorId') visitorId?: string,
   ): Promise<GenerateWinningNumberResponseDto> {
-    return this.algorithmService.generate(type, ip, visitorId);
+    const generated: DomainAlgorithmResult =
+      await this.algorithmService.generate(type, ip, visitorId);
+    return plainToInstance(GenerateWinningNumberResponseDto, {
+      numbers: generated.getNumberArray(),
+    });
   }
 
   @ApiOperation({
