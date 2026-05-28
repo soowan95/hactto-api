@@ -125,9 +125,11 @@ describe('AlgorithmService', () => {
       expect(
         mockWinningNumberRepository.findLatestWithWinningNumber,
       ).toHaveBeenCalled();
-      expect(hacttoExecute).toHaveBeenCalledWith(AlgorithmType.MIN_COUNT, [
-        [1, 2, 3, 4, 5, 6, 7],
-      ]);
+      expect(hacttoExecute).toHaveBeenCalledWith(
+        AlgorithmType.MIN_COUNT,
+        [[1, 2, 3, 4, 5, 6, 7]],
+        [25, 20, 15, 15, 10, 10, 5],
+      );
       expect(mockAlgorithmResultRepository.create).toHaveBeenCalledWith(
         new DomainAlgorithmResult(AlgorithmType.MIN_COUNT, 11, mockPrediction),
       );

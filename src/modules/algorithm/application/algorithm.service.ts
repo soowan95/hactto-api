@@ -12,6 +12,7 @@ import {
 } from '../domain/ports/algorithm-result.repository.interface';
 import { AlgorithmExecutor } from '../domain/services/alogrithm-executor';
 import { PersonalWeightService } from '../../personal-weight/application/personal-weight.service';
+import { DomainPersonalWeight } from '../../personal-weight/domain/entities/personal-weight.entity';
 
 @Injectable()
 export class AlgorithmService {
@@ -62,16 +63,9 @@ export class AlgorithmService {
     if (!lastestWinningNumber) throw new Error('Not exists any winning number');
     const lastestEpisode: number = lastestWinningNumber.episode;
 
-    let personalWeightId: number | undefined = undefined;
-    if (visitorId) {
-      const personalWeight = await this.personalWeightService.getWeights(
-        visitorId,
-        type,
-      );
-      if (personalWeight) {
-        personalWeightId = personalWeight.id;
-      }
-    }
+    let personalWeight: DomainPersonalWeight | null = visitorId
+      ? await this.personalWeightService.getWeights(visitorId, type)
+      : null;
 
     return await this.algorithmResultRepository.create(
       await AlgorithmExecutor.execute(
@@ -79,7 +73,7 @@ export class AlgorithmService {
         lastestEpisode + 1,
         winningNumbers.map((winningNumber) => winningNumber.getNumberArray()),
         visitorId,
-        personalWeightId,
+        personalWeight || undefined,
       ),
     );
   }
