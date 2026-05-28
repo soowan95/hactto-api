@@ -49,7 +49,10 @@ export class InfraAlgorithmResultRepository implements IAlgorithmResultRepositor
     return prisma.algorithmResult.count();
   }
 
-  async updatePersonalWeight(id: number, personalWeightId: number): Promise<void> {
+  async updatePersonalWeight(
+    id: number,
+    personalWeightId: number,
+  ): Promise<void> {
     await prisma.algorithmResult.update({
       where: {
         id,

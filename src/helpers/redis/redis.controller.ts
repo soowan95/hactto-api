@@ -101,7 +101,12 @@ export class RedisController {
   async checkIp(
     @Req() request: Request,
     @Query('mk') queryMk?: string,
-  ): Promise<{ allowed: boolean; pending: boolean; ip: string; visitorId: string }> {
+  ): Promise<{
+    allowed: boolean;
+    pending: boolean;
+    ip: string;
+    visitorId: string;
+  }> {
     let ip =
       (request.headers['x-forwarded-for'] as string) ||
       request.socket.remoteAddress;

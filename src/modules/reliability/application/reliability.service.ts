@@ -123,9 +123,7 @@ export class ReliabilityService {
     }
   }
 
-  async getAverageScore(
-    type?: AlgorithmType,
-  ): Promise<number> {
+  async getAverageScore(type?: AlgorithmType): Promise<number> {
     return this.reliabilityRepository.getAverageScore(type);
   }
 }
