@@ -57,6 +57,18 @@ export class AnalyzeReliabilityHandler implements ICommandHandler<AnalyzeReliabi
 
     if (resultsToSave.length > 0) {
       await this.repository.saveMany(resultsToSave);
+
+      // 사용자 예측 이력 캐시 무효화
+      const visitorIds = Array.from(
+        new Set(
+          resultsToSave
+            .map((r) => r.visitorId)
+            .filter((id): id is string => !!id && id !== 'guest'),
+        ),
+      );
+      for (const visitorId of visitorIds) {
+        await this.redisService.del(`user:${visitorId}:predictions:history`);
+      }
     }
 
     // 캐시 무효화

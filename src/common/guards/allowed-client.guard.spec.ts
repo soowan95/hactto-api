@@ -2,16 +2,22 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AllowedClientGuard } from './allowed-client.guard';
 import { RedisService } from '../../helpers/redis/redis.service';
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 
 describe('AllowedClientGuard', () => {
   let guard: AllowedClientGuard;
   let redisService: jest.Mocked<RedisService>;
+  let reflector: jest.Mocked<Reflector>;
 
   beforeEach(async () => {
     const mockRedisService = {
       isMemberOfSet: jest.fn(),
       verifyAccessPayload: jest.fn(),
       addToSet: jest.fn(),
+    };
+
+    const mockReflector = {
+      getAllAndOverride: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -21,6 +27,10 @@ describe('AllowedClientGuard', () => {
           provide: RedisService,
           useValue: mockRedisService,
         },
+        {
+          provide: Reflector,
+          useValue: mockReflector,
+        },
       ],
     }).compile();
 
@@ -28,11 +38,13 @@ describe('AllowedClientGuard', () => {
     redisService = module.get(
       RedisService,
     ) as unknown as jest.Mocked<RedisService>;
+    reflector = module.get(Reflector) as unknown as jest.Mocked<Reflector>;
   });
 
   const createMockContext = (
     ip: string,
     cookieHeader?: string,
+    query?: any,
   ): ExecutionContext => {
     const request = {
       headers: {
@@ -42,11 +54,14 @@ describe('AllowedClientGuard', () => {
       socket: {
         remoteAddress: ip,
       },
+      query: query || {},
     };
     return {
       switchToHttp: () => ({
         getRequest: () => request,
       }),
+      getHandler: () => ({}),
+      getClass: () => ({}),
     } as unknown as ExecutionContext;
   };
 
@@ -109,5 +124,30 @@ describe('AllowedClientGuard', () => {
       ForbiddenException,
     );
     expect(redisService.addToSet).not.toHaveBeenCalled();
+  });
+
+  it('visitorId가 guest이고 @GuestAllowed() 데코레이터가 설정되어 있으면 true를 반환해야 한다', async () => {
+    const context = createMockContext('1.2.3.4', undefined, {
+      visitorId: 'guest',
+    });
+    reflector.getAllAndOverride.mockReturnValue(true);
+
+    const result = await guard.canActivate(context);
+
+    expect(result).toBe(true);
+    expect(reflector.getAllAndOverride).toHaveBeenCalled();
+  });
+
+  it('visitorId가 guest이지만 @GuestAllowed() 데코레이터가 설정되어 있지 않으면 ForbiddenException을 발생시켜야 한다', async () => {
+    const context = createMockContext('1.2.3.4', undefined, {
+      visitorId: 'guest',
+    });
+    reflector.getAllAndOverride.mockReturnValue(false);
+    redisService.isMemberOfSet.mockResolvedValue(false);
+
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(reflector.getAllAndOverride).toHaveBeenCalled();
   });
 });

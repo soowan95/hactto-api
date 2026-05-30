@@ -20,6 +20,8 @@ import { GeneratePredictionCommand } from '../application/commands/generate-pred
 import { GetPredictionHistoryQuery } from '../application/queries/get-prediction-history/get-prediction-history.query';
 import { GeneratePredictionRequestDto } from './dtos/requests/generate-prediction-request.dto';
 
+import { GuestAllowed } from '../../../common/decorators/guest-allowed.decorator';
+
 @ApiTags('- Algorithm')
 @Controller('algorithms')
 export class AlgorithmController {
@@ -31,7 +33,7 @@ export class AlgorithmController {
   @ApiOperation({
     summary: 'Get all algorithm types',
   })
-  @Permission()
+  @GuestAllowed()
   @ResponseMessage('success.read')
   @Get()
   async getAllAlgorithmTypes(): Promise<AllAlgorithmTypesResponsesDto> {

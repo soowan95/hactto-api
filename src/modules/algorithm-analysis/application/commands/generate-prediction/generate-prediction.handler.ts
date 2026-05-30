@@ -42,8 +42,10 @@ export class GeneratePredictionHandler implements ICommandHandler<GeneratePredic
 
     const result = await this.repository.create(executed);
 
-    const cacheKey = `user:${command.visitorId || 'guest'}:predictions:history`;
-    await this.redisService.del(cacheKey);
+    if (command.visitorId && command.visitorId !== 'guest') {
+      const cacheKey = `user:${command.visitorId}:predictions:history`;
+      await this.redisService.del(cacheKey);
+    }
 
     return result;
   }

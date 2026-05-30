@@ -175,6 +175,9 @@ describe('AlgorithmAnalysis CQRS Handlers', () => {
         prediction,
       ]);
       expect(mockRedisService.del).toHaveBeenCalledWith(
+        'user:user-1:predictions:history',
+      );
+      expect(mockRedisService.del).toHaveBeenCalledWith(
         'algorithm:all:average-reliability',
       );
     });

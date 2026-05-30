@@ -6,15 +6,31 @@ import {
   Logger,
 } from '@nestjs/common';
 import { RedisService } from '../../helpers/redis/redis.service';
+import { Reflector } from '@nestjs/core';
+import { IS_GUEST_ALLOWED_KEY } from '../decorators/guest-allowed.decorator';
 
 @Injectable()
 export class AllowedClientGuard implements CanActivate {
   private readonly logger = new Logger(AllowedClientGuard.name);
 
-  constructor(private readonly redisService: RedisService) {}
+  constructor(
+    private readonly redisService: RedisService,
+    private readonly reflector: Reflector,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
+
+    // 게스트 전용 엔드포인트 접근 체크
+    const visitorId = request.query?.visitorId || request.body?.visitorId;
+    const isGuestAllowed = this.reflector.getAllAndOverride<boolean>(
+      IS_GUEST_ALLOWED_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+
+    if (visitorId === 'guest' && isGuestAllowed) {
+      return true;
+    }
 
     let ip =
       (request.headers['x-forwarded-for'] as string) ||
