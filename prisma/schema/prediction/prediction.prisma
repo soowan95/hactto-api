@@ -1,0 +1,18 @@
+/**
+ * 알고리즘으로 생성된 예측 당첨 번호
+ */
+model Prediction {
+  id Int @id @default(autoincrement())
+
+  algorithm String // @hactto/algorithm 에 정의된 알고리즘 명
+  episode   Int // 로또 회차
+  weights   String // 가중치 SET
+  numbers   String // 당첨번호 SET
+  visitorId String? @map("visitor_id")
+
+  winningNumber WinningNumber @relation(fields: [episode], references: [episode])
+
+  reliability Reliability?
+
+  @@map("prediction")
+}

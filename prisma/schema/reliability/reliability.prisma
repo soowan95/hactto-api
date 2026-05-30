@@ -5,7 +5,7 @@ model Reliability {
   id    Int  @id
   score Int  // 신뢰도 점수
 
-  algorithmResult AlgorithmResult @relation(fields: [id], references: [id])
+  prediction Prediction @relation(fields: [id], references: [id])
 
   @@map("reliability")
 }

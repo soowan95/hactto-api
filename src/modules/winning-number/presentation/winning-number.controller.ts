@@ -6,7 +6,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { WinningNumberService } from '../application/winning-number.service';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
 import { WinningNumberShowResponseDto } from './dtos/responses/winning-number-show-response.dto';
@@ -15,10 +15,18 @@ import { DomainWinningNumber } from '../domain/entities/winning-number.entity';
 import { plainToInstance } from 'class-transformer';
 import { WinningNumberResponseConvertor } from '../domain/services/winning-number-response-convertor';
 
+import { FetchWinningNumbersCommand } from '../application/commands/fetch-winning-numbers/fetch-winning-numbers.command';
+import { GetAllWinningNumbersQuery } from '../application/queries/get-all-winning-numbers/get-all-winning-numbers.query';
+import { GetLatestWinningNumberQuery } from '../application/queries/get-latest-winning-number/get-latest-winning-number.query';
+import { GetWinningNumberByEpisodeQuery } from '../application/queries/get-winning-number-by-episode/get-winning-number-by-episode.query';
+
 @ApiTags('- Winning Number')
 @Controller('winning-numbers')
 export class WinningNumberController {
-  constructor(private readonly winningNumberService: WinningNumberService) {}
+  constructor(
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus,
+  ) {}
 
   @ApiOperation({
     summary: 'Get all winning numbers',
@@ -26,8 +34,11 @@ export class WinningNumberController {
   @ResponseMessage('success.read')
   @Get()
   async findAll(): Promise<WinningNumberShowResponseDto[]> {
-    const winningNumbers: DomainWinningNumber[] =
-      await this.winningNumberService.findAll();
+    const query = new GetAllWinningNumbersQuery();
+    const winningNumbers = await this.queryBus.execute<
+      GetAllWinningNumbersQuery,
+      DomainWinningNumber[]
+    >(query);
     return plainToInstance(
       WinningNumberShowResponseDto,
       winningNumbers.map((winningNumber) =>
@@ -42,8 +53,11 @@ export class WinningNumberController {
   @ResponseMessage('success.read')
   @Get('latest')
   async findLatest(): Promise<WinningNumberShowResponseDto | null> {
-    const winningNumber: DomainWinningNumber | null =
-      await this.winningNumberService.findLatest();
+    const query = new GetLatestWinningNumberQuery();
+    const winningNumber = await this.queryBus.execute<
+      GetLatestWinningNumberQuery,
+      DomainWinningNumber | null
+    >(query);
     if (!winningNumber) return null;
     else
       return plainToInstance(
@@ -61,8 +75,11 @@ export class WinningNumberController {
   async findByEpisode(
     @Param('episode', ParseIntPipe) episode: number,
   ): Promise<WinningNumberShowResponseDto> {
-    const winningNumber: DomainWinningNumber =
-      await this.winningNumberService.findByEpisode(episode);
+    const query = new GetWinningNumberByEpisodeQuery(episode);
+    const winningNumber = await this.queryBus.execute<
+      GetWinningNumberByEpisodeQuery,
+      DomainWinningNumber
+    >(query);
     return plainToInstance(
       WinningNumberShowResponseDto,
       WinningNumberResponseConvertor.convertForShow(winningNumber),
@@ -83,6 +100,7 @@ export class WinningNumberController {
   async fetch(
     @Query('latestEpisode', ParseIntPipe) latestEpisode: number,
   ): Promise<void> {
-    await this.winningNumberService.fetch(latestEpisode);
+    const command = new FetchWinningNumbersCommand(latestEpisode);
+    await this.commandBus.execute(command);
   }
 }

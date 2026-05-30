@@ -6,7 +6,7 @@ model WinningNumber {
   numbers String // 당첨번호 SET
   isDrawn Boolean @default(true)
 
-  algorithmResult AlgorithmResult[] // 회차 별 각 알고리즘에 대한 결과
+  predictions Prediction[] // 회차 별 각 알고리즘에 대한 결과
 
   @@map("winning_number")
 }
