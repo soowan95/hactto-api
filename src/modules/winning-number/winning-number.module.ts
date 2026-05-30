@@ -1,14 +1,16 @@
 import { Module } from '@nestjs/common';
-import { WinningNumberService } from './application/winning-number.service';
+import { CqrsModule } from '@nestjs/cqrs';
 import { WinningNumberController } from './presentation/winning-number.controller';
 import { HttpModule } from '@nestjs/axios';
 import { WINNING_NUMBER_REPOSITORY_TOKEN } from './domain/ports/winning-number.repository.interface';
 import { InfraWinningNumberRepository } from './infrastructure/adapters/infra-winning-number.repository';
 import { WINNING_NUMBER_FETCHER_TOKEN } from './domain/ports/winning-number-fetcher.interface';
 import { DhlotteryWinningNumberFetcher } from './infrastructure/adapters/dhlottery-winning-number.fetcher';
+import { CommandHandlers, QueryHandlers } from './application';
 
 @Module({
   imports: [
+    CqrsModule,
     HttpModule.register({
       timeout: 5000,
       maxRedirects: 3,
@@ -16,7 +18,6 @@ import { DhlotteryWinningNumberFetcher } from './infrastructure/adapters/dhlotte
   ],
   controllers: [WinningNumberController],
   providers: [
-    WinningNumberService,
     {
       provide: WINNING_NUMBER_REPOSITORY_TOKEN,
       useClass: InfraWinningNumberRepository,
@@ -25,7 +26,9 @@ import { DhlotteryWinningNumberFetcher } from './infrastructure/adapters/dhlotte
       provide: WINNING_NUMBER_FETCHER_TOKEN,
       useClass: DhlotteryWinningNumberFetcher,
     },
+    ...CommandHandlers,
+    ...QueryHandlers,
   ],
-  exports: [WinningNumberService, WINNING_NUMBER_REPOSITORY_TOKEN],
+  exports: [WINNING_NUMBER_REPOSITORY_TOKEN, CqrsModule],
 })
 export class WinningNumberModule {}
