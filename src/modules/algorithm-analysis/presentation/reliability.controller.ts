@@ -15,6 +15,8 @@ import { AlgorithmType } from '@hactto/algorithm';
 import { AnalyzeReliabilityCommand } from '../application/commands/analyze-reliability/analyze-reliability.command';
 import { GetAverageReliabilityQuery } from '../application/queries/get-average-reliability/get-average-reliability.query';
 
+import { GuestAllowed } from '../../../common/decorators/guest-allowed.decorator';
+
 @ApiTags('- Reliability')
 @Controller('reliability')
 export class ReliabilityController {
@@ -44,7 +46,7 @@ export class ReliabilityController {
     required: false,
     description: '알고리즘 타입',
   })
-  @Permission()
+  @GuestAllowed()
   @ResponseMessage('success.read')
   @Get('average')
   async getAverage(

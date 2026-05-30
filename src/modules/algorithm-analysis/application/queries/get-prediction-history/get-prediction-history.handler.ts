@@ -23,7 +23,11 @@ export class GetPredictionHistoryHandler implements IQueryHandler<GetPredictionH
   ) {}
 
   async execute(query: GetPredictionHistoryQuery): Promise<any[]> {
-    const cacheKey = `user:${query.visitorId || 'guest'}:predictions:history`;
+    if (!query.visitorId || query.visitorId === 'guest') {
+      return [];
+    }
+
+    const cacheKey = `user:${query.visitorId}:predictions:history`;
 
     const cachedData = await this.redisService.get(cacheKey);
     if (cachedData) {
