@@ -1,6 +1,6 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { GetPersonalWeightQuery } from './get-personal-weight.query';
-import { RedisService } from '../../../../../helpers/redis/redis.service';
+import { GetPersonalWeightQuery } from '../queries/get-personal-weight.query';
+import { RedisService } from '../../../../helpers/redis/application/redis.service';
 
 @QueryHandler(GetPersonalWeightQuery)
 export class GetPersonalWeightHandler implements IQueryHandler<GetPersonalWeightQuery> {

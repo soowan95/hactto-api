@@ -16,8 +16,8 @@ import { ResponseMessage } from '../../../common/decorators/response-message.dec
 import { GenerateWinningNumberResponseDto } from './dtos/responses/generate-winning-number-response.dto';
 import { AlgorithmType, getAlgorithm } from '@hactto/algorithm';
 import { AlgorithmHistoryResponseDto } from './dtos/responses/algorithm-history-response.dto';
-import { GeneratePredictionCommand } from '../application/commands/generate-prediction/generate-prediction.command';
-import { GetPredictionHistoryQuery } from '../application/queries/get-prediction-history/get-prediction-history.query';
+import { GeneratePredictionCommand } from '../application/commands/generate-prediction.command';
+import { GetPredictionHistoryQuery } from '../application/queries/get-prediction-history.query';
 import { GeneratePredictionRequestDto } from './dtos/requests/generate-prediction-request.dto';
 
 import { GuestAllowed } from '../../../common/decorators/guest-allowed.decorator';

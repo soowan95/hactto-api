@@ -1,18 +1,18 @@
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { FetchWinningNumbersCommand } from './fetch-winning-numbers.command';
+import { CommandHandler, EventPublisher, ICommandHandler } from '@nestjs/cqrs';
+import { FetchWinningNumbersCommand } from '../commands/fetch-winning-numbers.command';
 import { Inject } from '@nestjs/common';
 import {
   IWinningNumberRepository,
   WINNING_NUMBER_REPOSITORY_TOKEN,
-} from '../../../domain/ports/winning-number.repository.interface';
+} from '../../domain/ports/winning-number.repository.interface';
 import {
   ExternalLotteryData,
   IWinningNumberFetcher,
   WINNING_NUMBER_FETCHER_TOKEN,
-} from '../../../domain/ports/winning-number-fetcher.interface';
-import { DomainWinningNumber } from '../../../domain/entities/winning-number.entity';
-import { WinningNumberDrawer } from '../../../domain/services/winning-number-drawer';
-import { RedisService } from '../../../../../helpers/redis/redis.service';
+} from '../../domain/ports/winning-number-fetcher.interface';
+import { DomainWinningNumber } from '../../domain/entities/winning-number.entity';
+import { WinningNumberDrawer } from '../../domain/services/winning-number-drawer';
+import { RedisService } from '../../../../helpers/redis/application/redis.service';
 
 @CommandHandler(FetchWinningNumbersCommand)
 export class FetchWinningNumbersHandler implements ICommandHandler<FetchWinningNumbersCommand> {
@@ -22,6 +22,7 @@ export class FetchWinningNumbersHandler implements ICommandHandler<FetchWinningN
     @Inject(WINNING_NUMBER_REPOSITORY_TOKEN)
     private readonly winningNumberRepository: IWinningNumberRepository,
     private readonly redisService: RedisService,
+    private readonly publisher: EventPublisher,
   ) {}
 
   async execute(command: FetchWinningNumbersCommand): Promise<void> {
@@ -62,8 +63,8 @@ export class FetchWinningNumbersHandler implements ICommandHandler<FetchWinningN
 
   private async fetchRecentOne(): Promise<void> {
     const data = await this.winningNumberFetcher.fetchRecentOne();
-    const winningNumber = await this.winningNumberRepository.findByEpisode(
-      data.episode,
+    const winningNumber = this.publisher.mergeObjectContext(
+      await this.winningNumberRepository.findByEpisode(data.episode),
     );
     if (!winningNumber.isDrawn) {
       winningNumber.draw(data.numbers);
@@ -72,8 +73,7 @@ export class FetchWinningNumbersHandler implements ICommandHandler<FetchWinningN
         WinningNumberDrawer.drawPlaceholder(data.episode + 1),
       );
 
-      await this.redisService.del(`winning-number:episode:${data.episode}`);
-      await this.redisService.del(`winning-number:episode:${data.episode + 1}`);
+      winningNumber.commit();
     }
   }
 }

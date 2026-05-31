@@ -1,11 +1,11 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { GetAverageReliabilityQuery } from './get-average-reliability.query';
+import { GetAverageReliabilityQuery } from '../queries/get-average-reliability.query';
 import { Inject } from '@nestjs/common';
 import {
   ALGORITHM_ANALYSIS_REPOSITORY_TOKEN,
   IAlgorithmAnalysisRepository,
-} from '../../../domain/ports/algorithm-analysis.repository.interface';
-import { RedisService } from '../../../../../helpers/redis/redis.service';
+} from '../../domain/ports/algorithm-analysis.repository.interface';
+import { RedisService } from '../../../../helpers/redis/application/redis.service';
 
 @QueryHandler(GetAverageReliabilityQuery)
 export class GetAverageReliabilityHandler implements IQueryHandler<GetAverageReliabilityQuery> {

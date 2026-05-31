@@ -5,7 +5,7 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import { RedisService } from '../../helpers/redis/redis.service';
+import { RedisService } from '../../helpers/redis/application/redis.service';
 
 @Injectable()
 export class RedisManagerGuard implements CanActivate {

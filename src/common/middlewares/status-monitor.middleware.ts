@@ -1,6 +1,6 @@
 import { Injectable, NestMiddleware, ForbiddenException } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-import { RedisService } from '../../helpers/redis/redis.service';
+import { RedisService } from '../../helpers/redis/application/redis.service';
 
 @Injectable()
 export class StatusMonitorMiddleware implements NestMiddleware {

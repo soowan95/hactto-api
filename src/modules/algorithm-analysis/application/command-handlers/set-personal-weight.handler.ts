@@ -1,6 +1,6 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { SetPersonalWeightCommand } from './set-personal-weight.command';
-import { RedisService } from '../../../../../helpers/redis/redis.service';
+import { SetPersonalWeightCommand } from '../commands/set-personal-weight.command';
+import { RedisService } from '../../../../helpers/redis/application/redis.service';
 
 @CommandHandler(SetPersonalWeightCommand)
 export class SetPersonalWeightHandler implements ICommandHandler<SetPersonalWeightCommand> {

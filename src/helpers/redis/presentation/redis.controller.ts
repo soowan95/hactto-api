@@ -1,4 +1,4 @@
-import { RedisService } from './redis.service';
+import { RedisService } from '../application/redis.service';
 import {
   Body,
   Controller,
@@ -9,22 +9,24 @@ import {
   Param,
   Post,
   Query,
-  Req,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
-import { ResponseMessage } from '../../common/decorators/response-message.decorator';
-import { RedisManager } from '../../common/decorators/redis-manager.decorator';
+import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
+import { RedisManager } from '../../../common/decorators/redis-manager.decorator';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { CreateAllowedIpRequestDto } from './dtos/requests/create-allowed-ip-request.dto';
 import { CreateMasterKeyRequestDto } from './dtos/requests/create-master-key-request.dto';
-import { Request } from 'express';
+import { RequestParser } from '../../../common/utils/request-parser';
 
 @ApiTags('- Allowed Client')
 @Controller()
 export class RedisController {
   private readonly logger = new Logger(RedisController.name);
 
-  constructor(private readonly redisService: RedisService) {}
+  constructor(
+    private readonly redisService: RedisService,
+    private readonly requestParser: RequestParser,
+  ) {}
 
   @ApiOperation({ summary: 'Generate master key' })
   @Get('gk')
@@ -87,40 +89,20 @@ export class RedisController {
     await this.redisService.reset();
   }
 
-  @ApiOperation({ summary: 'Reset all redis database' })
-  @RedisManager()
-  @Delete('redis/all')
-  @ResponseMessage('success.reset.all.redis')
-  async resetAllDatabase(): Promise<void> {
-    await this.redisService.resetAll();
-  }
-
   @ApiOperation({ summary: 'Check if current IP is allowed' })
   @Get('check-ip')
   @ResponseMessage('success.check.ip')
-  async checkIp(
-    @Req() request: Request,
-    @Query('mk') queryMk?: string,
-  ): Promise<{
+  async checkIp(@Query('mk') queryMk?: string): Promise<{
     allowed: boolean;
     pending: boolean;
     ip: string;
     visitorId: string;
   }> {
-    let ip =
-      (request.headers['x-forwarded-for'] as string) ||
-      request.socket.remoteAddress;
-
-    if (!ip) {
+    let ip = '';
+    try {
+      ip = this.requestParser.getIpOrThrow();
+    } catch {
       return { allowed: false, pending: false, ip: 'unknown', visitorId: '' };
-    }
-
-    if (ip.includes(',')) {
-      ip = ip.split(',')[0].trim();
-    }
-
-    if (ip.startsWith('::ffff:')) {
-      ip = ip.replace('::ffff:', '');
     }
 
     const visitorId = crypto
@@ -155,9 +137,7 @@ export class RedisController {
       return { allowed: true, pending: false, ip, visitorId };
     }
 
-    const cookieHeader = request.headers.cookie;
-    const cookies = this.parseCookies(cookieHeader);
-    const token = cookies['allowed_token'];
+    const token = this.requestParser.getCookies()['allowed_token'];
 
     if (token) {
       const isValidToken = await this.redisService.verifyAccessPayload(token);
@@ -175,43 +155,15 @@ export class RedisController {
     return { allowed: false, pending: isPendingIp, ip, visitorId };
   }
 
-  private parseCookies(cookieHeader?: string): Record<string, string> {
-    if (!cookieHeader) return {};
-    const list: Record<string, string> = {};
-    cookieHeader.split(';').forEach((cookie) => {
-      const parts = cookie.split('=');
-      const name = parts.shift()?.trim();
-      const value = parts.join('=').trim();
-      if (name) {
-        list[name] = decodeURIComponent(value);
-      }
-    });
-    return list;
-  }
-
   @ApiOperation({ summary: 'Request access permission' })
   @Post('request-access')
   @ResponseMessage('success.request.access')
-  async requestAccess(@Req() request: Request): Promise<void> {
-    let ip =
-      (request.headers['x-forwarded-for'] as string) ||
-      request.socket.remoteAddress;
-
-    if (!ip) {
-      throw new ForbiddenException('IP 주소를 식별할 수 없습니다.');
-    }
-
-    if (ip.includes(',')) {
-      ip = ip.split(',')[0].trim();
-    }
-
-    if (ip.startsWith('::ffff:')) {
-      ip = ip.replace('::ffff:', '');
-    }
+  async requestAccess(): Promise<void> {
+    let ip = this.requestParser.getIpOrThrow();
 
     // 대한민국 IP 여부 검증 (Cloudflare 헤더 검증)
     if (process.env.NODE_ENV !== 'localhost') {
-      const country = request.headers['cf-ipcountry'] as string;
+      const country = this.requestParser.getHeaders('cf-ipcountry') as string;
       if (!country || country.toUpperCase() !== 'KR') {
         this.logger.warn(
           `Access request blocked: IP ${ip} is from country ${

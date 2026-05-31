@@ -4,15 +4,19 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import { RedisService } from '../../helpers/redis/redis.service';
+import { RedisService } from '../../helpers/redis/application/redis.service';
+import { RequestParser } from '../utils/request-parser';
 
 @Injectable()
 export class AdminGuard implements CanActivate {
-  constructor(private readonly redisService: RedisService) {}
+  constructor(
+    private readonly redisService: RedisService,
+    private readonly requestParser: RequestParser,
+  ) {}
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
-    const masterKey: string = request.query.mk;
+    const masterKey: string = this.requestParser.getMasterKey();
 
     if (masterKey) {
       // Check master key

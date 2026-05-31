@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, ParseEnumPipe } from '@nestjs/common';
+import { Controller, Get, ParseEnumPipe, Post, Query } from '@nestjs/common';
 import {
   ApiOkResponse,
   ApiOperation,
@@ -8,12 +8,11 @@ import {
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { Admin } from '../../../common/decorators/admin.decorator';
 import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
-import { Permission } from '../../../common/decorators/permission.decorator';
 import { ReliabilityAverageResponseDto } from './dtos/responses/reliability-average-response.dto';
 import { plainToInstance } from 'class-transformer';
 import { AlgorithmType } from '@hactto/algorithm';
-import { AnalyzeReliabilityCommand } from '../application/commands/analyze-reliability/analyze-reliability.command';
-import { GetAverageReliabilityQuery } from '../application/queries/get-average-reliability/get-average-reliability.query';
+import { AnalyzeReliabilityCommand } from '../application/commands/analyze-reliability.command';
+import { GetAverageReliabilityQuery } from '../application/queries/get-average-reliability.query';
 
 import { GuestAllowed } from '../../../common/decorators/guest-allowed.decorator';
 

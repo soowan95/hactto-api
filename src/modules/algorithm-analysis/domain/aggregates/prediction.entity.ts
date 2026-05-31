@@ -1,10 +1,12 @@
+import { AggregateRoot } from '@nestjs/cqrs';
 import { AlgorithmType } from '@hactto/algorithm';
 import { LottoNumberSet } from '../../../winning-number/domain/vos/lotto-number-set.vo';
 import { DomainReliability } from './reliability.entity';
 import { DomainWinningNumber } from '../../../winning-number/domain/entities/winning-number.entity';
 import { Weights } from './vos/weights.vo';
+import { PredictionReliabilityCalculatedEvent } from '../events/prediction-reliability-calculated.event';
 
-export class DomainPrediction {
+export class DomainPrediction extends AggregateRoot {
   public id?: number;
   public readonly algorithm: AlgorithmType;
   public readonly episode: number;
@@ -22,6 +24,7 @@ export class DomainPrediction {
     visitorId?: string,
     reliability?: DomainReliability,
   ) {
+    super();
     this.algorithm = algorithm;
     this.episode = episode;
     this.weights = new Weights(weights);
@@ -49,6 +52,14 @@ export class DomainPrediction {
   ): void {
     if (!this.isNonZero()) {
       this.reliability = new DomainReliability(this.getId(), -1);
+      this.apply(
+        new PredictionReliabilityCalculatedEvent(
+          this.getId(),
+          this.episode,
+          this.visitorId,
+          -1,
+        ),
+      );
       return;
     }
 
@@ -67,5 +78,13 @@ export class DomainPrediction {
     const finalScore = Math.round((score / maxScore) * 100 * 100) / 100;
 
     this.reliability = new DomainReliability(this.getId(), finalScore);
+    this.apply(
+      new PredictionReliabilityCalculatedEvent(
+        this.getId(),
+        this.episode,
+        this.visitorId,
+        finalScore,
+      ),
+    );
   }
 }
