@@ -125,21 +125,68 @@ describe('WinningNumber CQRS Handlers', () => {
   });
 
   describe('FetchRecentWinningNumberHandler', () => {
-    it('should fetch recent winning number and draw if not drawn and commit events', async () => {
+    it('should draw if a new episode is found and return success status', async () => {
       mockFetcher.fetchRecentOne.mockResolvedValue({
         episode: 10,
         numbers: [1, 2, 3, 4, 5, 6, 7],
       });
+      mockRepository.findLatestWithWinningNumber.mockResolvedValue(
+        new DomainWinningNumber(9, [1, 2, 3, 4, 5, 6, 7], true),
+      );
       const placeholder = WinningNumberDrawer.drawPlaceholder(10);
       placeholder.commit = jest.fn(); // Spy on commit
       mockRepository.findByEpisode.mockResolvedValue(placeholder);
 
       const command = new FetchRecentWinningNumberCommand();
-      await fetchRecentWinningNumberHandler.execute(command);
+      const result = await fetchRecentWinningNumberHandler.execute(command);
 
       expect(mockFetcher.fetchRecentOne).toHaveBeenCalled();
+      expect(mockRepository.findLatestWithWinningNumber).toHaveBeenCalled();
       expect(mockRepository.upsert).toHaveBeenCalled();
       expect(placeholder.commit).toHaveBeenCalled();
+      expect(result).toEqual({ status: 'success', episode: 10 });
+    });
+
+    it('should return waiting_new_episode status if the API returned an old episode', async () => {
+      mockFetcher.fetchRecentOne.mockResolvedValue({
+        episode: 9,
+        numbers: [1, 2, 3, 4, 5, 6, 7],
+      });
+      mockRepository.findLatestWithWinningNumber.mockResolvedValue(
+        new DomainWinningNumber(9, [1, 2, 3, 4, 5, 6, 7], true),
+      );
+
+      const command = new FetchRecentWinningNumberCommand();
+      const result = await fetchRecentWinningNumberHandler.execute(command);
+
+      expect(mockFetcher.fetchRecentOne).toHaveBeenCalled();
+      expect(mockRepository.findLatestWithWinningNumber).toHaveBeenCalled();
+      expect(mockRepository.upsert).not.toHaveBeenCalled();
+      expect(result).toEqual({ status: 'waiting_new_episode', episode: 9 });
+    });
+
+    it('should return already_drawn status if the episode is already drawn', async () => {
+      mockFetcher.fetchRecentOne.mockResolvedValue({
+        episode: 10,
+        numbers: [1, 2, 3, 4, 5, 6, 7],
+      });
+      mockRepository.findLatestWithWinningNumber.mockResolvedValue(
+        new DomainWinningNumber(9, [1, 2, 3, 4, 5, 6, 7], true),
+      );
+      const alreadyDrawn = new DomainWinningNumber(
+        10,
+        [1, 2, 3, 4, 5, 6, 7],
+        true,
+      );
+      mockRepository.findByEpisode.mockResolvedValue(alreadyDrawn);
+
+      const command = new FetchRecentWinningNumberCommand();
+      const result = await fetchRecentWinningNumberHandler.execute(command);
+
+      expect(mockFetcher.fetchRecentOne).toHaveBeenCalled();
+      expect(mockRepository.findLatestWithWinningNumber).toHaveBeenCalled();
+      expect(mockRepository.upsert).not.toHaveBeenCalled();
+      expect(result).toEqual({ status: 'already_drawn', episode: 10 });
     });
   });
 
