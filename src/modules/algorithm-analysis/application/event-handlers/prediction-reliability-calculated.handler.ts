@@ -16,6 +16,7 @@ export class PredictionReliabilityCalculatedHandler implements IEventHandler<Pre
 
     // 2. 알고리즘 통계 캐시 무효화
     await this.redisService.del('algorithm:all:average-reliability');
+    await this.redisService.del('algorithm:all:averages-list');
     const types = getAlgorithm();
     for (const type of types) {
       await this.redisService.del(`algorithm:${type}:average-reliability`);
