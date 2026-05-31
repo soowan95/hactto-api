@@ -2,9 +2,16 @@
  * 당첨번호
  */
 model WinningNumber {
-  episode Int     @id // 로또 회차
-  numbers String // 당첨번호 SET
-  isDrawn Boolean @default(true)
+  episode Int @id // 로또 회차
+
+  lt1WnNo   Int     @default(0) @map("lt1_wn_no")
+  lt2WnNo   Int     @default(0) @map("lt2_wn_no")
+  lt3WnNo   Int     @default(0) @map("lt3_wn_no")
+  lt4WnNo   Int     @default(0) @map("lt4_wn_no")
+  lt5WnNo   Int     @default(0) @map("lt5_wn_no")
+  lt6WnNo   Int     @default(0) @map("lt6_wn_no")
+  ltBnsWnNo Int     @default(0) @map("lt_bns_wn_no")
+  isDrawn   Boolean @default(true) @map("is_drawn")
 
   predictions Prediction[] // 회차 별 각 알고리즘에 대한 결과
 

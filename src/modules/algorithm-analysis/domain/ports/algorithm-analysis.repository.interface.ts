@@ -10,6 +10,16 @@ export interface IAlgorithmAnalysisRepository {
   saveMany(analyses: DomainPrediction[]): Promise<void>;
   findByUser(visitorId?: string): Promise<DomainPrediction[]>;
   findWithoutReliability(): Promise<DomainPrediction[]>;
+  findRecentEpisodeByReliabilityIsNotNull(): Promise<{
+    episode: number;
+  } | null>;
+  findBestByEpisodeAndAlgorithm(
+    episode: number,
+    algorithm: AlgorithmType,
+  ): Promise<DomainPrediction | null>;
+  findBestByEpisodeAndReliabilityIsNotNull(
+    episode: number,
+  ): Promise<DomainPrediction | null>;
   count(): Promise<number>;
   getAverageScore(algorithm?: AlgorithmType): Promise<number>;
 }

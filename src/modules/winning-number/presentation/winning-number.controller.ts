@@ -19,6 +19,8 @@ import { FetchWinningNumbersCommand } from '../application/commands/fetch-winnin
 import { GetAllWinningNumbersQuery } from '../application/queries/get-all-winning-numbers.query';
 import { GetLatestWinningNumberQuery } from '../application/queries/get-latest-winning-number.query';
 import { GetWinningNumberByEpisodeQuery } from '../application/queries/get-winning-number-by-episode.query';
+import { GetLotteryBallStatusQuery } from '../application/queries/get-lottery-ball-status.query';
+import { LotteryBallStatus } from '../domain/entities/lottery-ball-status.entity';
 
 @ApiTags('- Winning Number')
 @Controller('winning-numbers')
@@ -84,6 +86,21 @@ export class WinningNumberController {
       WinningNumberShowResponseDto,
       WinningNumberResponseConvertor.convertForShow(winningNumber),
     );
+  }
+
+  @ApiOperation({
+    summary: 'Get the status of a lottery ball',
+  })
+  @ApiParam({ name: 'ball', required: true, description: '공 번호' })
+  @ResponseMessage('success.read')
+  @Get('lottery-ball/:ball')
+  async getLotteryBallStatus(@Param('ball', ParseIntPipe) ball: number) {
+    const query = new GetLotteryBallStatusQuery(ball);
+
+    return await this.queryBus.execute<
+      GetLotteryBallStatusQuery,
+      LotteryBallStatus
+    >(query);
   }
 
   @ApiOperation({

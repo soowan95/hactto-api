@@ -46,6 +46,10 @@ export class DomainPrediction extends AggregateRoot {
     return this.numberSet.toValues();
   }
 
+  getWeights(): number[] {
+    return this.weights.toValues();
+  }
+
   calculateReliability(
     winningNumber: DomainWinningNumber,
     customWeights?: number[],

@@ -4,6 +4,7 @@ import { GetAllWinningNumbersHandler } from './query-handlers/get-all-winning-nu
 import { GetLatestWinningNumberHandler } from './query-handlers/get-latest-winning-number.handler';
 import { GetWinningNumberByEpisodeHandler } from './query-handlers/get-winning-number-by-episode.handler';
 import { WinningNumberDrawnHandler } from './event-handlers/winning-number-drawn.handler';
+import { GetLotteryBallStatusHandler } from './query-handlers/get-lottery-ball-status.handler';
 
 export const CommandHandlers = [
   FetchWinningNumbersHandler,
@@ -14,6 +15,7 @@ export const QueryHandlers = [
   GetAllWinningNumbersHandler,
   GetLatestWinningNumberHandler,
   GetWinningNumberByEpisodeHandler,
+  GetLotteryBallStatusHandler,
 ];
 
 export const EventHandlers = [WinningNumberDrawnHandler];

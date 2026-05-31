@@ -80,6 +80,54 @@ export class InfraAlgorithmAnalysisRepository implements IAlgorithmAnalysisRepos
     return results.map((r) => InfraAlgorithmAnalysisMapper.toEntity(r));
   }
 
+  async findBestByEpisodeAndAlgorithm(
+    episode: number,
+    algorithm: AlgorithmType,
+  ): Promise<DomainPrediction | null> {
+    const result = await prisma.prediction.findFirst({
+      where: {
+        episode,
+        algorithm,
+      },
+      include: {
+        reliability: true,
+      },
+      orderBy: {
+        reliability: {
+          score: 'desc',
+        },
+      },
+    });
+
+    if (!result) return null;
+    return InfraAlgorithmAnalysisMapper.toEntity(result);
+  }
+
+  async findBestByEpisodeAndReliabilityIsNotNull(
+    episode: number,
+  ): Promise<DomainPrediction | null> {
+    const result = await prisma.prediction.findFirst({
+      where: {
+        episode,
+        reliability: {
+          isNot: null,
+        },
+      },
+      include: {
+        reliability: true,
+        winningNumber: true,
+      },
+      orderBy: {
+        reliability: {
+          score: 'desc',
+        },
+      },
+    });
+
+    if (!result) return null;
+    return InfraAlgorithmAnalysisMapper.toEntity(result);
+  }
+
   async findWithoutReliability(): Promise<DomainPrediction[]> {
     const results = await prisma.prediction.findMany({
       where: {
@@ -92,6 +140,22 @@ export class InfraAlgorithmAnalysisRepository implements IAlgorithmAnalysisRepos
 
   async count(): Promise<number> {
     return prisma.prediction.count();
+  }
+
+  async findRecentEpisodeByReliabilityIsNotNull(): Promise<{
+    episode: number;
+  } | null> {
+    return prisma.prediction.findFirst({
+      where: {
+        reliability: { isNot: null },
+      },
+      orderBy: {
+        episode: 'desc',
+      },
+      select: {
+        episode: true,
+      },
+    });
   }
 
   async getAverageScore(algorithm?: AlgorithmType): Promise<number> {
