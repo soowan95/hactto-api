@@ -12,8 +12,8 @@ import { AlgorithmType } from '@hactto/algorithm';
 import { SetPersonalWeightRequestDto } from './dtos/requests/set-personal-weight-request.dto';
 import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
 import { Permission } from '../../../common/decorators/permission.decorator';
-import { SetPersonalWeightCommand } from '../application/commands/set-personal-weight/set-personal-weight.command';
-import { GetPersonalWeightQuery } from '../application/queries/get-personal-weight/get-personal-weight.query';
+import { SetPersonalWeightCommand } from '../application/commands/set-personal-weight.command';
+import { GetPersonalWeightQuery } from '../application/queries/get-personal-weight.query';
 
 @ApiTags('- Personal Weight')
 @Controller('personal-weights')

@@ -6,7 +6,7 @@ import { ReliabilityController } from './presentation/reliability.controller';
 import { ALGORITHM_ANALYSIS_REPOSITORY_TOKEN } from './domain/ports/algorithm-analysis.repository.interface';
 import { InfraAlgorithmAnalysisRepository } from './infrastructure/adapters/infra-algorithm-analysis.repository';
 import { WinningNumberModule } from '../winning-number/winning-number.module';
-import { CommandHandlers, QueryHandlers } from './application';
+import { CommandHandlers, QueryHandlers, EventHandlers } from './application';
 
 @Module({
   imports: [CqrsModule, WinningNumberModule],
@@ -22,6 +22,7 @@ import { CommandHandlers, QueryHandlers } from './application';
     },
     ...CommandHandlers,
     ...QueryHandlers,
+    ...EventHandlers,
   ],
   exports: [ALGORITHM_ANALYSIS_REPOSITORY_TOKEN, CqrsModule],
 })

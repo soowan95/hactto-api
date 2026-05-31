@@ -6,7 +6,7 @@ import { WINNING_NUMBER_REPOSITORY_TOKEN } from './domain/ports/winning-number.r
 import { InfraWinningNumberRepository } from './infrastructure/adapters/infra-winning-number.repository';
 import { WINNING_NUMBER_FETCHER_TOKEN } from './domain/ports/winning-number-fetcher.interface';
 import { DhlotteryWinningNumberFetcher } from './infrastructure/adapters/dhlottery-winning-number.fetcher';
-import { CommandHandlers, QueryHandlers } from './application';
+import { CommandHandlers, QueryHandlers, EventHandlers } from './application';
 
 @Module({
   imports: [
@@ -28,6 +28,7 @@ import { CommandHandlers, QueryHandlers } from './application';
     },
     ...CommandHandlers,
     ...QueryHandlers,
+    ...EventHandlers,
   ],
   exports: [WINNING_NUMBER_REPOSITORY_TOKEN, CqrsModule],
 })

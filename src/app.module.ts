@@ -7,9 +7,10 @@ import { AdminGuard } from './common/guards/admin.guard';
 import { AllowedClientGuard } from './common/guards/allowed-client.guard';
 import expressStatusMonitor from 'express-status-monitor';
 import { StatusMonitorMiddleware } from './common/middlewares/status-monitor.middleware';
+import { CommonModule } from './common/common.module';
 
 @Module({
-  imports: [ScheduleModule.forRoot(), RootModule, RedisModule],
+  imports: [ScheduleModule.forRoot(), RootModule, RedisModule, CommonModule],
   providers: [TaskService, AdminGuard, AllowedClientGuard],
 })
 export class AppModule implements NestModule {

@@ -1,16 +1,16 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { GetPredictionHistoryQuery } from './get-prediction-history.query';
+import { GetPredictionHistoryQuery } from '../queries/get-prediction-history.query';
 import { Inject } from '@nestjs/common';
 import {
   ALGORITHM_ANALYSIS_REPOSITORY_TOKEN,
   IAlgorithmAnalysisRepository,
-} from '../../../domain/ports/algorithm-analysis.repository.interface';
+} from '../../domain/ports/algorithm-analysis.repository.interface';
 import {
   WINNING_NUMBER_REPOSITORY_TOKEN,
   IWinningNumberRepository,
-} from '../../../../winning-number/domain/ports/winning-number.repository.interface';
-import { DomainWinningNumber } from '../../../../winning-number/domain/entities/winning-number.entity';
-import { RedisService } from '../../../../../helpers/redis/redis.service';
+} from '../../../winning-number/domain/ports/winning-number.repository.interface';
+import { DomainWinningNumber } from '../../../winning-number/domain/entities/winning-number.entity';
+import { RedisService } from '../../../../helpers/redis/application/redis.service';
 
 @QueryHandler(GetPredictionHistoryQuery)
 export class GetPredictionHistoryHandler implements IQueryHandler<GetPredictionHistoryQuery> {

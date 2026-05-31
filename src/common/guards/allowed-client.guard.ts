@@ -5,9 +5,10 @@ import {
   Injectable,
   Logger,
 } from '@nestjs/common';
-import { RedisService } from '../../helpers/redis/redis.service';
+import { RedisService } from '../../helpers/redis/application/redis.service';
 import { Reflector } from '@nestjs/core';
 import { IS_GUEST_ALLOWED_KEY } from '../decorators/guest-allowed.decorator';
+import { RequestParser } from '../utils/request-parser';
 
 @Injectable()
 export class AllowedClientGuard implements CanActivate {
@@ -16,13 +17,12 @@ export class AllowedClientGuard implements CanActivate {
   constructor(
     private readonly redisService: RedisService,
     private readonly reflector: Reflector,
+    private readonly requestParser: RequestParser,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
-
     // 게스트 전용 엔드포인트 접근 체크
-    const visitorId = request.query?.visitorId || request.body?.visitorId;
+    const visitorId = this.requestParser.getVisitorId();
     const isGuestAllowed = this.reflector.getAllAndOverride<boolean>(
       IS_GUEST_ALLOWED_KEY,
       [context.getHandler(), context.getClass()],
@@ -32,20 +32,11 @@ export class AllowedClientGuard implements CanActivate {
       return true;
     }
 
-    let ip =
-      (request.headers['x-forwarded-for'] as string) ||
-      request.socket.remoteAddress;
-
-    if (!ip) {
+    let ip = '';
+    try {
+      ip = this.requestParser.getIpOrThrow();
+    } catch {
       throw new ForbiddenException('IP 주소를 식별할 수 없습니다.');
-    }
-
-    if (ip.includes(',')) {
-      ip = ip.split(',')[0].trim();
-    }
-
-    if (ip.startsWith('::ffff:')) {
-      ip = ip.replace('::ffff:', '');
     }
 
     const isAllowedIp = await this.redisService.isMemberOfSet(
@@ -57,9 +48,7 @@ export class AllowedClientGuard implements CanActivate {
       return true;
     }
 
-    const cookieHeader = request.headers.cookie;
-    const cookies = this.parseCookies(cookieHeader);
-    const token = cookies['allowed_token'];
+    const token = this.requestParser.getCookies()['allowed_token'];
 
     if (token) {
       const isValidToken = await this.redisService.verifyAccessPayload(token);
@@ -74,19 +63,5 @@ export class AllowedClientGuard implements CanActivate {
 
     this.logger.warn(`Access denied for IP: ${ip}`);
     throw new ForbiddenException('Access denied from this IP address.');
-  }
-
-  private parseCookies(cookieHeader?: string): Record<string, string> {
-    if (!cookieHeader) return {};
-    const list: Record<string, string> = {};
-    cookieHeader.split(';').forEach((cookie) => {
-      const parts = cookie.split('=');
-      const name = parts.shift()?.trim();
-      const value = parts.join('=').trim();
-      if (name) {
-        list[name] = decodeURIComponent(value);
-      }
-    });
-    return list;
   }
 }

@@ -1,12 +1,12 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { GetWinningNumberByEpisodeQuery } from './get-winning-number-by-episode.query';
+import { GetWinningNumberByEpisodeQuery } from '../queries/get-winning-number-by-episode.query';
 import { Inject } from '@nestjs/common';
 import {
   IWinningNumberRepository,
   WINNING_NUMBER_REPOSITORY_TOKEN,
-} from '../../../domain/ports/winning-number.repository.interface';
-import { DomainWinningNumber } from '../../../domain/entities/winning-number.entity';
-import { RedisService } from '../../../../../helpers/redis/redis.service';
+} from '../../domain/ports/winning-number.repository.interface';
+import { DomainWinningNumber } from '../../domain/entities/winning-number.entity';
+import { RedisService } from '../../../../helpers/redis/application/redis.service';
 
 @QueryHandler(GetWinningNumberByEpisodeQuery)
 export class GetWinningNumberByEpisodeHandler implements IQueryHandler<GetWinningNumberByEpisodeQuery> {

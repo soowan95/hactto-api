@@ -15,10 +15,10 @@ import { DomainWinningNumber } from '../domain/entities/winning-number.entity';
 import { plainToInstance } from 'class-transformer';
 import { WinningNumberResponseConvertor } from '../domain/services/winning-number-response-convertor';
 
-import { FetchWinningNumbersCommand } from '../application/commands/fetch-winning-numbers/fetch-winning-numbers.command';
-import { GetAllWinningNumbersQuery } from '../application/queries/get-all-winning-numbers/get-all-winning-numbers.query';
-import { GetLatestWinningNumberQuery } from '../application/queries/get-latest-winning-number/get-latest-winning-number.query';
-import { GetWinningNumberByEpisodeQuery } from '../application/queries/get-winning-number-by-episode/get-winning-number-by-episode.query';
+import { FetchWinningNumbersCommand } from '../application/commands/fetch-winning-numbers.command';
+import { GetAllWinningNumbersQuery } from '../application/queries/get-all-winning-numbers.query';
+import { GetLatestWinningNumberQuery } from '../application/queries/get-latest-winning-number.query';
+import { GetWinningNumberByEpisodeQuery } from '../application/queries/get-winning-number-by-episode.query';
 
 @ApiTags('- Winning Number')
 @Controller('winning-numbers')

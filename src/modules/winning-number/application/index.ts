@@ -1,8 +1,9 @@
-import { FetchWinningNumbersHandler } from './commands/fetch-winning-numbers/fetch-winning-numbers.handler';
-import { FetchRecentWinningNumberHandler } from './commands/fetch-recent-winning-number/fetch-recent-winning-number.handler';
-import { GetAllWinningNumbersHandler } from './queries/get-all-winning-numbers/get-all-winning-numbers.handler';
-import { GetLatestWinningNumberHandler } from './queries/get-latest-winning-number/get-latest-winning-number.handler';
-import { GetWinningNumberByEpisodeHandler } from './queries/get-winning-number-by-episode/get-winning-number-by-episode.handler';
+import { FetchWinningNumbersHandler } from './command-handlers/fetch-winning-numbers.handler';
+import { FetchRecentWinningNumberHandler } from './command-handlers/fetch-recent-winning-number.handler';
+import { GetAllWinningNumbersHandler } from './query-handlers/get-all-winning-numbers.handler';
+import { GetLatestWinningNumberHandler } from './query-handlers/get-latest-winning-number.handler';
+import { GetWinningNumberByEpisodeHandler } from './query-handlers/get-winning-number-by-episode.handler';
+import { WinningNumberDrawnHandler } from './event-handlers/winning-number-drawn.handler';
 
 export const CommandHandlers = [
   FetchWinningNumbersHandler,
@@ -14,3 +15,5 @@ export const QueryHandlers = [
   GetLatestWinningNumberHandler,
   GetWinningNumberByEpisodeHandler,
 ];
+
+export const EventHandlers = [WinningNumberDrawnHandler];

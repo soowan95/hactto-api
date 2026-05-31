@@ -1,19 +1,18 @@
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { AnalyzeReliabilityCommand } from './analyze-reliability.command';
+import { CommandHandler, EventPublisher, ICommandHandler } from '@nestjs/cqrs';
+import { AnalyzeReliabilityCommand } from '../commands/analyze-reliability.command';
 import { Inject, Logger } from '@nestjs/common';
 import {
   ALGORITHM_ANALYSIS_REPOSITORY_TOKEN,
   IAlgorithmAnalysisRepository,
-} from '../../../domain/ports/algorithm-analysis.repository.interface';
+} from '../../domain/ports/algorithm-analysis.repository.interface';
 import {
   WINNING_NUMBER_REPOSITORY_TOKEN,
   IWinningNumberRepository,
-} from '../../../../winning-number/domain/ports/winning-number.repository.interface';
-import { DomainPrediction } from '../../../domain/aggregates/prediction.entity';
-import { DomainWinningNumber } from '../../../../winning-number/domain/entities/winning-number.entity';
+} from '../../../winning-number/domain/ports/winning-number.repository.interface';
+import { DomainPrediction } from '../../domain/aggregates/prediction.entity';
+import { DomainWinningNumber } from '../../../winning-number/domain/entities/winning-number.entity';
 import { AlgorithmType, getAlgorithm } from '@hactto/algorithm';
-import { AlgorithmExecutor } from '../../../domain/services/algorithm-executor';
-import { RedisService } from '../../../../../helpers/redis/redis.service';
+import { AlgorithmExecutor } from '../../domain/services/algorithm-executor';
 
 @CommandHandler(AnalyzeReliabilityCommand)
 export class AnalyzeReliabilityHandler implements ICommandHandler<AnalyzeReliabilityCommand> {
@@ -24,7 +23,7 @@ export class AnalyzeReliabilityHandler implements ICommandHandler<AnalyzeReliabi
     private readonly repository: IAlgorithmAnalysisRepository,
     @Inject(WINNING_NUMBER_REPOSITORY_TOKEN)
     private readonly winningNumberRepository: IWinningNumberRepository,
-    private readonly redisService: RedisService,
+    private readonly publisher: EventPublisher,
   ) {}
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -51,31 +50,18 @@ export class AnalyzeReliabilityHandler implements ICommandHandler<AnalyzeReliabi
         await this.winningNumberRepository.findByEpisode(result.episode);
       if (!winningNumber || !winningNumber.isDrawn) continue;
 
-      result.calculateReliability(winningNumber, result.weights.toValues());
-      resultsToSave.push(result);
+      const prediction = this.publisher.mergeObjectContext(result);
+      prediction.calculateReliability(
+        winningNumber,
+        prediction.weights.toValues(),
+      );
+
+      resultsToSave.push(prediction);
     }
 
     if (resultsToSave.length > 0) {
       await this.repository.saveMany(resultsToSave);
-
-      // 사용자 예측 이력 캐시 무효화
-      const visitorIds = Array.from(
-        new Set(
-          resultsToSave
-            .map((r) => r.visitorId)
-            .filter((id): id is string => !!id && id !== 'guest'),
-        ),
-      );
-      for (const visitorId of visitorIds) {
-        await this.redisService.del(`user:${visitorId}:predictions:history`);
-      }
-    }
-
-    // 캐시 무효화
-    await this.redisService.del('algorithm:all:average-reliability');
-    const types = getAlgorithm();
-    for (const type of types) {
-      await this.redisService.del(`algorithm:${type}:average-reliability`);
+      resultsToSave.forEach((prediction) => prediction.commit());
     }
   }
 

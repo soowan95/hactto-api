@@ -1,15 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AllowedClientGuard } from './allowed-client.guard';
-import { RedisService } from '../../helpers/redis/redis.service';
+import { RedisService } from '../../helpers/redis/application/redis.service';
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { RequestParser } from '../utils/request-parser';
 
 describe('AllowedClientGuard', () => {
   let guard: AllowedClientGuard;
   let redisService: jest.Mocked<RedisService>;
   let reflector: jest.Mocked<Reflector>;
+  let currentRequest: any;
 
   beforeEach(async () => {
+    currentRequest = null;
+
     const mockRedisService = {
       isMemberOfSet: jest.fn(),
       verifyAccessPayload: jest.fn(),
@@ -18,6 +22,41 @@ describe('AllowedClientGuard', () => {
 
     const mockReflector = {
       getAllAndOverride: jest.fn(),
+    };
+
+    const mockRequestParser = {
+      getIpOrThrow: jest.fn().mockImplementation(() => {
+        let ip =
+          currentRequest?.headers?.['x-forwarded-for'] ||
+          currentRequest?.socket?.remoteAddress;
+        if (!ip) throw new ForbiddenException('IP 주소를 식별할 수 없습니다.');
+        if (ip.includes(',')) ip = ip.split(',')[0].trim();
+        if (ip.startsWith('::ffff:')) ip = ip.replace('::ffff:', '');
+        return ip;
+      }),
+      getHeaders: jest.fn().mockImplementation((path?: string) => {
+        if (path) return currentRequest?.headers?.[path];
+        return currentRequest?.headers;
+      }),
+      getCookies: jest.fn().mockImplementation(() => {
+        const cookieHeader = currentRequest?.headers?.cookie;
+        if (cookieHeader) {
+          return cookieHeader.split(';').reduce((cookies: any, cookie: any) => {
+            const [name, value] = cookie.trim().split('=');
+            cookies[name] = value;
+            return cookies;
+          }, {});
+        }
+        return {};
+      }),
+      getVisitorId: jest.fn().mockImplementation(() => {
+        return (
+          currentRequest?.query?.visitorId || currentRequest?.body?.visitorId
+        );
+      }),
+      getMasterKey: jest.fn().mockImplementation(() => {
+        return currentRequest?.query?.mk || currentRequest?.body?.mk;
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -30,6 +69,10 @@ describe('AllowedClientGuard', () => {
         {
           provide: Reflector,
           useValue: mockReflector,
+        },
+        {
+          provide: RequestParser,
+          useValue: mockRequestParser,
         },
       ],
     }).compile();
@@ -56,6 +99,7 @@ describe('AllowedClientGuard', () => {
       },
       query: query || {},
     };
+    currentRequest = request;
     return {
       switchToHttp: () => ({
         getRequest: () => request,

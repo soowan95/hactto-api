@@ -1,19 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { FetchWinningNumbersHandler } from './commands/fetch-winning-numbers/fetch-winning-numbers.handler';
-import { FetchRecentWinningNumberHandler } from './commands/fetch-recent-winning-number/fetch-recent-winning-number.handler';
-import { GetAllWinningNumbersHandler } from './queries/get-all-winning-numbers/get-all-winning-numbers.handler';
-import { GetLatestWinningNumberHandler } from './queries/get-latest-winning-number/get-latest-winning-number.handler';
+import { FetchWinningNumbersHandler } from './command-handlers/fetch-winning-numbers.handler';
+import { FetchRecentWinningNumberHandler } from './command-handlers/fetch-recent-winning-number.handler';
+import { GetAllWinningNumbersHandler } from './query-handlers/get-all-winning-numbers.handler';
+import { GetLatestWinningNumberHandler } from './query-handlers/get-latest-winning-number.handler';
 import { WINNING_NUMBER_REPOSITORY_TOKEN } from '../domain/ports/winning-number.repository.interface';
 import { WINNING_NUMBER_FETCHER_TOKEN } from '../domain/ports/winning-number-fetcher.interface';
-import { FetchWinningNumbersCommand } from './commands/fetch-winning-numbers/fetch-winning-numbers.command';
-import { FetchRecentWinningNumberCommand } from './commands/fetch-recent-winning-number/fetch-recent-winning-number.command';
-import { GetAllWinningNumbersQuery } from './queries/get-all-winning-numbers/get-all-winning-numbers.query';
-import { GetLatestWinningNumberQuery } from './queries/get-latest-winning-number/get-latest-winning-number.query';
-import { GetWinningNumberByEpisodeQuery } from './queries/get-winning-number-by-episode/get-winning-number-by-episode.query';
-import { GetWinningNumberByEpisodeHandler } from './queries/get-winning-number-by-episode/get-winning-number-by-episode.handler';
+import { FetchWinningNumbersCommand } from './commands/fetch-winning-numbers.command';
+import { FetchRecentWinningNumberCommand } from './commands/fetch-recent-winning-number.command';
+import { GetAllWinningNumbersQuery } from './queries/get-all-winning-numbers.query';
+import { GetLatestWinningNumberQuery } from './queries/get-latest-winning-number.query';
+import { GetWinningNumberByEpisodeQuery } from './queries/get-winning-number-by-episode.query';
+import { GetWinningNumberByEpisodeHandler } from './query-handlers/get-winning-number-by-episode.handler';
 import { DomainWinningNumber } from '../domain/entities/winning-number.entity';
 import { WinningNumberDrawer } from '../domain/services/winning-number-drawer';
-import { RedisService } from '../../../helpers/redis/redis.service';
+import { RedisService } from '../../../helpers/redis/application/redis.service';
+import { EventPublisher } from '@nestjs/cqrs';
 
 describe('WinningNumber CQRS Handlers', () => {
   let fetchWinningNumbersHandler: FetchWinningNumbersHandler;
@@ -25,6 +26,7 @@ describe('WinningNumber CQRS Handlers', () => {
   let mockRepository: any;
   let mockFetcher: any;
   let mockRedisService: any;
+  let mockEventPublisher: any;
 
   beforeEach(async () => {
     mockRepository = {
@@ -45,6 +47,13 @@ describe('WinningNumber CQRS Handlers', () => {
       del: jest.fn(),
     };
 
+    mockEventPublisher = {
+      mergeObjectContext: jest.fn().mockImplementation((entity) => {
+        entity.commit = jest.fn();
+        return entity;
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FetchWinningNumbersHandler,
@@ -63,6 +72,10 @@ describe('WinningNumber CQRS Handlers', () => {
         {
           provide: RedisService,
           useValue: mockRedisService,
+        },
+        {
+          provide: EventPublisher,
+          useValue: mockEventPublisher,
         },
       ],
     }).compile();
@@ -112,12 +125,13 @@ describe('WinningNumber CQRS Handlers', () => {
   });
 
   describe('FetchRecentWinningNumberHandler', () => {
-    it('should fetch recent winning number and draw if not drawn and clear cache', async () => {
+    it('should fetch recent winning number and draw if not drawn and commit events', async () => {
       mockFetcher.fetchRecentOne.mockResolvedValue({
         episode: 10,
         numbers: [1, 2, 3, 4, 5, 6, 7],
       });
       const placeholder = WinningNumberDrawer.drawPlaceholder(10);
+      placeholder.commit = jest.fn(); // Spy on commit
       mockRepository.findByEpisode.mockResolvedValue(placeholder);
 
       const command = new FetchRecentWinningNumberCommand();
@@ -125,7 +139,7 @@ describe('WinningNumber CQRS Handlers', () => {
 
       expect(mockFetcher.fetchRecentOne).toHaveBeenCalled();
       expect(mockRepository.upsert).toHaveBeenCalled();
-      expect(mockRedisService.del).toHaveBeenCalledWith('winning-number:all');
+      expect(placeholder.commit).toHaveBeenCalled();
     });
   });
 
