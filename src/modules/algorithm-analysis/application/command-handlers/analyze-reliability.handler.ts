@@ -14,6 +14,8 @@ import { DomainWinningNumber } from '../../../winning-number/domain/entities/win
 import { AlgorithmType, getAlgorithm } from '@hactto/algorithm';
 import { AlgorithmExecutor } from '../../domain/services/algorithm-executor';
 
+import { SystemStatusService } from '../../../../common/services/system-status.service';
+
 @CommandHandler(AnalyzeReliabilityCommand)
 export class AnalyzeReliabilityHandler implements ICommandHandler<AnalyzeReliabilityCommand> {
   private readonly logger = new Logger(AnalyzeReliabilityHandler.name);
@@ -24,44 +26,52 @@ export class AnalyzeReliabilityHandler implements ICommandHandler<AnalyzeReliabi
     @Inject(WINNING_NUMBER_REPOSITORY_TOKEN)
     private readonly winningNumberRepository: IWinningNumberRepository,
     private readonly publisher: EventPublisher,
+    private readonly systemStatusService: SystemStatusService,
   ) {}
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async execute(command: AnalyzeReliabilityCommand): Promise<void> {
-    const isExistAtLeastOneAlgorithmResult: boolean =
-      (await this.repository.count()) > 0;
+    try {
+      const isExistAtLeastOneAlgorithmResult: boolean =
+        (await this.repository.count()) > 0;
 
-    this.logger.debug(
-      `Algorithm result exists: `,
-      isExistAtLeastOneAlgorithmResult,
-    );
-
-    if (!isExistAtLeastOneAlgorithmResult) {
-      await this.initializeAlgorithms();
-    }
-
-    const targetPredictions: DomainPrediction[] =
-      await this.repository.findWithoutReliability();
-
-    const resultsToSave: DomainPrediction[] = [];
-
-    for (const result of targetPredictions) {
-      const winningNumber: DomainWinningNumber =
-        await this.winningNumberRepository.findByEpisode(result.episode);
-      if (!winningNumber || !winningNumber.isDrawn) continue;
-
-      const prediction = this.publisher.mergeObjectContext(result);
-      prediction.calculateReliability(
-        winningNumber,
-        prediction.weights.toValues(),
+      this.logger.debug(
+        `Algorithm result exists: `,
+        isExistAtLeastOneAlgorithmResult,
       );
 
-      resultsToSave.push(prediction);
-    }
+      if (!isExistAtLeastOneAlgorithmResult) {
+        await this.initializeAlgorithms();
+      }
 
-    if (resultsToSave.length > 0) {
-      await this.repository.saveMany(resultsToSave);
-      resultsToSave.forEach((prediction) => prediction.commit());
+      const targetPredictions: DomainPrediction[] =
+        await this.repository.findWithoutReliability();
+
+      const resultsToSave: DomainPrediction[] = [];
+
+      for (const result of targetPredictions) {
+        const winningNumber: DomainWinningNumber =
+          await this.winningNumberRepository.findByEpisode(result.episode);
+        if (!winningNumber || !winningNumber.isDrawn) continue;
+
+        const prediction = this.publisher.mergeObjectContext(result);
+        prediction.calculateReliability(
+          winningNumber,
+          prediction.weights.toValues(),
+        );
+
+        resultsToSave.push(prediction);
+      }
+
+      if (resultsToSave.length > 0) {
+        await this.repository.saveMany(resultsToSave);
+        resultsToSave.forEach((prediction) => prediction.commit());
+      }
+    } finally {
+      this.logger.debug(
+        '🔓 Analysis processing completed. Releasing system lock.',
+      );
+      await this.systemStatusService.setAnalysisStatus(false);
     }
   }
 
