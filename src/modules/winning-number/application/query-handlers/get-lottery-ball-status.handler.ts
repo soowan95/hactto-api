@@ -7,6 +7,7 @@ import {
 import { Inject } from '@nestjs/common';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 import { LotteryBallStatus } from '../../domain/entities/lottery-ball-status.entity';
+import { getBallTemperature } from '../../domain/vos/BallTemperature';
 
 @QueryHandler(GetLotteryBallStatusQuery)
 export class GetLotteryBallStatusHandler implements IQueryHandler<GetLotteryBallStatusQuery> {
@@ -26,6 +27,7 @@ export class GetLotteryBallStatusHandler implements IQueryHandler<GetLotteryBall
         parsed.recentTen,
         parsed.recentThirty,
         parsed.status,
+        parsed.skip,
         parsed.friendlyNumbers,
         parsed.latestEpisode,
       );
@@ -73,20 +75,13 @@ export class GetLotteryBallStatusHandler implements IQueryHandler<GetLotteryBall
       .slice(0, 3)
       .map(([num]) => num);
 
-    const statusScore = winningNumbers[0].episode - lastestEpisode;
-
-    if (statusScore < 5) {
-      status = 'hot';
-    } else if (statusScore < 10) {
-      status = 'warm';
-    } else {
-      status = 'cold';
-    }
+    const skip = winningNumbers[0].episode - lastestEpisode + 1;
 
     const result = new LotteryBallStatus(
       recentTen,
       recentThirty,
-      status,
+      getBallTemperature(skip),
+      skip,
       friendlyNumbers,
       lastestEpisode,
     );
@@ -96,6 +91,7 @@ export class GetLotteryBallStatusHandler implements IQueryHandler<GetLotteryBall
         recentTen: result.recentTen,
         recentThirty: result.recentThirty,
         status: result.status,
+        skip: skip,
         friendlyNumbers: result.getFriendlyNumberArray(),
         latestEpisode: result.latestEpisode,
       }),

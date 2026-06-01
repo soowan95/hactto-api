@@ -13,7 +13,6 @@ import { WinningNumberShowResponseDto } from './dtos/responses/winning-number-sh
 import { Admin } from '../../../common/decorators/admin.decorator';
 import { DomainWinningNumber } from '../domain/entities/winning-number.entity';
 import { plainToInstance } from 'class-transformer';
-import { WinningNumberResponseConvertor } from '../domain/services/winning-number-response-convertor';
 
 import { FetchWinningNumbersCommand } from '../application/commands/fetch-winning-numbers.command';
 import { GetAllWinningNumbersQuery } from '../application/queries/get-all-winning-numbers.query';
@@ -21,6 +20,7 @@ import { GetLatestWinningNumberQuery } from '../application/queries/get-latest-w
 import { GetWinningNumberByEpisodeQuery } from '../application/queries/get-winning-number-by-episode.query';
 import { GetLotteryBallStatusQuery } from '../application/queries/get-lottery-ball-status.query';
 import { LotteryBallStatus } from '../domain/entities/lottery-ball-status.entity';
+import { LotteryBallStatusShowResponseDto } from './dtos/responses/lottery-ball-status-show-response.dto';
 
 @ApiTags('- Winning Number')
 @Controller('winning-numbers')
@@ -41,12 +41,7 @@ export class WinningNumberController {
       GetAllWinningNumbersQuery,
       DomainWinningNumber[]
     >(query);
-    return plainToInstance(
-      WinningNumberShowResponseDto,
-      winningNumbers.map((winningNumber) =>
-        WinningNumberResponseConvertor.convertForShow(winningNumber),
-      ),
-    );
+    return plainToInstance(WinningNumberShowResponseDto, winningNumbers);
   }
 
   @ApiOperation({
@@ -61,11 +56,7 @@ export class WinningNumberController {
       DomainWinningNumber | null
     >(query);
     if (!winningNumber) return null;
-    else
-      return plainToInstance(
-        WinningNumberShowResponseDto,
-        WinningNumberResponseConvertor.convertForShow(winningNumber),
-      );
+    else return plainToInstance(WinningNumberShowResponseDto, winningNumber);
   }
 
   @ApiOperation({
@@ -82,10 +73,7 @@ export class WinningNumberController {
       GetWinningNumberByEpisodeQuery,
       DomainWinningNumber
     >(query);
-    return plainToInstance(
-      WinningNumberShowResponseDto,
-      WinningNumberResponseConvertor.convertForShow(winningNumber),
-    );
+    return plainToInstance(WinningNumberShowResponseDto, winningNumber);
   }
 
   @ApiOperation({
@@ -94,13 +82,17 @@ export class WinningNumberController {
   @ApiParam({ name: 'ball', required: true, description: '공 번호' })
   @ResponseMessage('success.read')
   @Get('lottery-ball/:ball')
-  async getLotteryBallStatus(@Param('ball', ParseIntPipe) ball: number) {
+  async getLotteryBallStatus(
+    @Param('ball', ParseIntPipe) ball: number,
+  ): Promise<LotteryBallStatusShowResponseDto> {
     const query = new GetLotteryBallStatusQuery(ball);
 
-    return await this.queryBus.execute<
+    const result = await this.queryBus.execute<
       GetLotteryBallStatusQuery,
       LotteryBallStatus
     >(query);
+
+    return plainToInstance(LotteryBallStatusShowResponseDto, result);
   }
 
   @ApiOperation({
