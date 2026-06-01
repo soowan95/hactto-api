@@ -44,7 +44,6 @@ export class GetLotteryBallStatusHandler implements IQueryHandler<GetLotteryBall
 
     let recentTen = 0;
     let recentThirty = 0;
-    let status: 'hot' | 'warm' | 'cold';
     let lastestEpisode = 0;
 
     const coOccurrenceMap = new Map<number, number>();

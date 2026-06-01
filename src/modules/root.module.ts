@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { WinningNumberModule } from './winning-number/winning-number.module';
-import { AlgorithmAnalysisModule } from './algorithm-analysis/algorithm-analysis.module';
+import { LotteryAnalysisModule } from './lottery-analysis/lottery-analysis.module';
 
 @Module({
-  imports: [WinningNumberModule, AlgorithmAnalysisModule],
-  exports: [WinningNumberModule, AlgorithmAnalysisModule],
+  imports: [WinningNumberModule, LotteryAnalysisModule],
+  exports: [WinningNumberModule, LotteryAnalysisModule],
 })
 export class RootModule {}

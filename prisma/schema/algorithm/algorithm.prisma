@@ -1,0 +1,9 @@
+model Algorithm {
+  type String @id
+
+  complexity Int @default(0)
+
+  predictions Prediction[]
+
+  @@map("algorithm")
+}

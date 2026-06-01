@@ -1,6 +1,6 @@
 import { CommandBus, EventsHandler, IEventHandler } from '@nestjs/cqrs';
 import { WinningNumberDrawnEvent } from '../../domain/events/winning-number-drawn.event';
-import { AnalyzeReliabilityCommand } from '../../../algorithm-analysis/application/commands/analyze-reliability.command';
+import { AnalyzeReliabilityCommand } from '../../../lottery-analysis/application/commands/analyze-reliability.command';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 
 @EventsHandler(WinningNumberDrawnEvent)

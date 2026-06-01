@@ -13,6 +13,7 @@ export class LottoNumberSet {
   }
 
   isNonZero(): boolean {
-    return this.toValues().every((n) => n !== 0);
+    const mainNumberSet = this.toValues().slice(0, 6);
+    return mainNumberSet.every((n) => n !== 0);
   }
 }
