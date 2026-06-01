@@ -19,14 +19,22 @@ export class AlgorithmExecutor {
   ): Promise<DomainPrediction> {
     if (!weights) weights = [25, 20, 18, 15, 12, 10];
     let command: ExecutableCommand;
-    if (algorithm.type.includes('FREQUENCY'))
-      command = new FrequencyCommand(algorithm.type as FrequencyType, data);
-    else
-      command = new WeightsCommand(
-        algorithm.type as WeightsType,
-        data,
-        weights,
-      );
+    const parts = algorithm.type.split('_');
+    const suffix = parts[parts.length - 1];
+    switch (suffix) {
+      case 'WEIGHTS':
+        command = new WeightsCommand(
+          algorithm.type as WeightsType,
+          data,
+          weights,
+        );
+        break;
+      case 'FREQUENCY':
+        command = new FrequencyCommand(algorithm.type as FrequencyType, data);
+        break;
+      default:
+        throw new Error(`Unsupported algorithm type: ${algorithm.type}`);
+    }
     const result: number[] = await hacttoExecute(command);
     return new DomainPrediction(
       algorithm,
