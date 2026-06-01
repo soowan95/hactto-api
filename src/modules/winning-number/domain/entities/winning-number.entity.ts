@@ -24,4 +24,8 @@ export class DomainWinningNumber extends AggregateRoot {
   getNumberArray(): number[] {
     return this.numberSet.toValues();
   }
+
+  isContain(number: number): boolean {
+    return this.getNumberArray().includes(number);
+  }
 }
