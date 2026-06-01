@@ -62,7 +62,7 @@ export class GetEpisodeBestPredictionHandler implements IQueryHandler<GetEpisode
         episode: bestPrediction.episode,
         weights: bestPrediction.getWeights(),
         numbers: bestPrediction.getNumberArray(),
-        reliabilityScore: bestPrediction.reliability?.score || 0,
+        reliabilityScore: bestPrediction.reliability?.getScore() ?? 0,
       },
       winningNumber: winningNumber
         ? {

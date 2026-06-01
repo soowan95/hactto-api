@@ -53,7 +53,7 @@ export class GetLatestBestPredictionHandler implements IQueryHandler<GetLatestBe
         episode: bestPrediction.episode,
         weights: bestPrediction.getWeights(),
         numbers: bestPrediction.getNumberArray(),
-        reliabilityScore: bestPrediction.reliability.score,
+        reliabilityScore: bestPrediction.reliability.getScore(),
       },
       winningNumber: {
         episode: latestEpisode,
