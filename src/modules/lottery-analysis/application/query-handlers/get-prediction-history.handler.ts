@@ -65,7 +65,7 @@ export class GetPredictionHistoryHandler implements IQueryHandler<GetPredictionH
           winningMain.includes(n),
         );
         const matchCount = matchedNumbers.length;
-        const bonusMatch = predictedNumbers[6] === winningBonus;
+        const bonusMatch = predictedMain.includes(winningBonus);
 
         let rank = 0; // 0 means no prize
         if (matchCount === 6) rank = 1;

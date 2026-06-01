@@ -11,11 +11,18 @@ export class GetPersonalWeightHandler implements IQueryHandler<GetPersonalWeight
 
     const cachedData = await this.redisService.get(cacheKey);
     if (cachedData) {
-      return JSON.parse(cachedData);
-    } else {
-      const result = [25, 20, 15, 15, 10, 10, 5];
-      await this.redisService.set(cacheKey, JSON.stringify(result));
-      return [25, 20, 15, 15, 10, 10, 5];
+      try {
+        const parsed = JSON.parse(cachedData);
+        if (Array.isArray(parsed) && parsed.length === 6) {
+          return parsed;
+        }
+      } catch {
+        // ignore and fallback
+      }
     }
+
+    const result = [25, 20, 18, 15, 12, 10];
+    await this.redisService.set(cacheKey, JSON.stringify(result));
+    return result;
   }
 }

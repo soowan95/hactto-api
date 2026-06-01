@@ -2,8 +2,8 @@ export class Weights {
   private readonly values: number[];
 
   constructor(weights: number[]) {
-    if (weights.length !== 7) {
-      throw new Error('Weights must contain exactly 7 values.');
+    if (weights.length !== 6) {
+      throw new Error('Weights must contain exactly 6 values.');
     }
     if (weights.some((w) => w < 0)) {
       throw new Error('Weights must be non-negative values.');

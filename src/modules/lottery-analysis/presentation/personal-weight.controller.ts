@@ -41,7 +41,7 @@ export class PersonalWeightController {
       GetPersonalWeightQuery,
       number[]
     >(query);
-    if (!result) return [25, 20, 15, 15, 10, 10, 5];
+    if (!result) return [25, 20, 18, 15, 12, 10];
     return result;
   }
 }

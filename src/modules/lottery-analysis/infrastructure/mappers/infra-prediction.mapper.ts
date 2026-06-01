@@ -14,7 +14,7 @@ export class InfraPredictionMapper {
       reliability?: Reliability | null;
     },
   ): DomainPrediction {
-    let numbersArray = [0, 0, 0, 0, 0, 0, 0];
+    let numbersArray = [0, 0, 0, 0, 0, 0];
     try {
       if (raw.numbers) {
         const parsed = JSON.parse(raw.numbers);
@@ -25,7 +25,6 @@ export class InfraPredictionMapper {
           parsed['4th'] ?? 0,
           parsed['5th'] ?? 0,
           parsed['6th'] ?? 0,
-          parsed['bns'] ?? 0,
         ];
       }
     } catch (e) {
@@ -60,7 +59,6 @@ export class InfraPredictionMapper {
       '4th': rawNumbers[3],
       '5th': rawNumbers[4],
       '6th': rawNumbers[5],
-      bns: rawNumbers[6],
     };
     return {
       id: entity.id as number,
