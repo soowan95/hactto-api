@@ -103,59 +103,47 @@ describe('RedisController', () => {
     expect(controller).toBeDefined();
   });
 
-  describe('requestAccess', () => {
-    const originalEnv = process.env.NODE_ENV;
-
-    afterEach(() => {
-      process.env.NODE_ENV = originalEnv;
+  describe('generateMasterKey', () => {
+    it('should generate master key', async () => {
+      redisService.generateMasterKey.mockResolvedValue('test-key');
+      const result = await controller.generateMasterKey();
+      expect(result).toBe('test-key');
+      expect(redisService.generateMasterKey).toHaveBeenCalled();
     });
+  });
 
-    it('localhost 환경에서는 국가 검증을 무시하고 대기열(pending:ips)에 IP를 등록해야 한다', async () => {
-      process.env.NODE_ENV = 'localhost';
+  describe('resetCurrentDatabase', () => {
+    it('should reset redis', async () => {
+      redisService.reset.mockResolvedValue(undefined);
+      await controller.resetCurrentDatabase();
+      expect(redisService.reset).toHaveBeenCalled();
+    });
+  });
+
+  describe('checkIp', () => {
+    it('should return allowed true for queryMk when it is in manager:k set', async () => {
       const { req } = createMockReqRes('127.0.0.1');
       currentRequest = req;
-
-      await controller.requestAccess();
-
-      expect(redisService.addToSet).toHaveBeenCalledWith(
-        'pending:ips',
-        '127.0.0.1',
-      );
+      redisService.isMemberOfSet.mockResolvedValue(true);
+      const result = await controller.checkIp('test-key');
+      expect(result.allowed).toBe(true);
+      expect(redisService.isMemberOfSet).toHaveBeenCalledWith('manager:k', 'test-key');
     });
 
-    it('프로덕션 환경에서 대한민국(KR) IP이면 대기열(pending:ips)에 IP를 등록해야 한다', async () => {
-      process.env.NODE_ENV = 'production';
-      const { req } = createMockReqRes('1.2.3.4', 'KR');
+    it('should return allowed false for queryMk when it is not in manager:k set', async () => {
+      const { req } = createMockReqRes('127.0.0.1');
       currentRequest = req;
-
-      await controller.requestAccess();
-
-      expect(redisService.addToSet).toHaveBeenCalledWith(
-        'pending:ips',
-        '1.2.3.4',
-      );
+      redisService.isMemberOfSet.mockResolvedValue(false);
+      const result = await controller.checkIp('test-key');
+      expect(result.allowed).toBe(false);
+      expect(redisService.isMemberOfSet).toHaveBeenCalledWith('manager:k', 'test-key');
     });
 
-    it('프로덕션 환경에서 대한민국 IP가 아니면(예: US) ForbiddenException을 발생시켜야 한다', async () => {
-      process.env.NODE_ENV = 'production';
-      const { req } = createMockReqRes('1.2.3.4', 'US');
+    it('should return allowed true if queryMk is not provided', async () => {
+      const { req } = createMockReqRes('127.0.0.1');
       currentRequest = req;
-
-      await expect(controller.requestAccess()).rejects.toThrow(
-        ForbiddenException,
-      );
-      expect(redisService.addToSet).not.toHaveBeenCalled();
-    });
-
-    it('프로덕션 환경에서 국가 헤더가 누락되면 ForbiddenException을 발생시켜야 한다', async () => {
-      process.env.NODE_ENV = 'production';
-      const { req } = createMockReqRes('1.2.3.4');
-      currentRequest = req;
-
-      await expect(controller.requestAccess()).rejects.toThrow(
-        ForbiddenException,
-      );
-      expect(redisService.addToSet).not.toHaveBeenCalled();
+      const result = await controller.checkIp();
+      expect(result.allowed).toBe(true);
     });
   });
 });
