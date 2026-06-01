@@ -74,7 +74,7 @@ export class GetLotteryBallStatusHandler implements IQueryHandler<GetLotteryBall
       .slice(0, 3)
       .map(([num]) => num);
 
-    const skip = winningNumbers[0].episode - lastestEpisode + 1;
+    const skip = winningNumbers[0].episode - lastestEpisode;
 
     const result = new LotteryBallStatus(
       recentTen,
