@@ -7,11 +7,11 @@ export class StatusMonitorMiddleware implements NestMiddleware {
   constructor(private readonly redisService: RedisService) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
-    const masterKey = req.query.rmk as string;
+    const masterKey = req.query.mk as string;
 
     if (!masterKey) {
       throw new ForbiddenException(
-        'Access denied. Master key (rmk) is required.',
+        'Access denied. Master key (mk) is required.',
       );
     }
 

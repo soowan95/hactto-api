@@ -5,7 +5,7 @@ import { ApiQuery } from '@nestjs/swagger';
 export function RedisManager() {
   return applyDecorators(
     ApiQuery({
-      name: 'rmk',
+      name: 'mk',
       required: true,
       description: 'Master Key for Admin Authentication',
     }),

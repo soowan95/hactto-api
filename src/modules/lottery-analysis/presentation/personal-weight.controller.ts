@@ -3,7 +3,6 @@ import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { SetPersonalWeightRequestDto } from './dtos/requests/set-personal-weight-request.dto';
 import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
-import { Permission } from '../../../common/decorators/permission.decorator';
 import { SetPersonalWeightCommand } from '../application/commands/set-personal-weight.command';
 import { GetPersonalWeightQuery } from '../application/queries/get-personal-weight.query';
 
@@ -16,7 +15,6 @@ export class PersonalWeightController {
   ) {}
 
   @ApiOperation({ summary: '개인화 가중치 저장' })
-  @Permission()
   @ResponseMessage('success.create')
   @Post()
   async setWeights(@Body() dto: SetPersonalWeightRequestDto): Promise<void> {
@@ -31,7 +29,6 @@ export class PersonalWeightController {
   @ApiOperation({ summary: '개인화 가중치 조회' })
   @ApiQuery({ name: 'visitorId', type: String, required: true })
   @ApiQuery({ name: 'algorithm', required: true })
-  @Permission()
   @ResponseMessage('success.read')
   @Get()
   async getWeights(
