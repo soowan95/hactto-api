@@ -4,7 +4,9 @@ export class LottoNumberSet {
   readonly numbers: LottoNumber[];
 
   constructor(numbers: number[]) {
-    if (numbers.length !== 7) throw new Error('Numbers must be 7');
+    if (numbers.length !== 6 && numbers.length !== 7) {
+      throw new Error('Numbers must be 6 or 7');
+    }
     this.numbers = numbers.map((n) => new LottoNumber(n));
   }
 

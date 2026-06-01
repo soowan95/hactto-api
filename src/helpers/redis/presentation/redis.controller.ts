@@ -1,11 +1,5 @@
 import { RedisService } from '../application/redis.service';
-import {
-  Controller,
-  Delete,
-  Get,
-  Logger,
-  Query,
-} from '@nestjs/common';
+import { Controller, Delete, Get, Logger, Query } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
 import { RedisManager } from '../../../common/decorators/redis-manager.decorator';

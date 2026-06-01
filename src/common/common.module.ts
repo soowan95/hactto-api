@@ -7,11 +7,7 @@ import { SystemStatusController } from './controllers/system-status.controller';
 @Global()
 @Module({
   controllers: [SystemStatusController],
-  providers: [
-    RequestParser,
-    AdminGuard,
-    SystemStatusService,
-  ],
+  providers: [RequestParser, AdminGuard, SystemStatusService],
   exports: [RequestParser, AdminGuard, SystemStatusService],
 })
 export class CommonModule {}

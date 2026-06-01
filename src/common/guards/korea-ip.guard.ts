@@ -1,6 +1,5 @@
 import {
   CanActivate,
-  ExecutionContext,
   ForbiddenException,
   Injectable,
   Logger,
@@ -13,7 +12,7 @@ export class KoreaIpGuard implements CanActivate {
 
   constructor(private readonly requestParser: RequestParser) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  async canActivate(): Promise<boolean> {
     // 로컬 환경 및 개발 환경에서는 IP 검증을 제외합니다.
     if (
       process.env.NODE_ENV === 'localhost' ||

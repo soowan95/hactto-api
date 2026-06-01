@@ -127,7 +127,10 @@ describe('RedisController', () => {
       redisService.isMemberOfSet.mockResolvedValue(true);
       const result = await controller.checkIp('test-key');
       expect(result.allowed).toBe(true);
-      expect(redisService.isMemberOfSet).toHaveBeenCalledWith('manager:k', 'test-key');
+      expect(redisService.isMemberOfSet).toHaveBeenCalledWith(
+        'manager:k',
+        'test-key',
+      );
     });
 
     it('should return allowed false for queryMk when it is not in manager:k set', async () => {
@@ -136,7 +139,10 @@ describe('RedisController', () => {
       redisService.isMemberOfSet.mockResolvedValue(false);
       const result = await controller.checkIp('test-key');
       expect(result.allowed).toBe(false);
-      expect(redisService.isMemberOfSet).toHaveBeenCalledWith('manager:k', 'test-key');
+      expect(redisService.isMemberOfSet).toHaveBeenCalledWith(
+        'manager:k',
+        'test-key',
+      );
     });
 
     it('should return allowed true if queryMk is not provided', async () => {

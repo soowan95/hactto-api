@@ -1,0 +1,1 @@
+docker exec redis redis-cli flushall && npx dotenv -e .env.migrate.localhost -- npx prisma migrate reset --schema=./prisma/schema/ --force

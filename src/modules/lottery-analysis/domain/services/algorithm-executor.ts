@@ -17,7 +17,7 @@ export class AlgorithmExecutor {
     visitorId?: string,
     weights?: number[],
   ): Promise<DomainPrediction> {
-    if (!weights) weights = [25, 20, 15, 15, 10, 10, 5];
+    if (!weights) weights = [25, 20, 18, 15, 12, 10];
     let command: ExecutableCommand;
     if (algorithm.type.includes('FREQUENCY'))
       command = new FrequencyCommand(algorithm.type as FrequencyType, data);

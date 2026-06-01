@@ -67,15 +67,13 @@ export class DomainPrediction extends AggregateRoot {
       return;
     }
 
-    const WEIGHTS =
-      customWeights ||
-      Array(winningNumber.getNumberArray().length).fill(100 / 6);
+    const WEIGHTS = customWeights || Array(6).fill(100 / 6);
     let score = 0;
 
     const winningNumbers = winningNumber.getNumberArray();
     const predictedNumbers = this.getNumberArray();
 
-    for (let i = 0; i < WEIGHTS.length; i++) {
+    for (let i = 0; i < 6; i++) {
       if (winningNumbers[i] === 0) continue;
       const distance = Math.abs(winningNumbers[i] - predictedNumbers[i]);
       score += WEIGHTS[i] / (1 + distance);

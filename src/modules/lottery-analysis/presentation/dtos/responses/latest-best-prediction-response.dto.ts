@@ -10,10 +10,10 @@ export class PredictionDetailDto {
   @ApiProperty({ example: 1120 })
   episode: number;
 
-  @ApiProperty({ example: [25, 20, 15, 15, 10, 10, 5] })
+  @ApiProperty({ example: [25, 20, 18, 15, 12, 10] })
   weights: number[];
 
-  @ApiProperty({ example: [4, 12, 18, 29, 32, 45, 9] })
+  @ApiProperty({ example: [4, 12, 18, 29, 32, 45] })
   numbers: number[];
 
   @ApiProperty({ example: 88.5 })
