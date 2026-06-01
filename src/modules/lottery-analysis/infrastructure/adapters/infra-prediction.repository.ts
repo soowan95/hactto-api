@@ -47,19 +47,35 @@ export class InfraPredictionRepository implements IPredictionRepository {
   async saveMany(analyses: DomainPrediction[]): Promise<void> {
     if (analyses.length === 0) return;
 
+    const predictionsToCreate: any[] = [];
     const reliabilityDataToCreate: { id: number; score: number }[] = [];
 
     for (const entity of analyses) {
       const raw = InfraPredictionMapper.toPersistence(entity);
 
-      if (entity.reliability) {
-        const scoreVal = entity.reliability.getScore();
-
-        reliabilityDataToCreate.push({
-          id: raw.id,
-          score: scoreVal,
+      if (!raw.id) {
+        predictionsToCreate.push({
+          algorithmType: raw.algorithmType,
+          episode: raw.episode,
+          weights: raw.weights,
+          numbers: raw.numbers,
+          visitorId: raw.visitorId,
         });
+      } else {
+        if (entity.reliability) {
+          reliabilityDataToCreate.push({
+            id: raw.id,
+            score: entity.reliability.getScore(),
+          });
+        }
       }
+    }
+
+    if (predictionsToCreate.length > 0) {
+      await prisma.prediction.createMany({
+        data: predictionsToCreate,
+        skipDuplicates: true,
+      });
     }
 
     if (reliabilityDataToCreate.length > 0) {
@@ -202,5 +218,19 @@ export class InfraPredictionRepository implements IPredictionRepository {
         id: true,
       },
     });
+  }
+
+  async findAllSystemPredictions(): Promise<DomainPrediction[]> {
+    const results = await prisma.prediction.findMany({
+      where: {
+        visitorId: null,
+      },
+      include: {
+        algorithm: true,
+        reliability: true,
+      },
+    });
+
+    return results.map((r) => InfraPredictionMapper.toEntity(r));
   }
 }

@@ -40,13 +40,8 @@ export class AnalyzeReliabilityHandler implements ICommandHandler<AnalyzeReliabi
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async execute(command: AnalyzeReliabilityCommand): Promise<void> {
     try {
-      const predictionCount = await this.predictionRepository.count();
-
-      this.logger.debug(`Algorithm result exists: `, predictionCount);
-
-      if (predictionCount <= 0) {
-        await this.initializeAlgorithms();
-      }
+      // Always initialize algorithms (new episodes will be processed dynamically)
+      await this.initializeAlgorithms();
 
       const targetPredictions: DomainPrediction[] =
         await this.predictionRepository.findWithoutReliability();
@@ -88,20 +83,37 @@ export class AnalyzeReliabilityHandler implements ICommandHandler<AnalyzeReliabi
       algorithms = await this.algorithmRepository.findAll();
       await this.redisService.set(cacheKey, JSON.stringify(algorithms));
     } else algorithms = JSON.parse(cachedData);
+
     const winningNumbers: DomainWinningNumber[] =
-      await this.winningNumberRepository.findAll();
+      await this.winningNumberRepository.findAll({
+        orderBy: { episode: 'asc' },
+      });
     const data: number[][] = winningNumbers.map((winningNumber) =>
       winningNumber.getNumberArray(),
     );
+
+    const existingPredictions =
+      await this.predictionRepository.findAllSystemPredictions();
+    const existingSet = new Set<string>();
+    for (const p of existingPredictions) {
+      existingSet.add(`${p.episode}:${p.algorithm.type}`);
+    }
 
     const predictionsToCreate: DomainPrediction[] = [];
 
     for (const algorithm of algorithms) {
       for (let i = 1; i < data.length; i++) {
+        const episode = i + 1;
+        const key = `${episode}:${algorithm.type}`;
+
+        if (existingSet.has(key)) {
+          continue;
+        }
+
         const subData: number[][] = data.slice(0, i);
         const executed = await AlgorithmExecutor.execute(
           algorithm,
-          i + 1,
+          episode,
           subData,
         );
         predictionsToCreate.push(executed);
