@@ -1,17 +1,17 @@
 import {
   Algorithm,
   Prediction,
-  Reliability,
+  Analysis,
 } from '../../../../generated/prisma/client';
 import { DomainPrediction } from '../../domain/aggregates/prediction.entity';
-import { DomainReliability } from '../../domain/aggregates/reliability.entity';
+import { DomainAnalysis } from '../../domain/aggregates/analysis.entity';
 import { InfraAlgorithmMapper } from './infra-algorithm.mapper';
 
 export class InfraPredictionMapper {
   static toEntity(
     raw: Prediction & {
       algorithm: Algorithm;
-      reliability?: Reliability | null;
+      analysis?: Analysis | null;
     },
   ): DomainPrediction {
     let numbersArray = [0, 0, 0, 0, 0, 0];
@@ -31,11 +31,20 @@ export class InfraPredictionMapper {
       console.warn(`Failed to parse prediction numbers for id ${raw.id}:`, e);
     }
 
-    let domainReliability: DomainReliability | undefined = undefined;
-    if (raw.reliability) {
-      domainReliability = new DomainReliability(
-        raw.reliability.id,
-        raw.reliability.score,
+    let domainReliability: DomainAnalysis | undefined = undefined;
+    if (raw.analysis) {
+      domainReliability = new DomainAnalysis(
+        raw.analysis.id,
+        raw.analysis.reliability,
+        raw.analysis.even,
+        raw.analysis.odd,
+        raw.analysis.hot,
+        raw.analysis.warm,
+        raw.analysis.cold,
+        raw.analysis.low,
+        raw.analysis.high,
+        raw.analysis.ac,
+        JSON.parse(raw.analysis.consecutive),
       );
     }
 

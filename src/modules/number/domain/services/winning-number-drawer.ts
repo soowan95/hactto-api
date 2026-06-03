@@ -1,4 +1,4 @@
-import { DomainWinningNumber } from '../entities/winning-number.entity';
+import { DomainWinningNumber } from '../aggregates/winning-number.entity';
 
 export class WinningNumberDrawer {
   static drawPlaceholder(episode: number): DomainWinningNumber {

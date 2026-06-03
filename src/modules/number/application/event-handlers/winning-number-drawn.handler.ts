@@ -1,6 +1,6 @@
 import { CommandBus, EventsHandler, IEventHandler } from '@nestjs/cqrs';
 import { WinningNumberDrawnEvent } from '../../domain/events/winning-number-drawn.event';
-import { AnalyzeReliabilityCommand } from '../../../lottery-analysis/application/commands/analyze-reliability.command';
+import { AnalyzeCommand } from '../../../lottery-analysis/application/commands/analyze.command';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 
 @EventsHandler(WinningNumberDrawnEvent)
@@ -18,6 +18,6 @@ export class WinningNumberDrawnHandler implements IEventHandler<WinningNumberDra
     await this.redisService.del('winning-number:latest');
 
     // 2. 신뢰도 측정 실행
-    await this.commandBus.execute(new AnalyzeReliabilityCommand());
+    await this.commandBus.execute(new AnalyzeCommand());
   }
 }

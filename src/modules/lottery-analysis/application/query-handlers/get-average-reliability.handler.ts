@@ -3,15 +3,15 @@ import { GetAverageReliabilityQuery } from '../queries/get-average-reliability.q
 import { Inject } from '@nestjs/common';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 import {
-  IReliabilityRepository,
-  RELIABILITY_REPOSITORY_TOKEN,
-} from '../../domain/ports/reliability.repository.port';
+  IAnalysisRepository,
+  RELIABILITY_ANALYSIS_TOKEN,
+} from '../../domain/ports/analysis.repository.port';
 
 @QueryHandler(GetAverageReliabilityQuery)
 export class GetAverageReliabilityHandler implements IQueryHandler<GetAverageReliabilityQuery> {
   constructor(
-    @Inject(RELIABILITY_REPOSITORY_TOKEN)
-    private readonly repository: IReliabilityRepository,
+    @Inject(RELIABILITY_ANALYSIS_TOKEN)
+    private readonly repository: IAnalysisRepository,
     private readonly redisService: RedisService,
   ) {}
 

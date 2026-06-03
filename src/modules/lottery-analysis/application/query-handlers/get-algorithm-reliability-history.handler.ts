@@ -48,8 +48,8 @@ export class GetAlgorithmReliabilityHistoryHandler implements IQueryHandler<GetA
       if (!episodeGroups[p.episode]) {
         episodeGroups[p.episode] = [];
       }
-      if (p.reliability) {
-        episodeGroups[p.episode].push(p.reliability.getScore());
+      if (p.analysis) {
+        episodeGroups[p.episode].push(p.analysis.getScore());
       }
     }
 

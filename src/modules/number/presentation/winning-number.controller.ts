@@ -11,7 +11,7 @@ import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
 import { WinningNumberShowResponseDto } from './dtos/responses/winning-number-show-response.dto';
 import { Admin } from '../../../common/decorators/admin.decorator';
-import { DomainWinningNumber } from '../domain/entities/winning-number.entity';
+import { DomainWinningNumber } from '../domain/aggregates/winning-number.entity';
 import { plainToInstance } from 'class-transformer';
 
 import { FetchWinningNumbersCommand } from '../application/commands/fetch-winning-numbers.command';
@@ -19,7 +19,7 @@ import { GetAllWinningNumbersQuery } from '../application/queries/get-all-winnin
 import { GetLatestWinningNumberQuery } from '../application/queries/get-latest-winning-number.query';
 import { GetWinningNumberByEpisodeQuery } from '../application/queries/get-winning-number-by-episode.query';
 import { GetLotteryBallStatusQuery } from '../application/queries/get-lottery-ball-status.query';
-import { LotteryBallStatus } from '../domain/entities/lottery-ball-status.entity';
+import { LotteryBallStatus } from '../domain/aggregates/lottery-ball-status.entity';
 import { LotteryBallStatusShowResponseDto } from './dtos/responses/lottery-ball-status-show-response.dto';
 
 @ApiTags('- Winning Number')

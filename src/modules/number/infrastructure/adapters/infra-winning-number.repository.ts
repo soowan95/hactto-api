@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { IWinningNumberRepository } from '../../domain/ports/winning-number.repository.port';
 import { prisma } from '../../../../lib/prisma';
 import { Prisma, WinningNumber } from '../../../../generated/prisma/client';
-import { DomainWinningNumber } from '../../domain/entities/winning-number.entity';
+import { DomainWinningNumber } from '../../domain/aggregates/winning-number.entity';
 import { InfraWinningNumberMapper } from '../mappers/infra-winning-number.mapper';
 import { WinningNumberDrawer } from '../../domain/services/winning-number-drawer';
 

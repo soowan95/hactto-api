@@ -1,8 +1,8 @@
 import { AggregateRoot } from '@nestjs/cqrs';
 import { LottoNumberSet } from '../../../number/domain/vos/lotto-number-set.vo';
-import { DomainReliability } from './reliability.entity';
+import { DomainAnalysis } from './analysis.entity';
 import { AnalysisWinningNumber } from './winning-number.entity';
-import { Weights } from './vos/weights.vo';
+import { Weights } from '../vos/weights.vo';
 import { PredictionReliabilityCalculatedEvent } from '../events/prediction-reliability-calculated.event';
 import { DomainAlgorithm } from './algorithm.entity';
 
@@ -13,7 +13,7 @@ export class DomainPrediction extends AggregateRoot {
   public readonly weights: Weights;
   public readonly numberSet: LottoNumberSet;
   public readonly visitorId?: string;
-  public reliability?: DomainReliability;
+  public analysis?: DomainAnalysis;
 
   constructor(
     algorithm: DomainAlgorithm,
@@ -22,7 +22,7 @@ export class DomainPrediction extends AggregateRoot {
     numbers: number[],
     id?: number,
     visitorId?: string,
-    reliability?: DomainReliability,
+    analysis?: DomainAnalysis,
   ) {
     super();
     this.algorithm = algorithm;
@@ -31,7 +31,7 @@ export class DomainPrediction extends AggregateRoot {
     this.numberSet = new LottoNumberSet(numbers);
     this.id = id;
     this.visitorId = visitorId;
-    this.reliability = reliability;
+    this.analysis = analysis;
   }
 
   getId(): number {
@@ -50,12 +50,18 @@ export class DomainPrediction extends AggregateRoot {
     return this.weights.toValues();
   }
 
-  calculateReliability(
+  analyze(
     winningNumber: AnalysisWinningNumber,
     customWeights?: number[],
+    temperatures?: Record<number, 'HOT' | 'WARM' | 'COLD'>,
   ): void {
     if (!this.isNonZero()) {
-      this.reliability = new DomainReliability(this.getId(), -1);
+      this.analysis = DomainAnalysis.create(
+        this.getId(),
+        -1,
+        this.getNumberArray(),
+        temperatures,
+      );
       this.apply(
         new PredictionReliabilityCalculatedEvent(
           this.getId(),
@@ -81,7 +87,12 @@ export class DomainPrediction extends AggregateRoot {
 
     const finalScore = Math.round(score * 100) / 100;
 
-    this.reliability = new DomainReliability(this.getId(), finalScore);
+    this.analysis = DomainAnalysis.create(
+      this.getId(),
+      finalScore,
+      this.getNumberArray(),
+      temperatures,
+    );
     this.apply(
       new PredictionReliabilityCalculatedEvent(
         this.getId(),

@@ -11,7 +11,7 @@ import { GetAllWinningNumbersQuery } from './queries/get-all-winning-numbers.que
 import { GetLatestWinningNumberQuery } from './queries/get-latest-winning-number.query';
 import { GetWinningNumberByEpisodeQuery } from './queries/get-winning-number-by-episode.query';
 import { GetWinningNumberByEpisodeHandler } from './query-handlers/get-winning-number-by-episode.handler';
-import { DomainWinningNumber } from '../domain/entities/winning-number.entity';
+import { DomainWinningNumber } from '../domain/aggregates/winning-number.entity';
 import { WinningNumberDrawer } from '../domain/services/winning-number-drawer';
 import { RedisService } from '../../../helpers/redis/application/redis.service';
 import { EventPublisher } from '@nestjs/cqrs';

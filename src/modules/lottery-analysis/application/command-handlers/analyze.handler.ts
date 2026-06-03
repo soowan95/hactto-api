@@ -1,5 +1,5 @@
 import { CommandHandler, EventPublisher, ICommandHandler } from '@nestjs/cqrs';
-import { AnalyzeReliabilityCommand } from '../commands/analyze-reliability.command';
+import { AnalyzeCommand } from '../commands/analyze.command';
 import { Inject, Logger } from '@nestjs/common';
 import {
   IPredictionRepository,
@@ -9,6 +9,10 @@ import {
   WINNING_NUMBER_READER_TOKEN,
   WinningNumberReader,
 } from '../../domain/ports/winning-number-reader.port';
+import {
+  BALL_STATUS_READER_TOKEN,
+  BallStatusReader,
+} from '../../domain/ports/ball-status-reader.port';
 import { DomainPrediction } from '../../domain/aggregates/prediction.entity';
 import { AnalysisWinningNumber } from '../../domain/aggregates/winning-number.entity';
 import { AlgorithmExecutor } from '../../domain/services/algorithm-executor';
@@ -21,9 +25,9 @@ import {
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 import { DomainAlgorithm } from '../../domain/aggregates/algorithm.entity';
 
-@CommandHandler(AnalyzeReliabilityCommand)
-export class AnalyzeReliabilityHandler implements ICommandHandler<AnalyzeReliabilityCommand> {
-  private readonly logger = new Logger(AnalyzeReliabilityHandler.name);
+@CommandHandler(AnalyzeCommand)
+export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
+  private readonly logger = new Logger(AnalyzeHandler.name);
 
   constructor(
     @Inject(PREDICTION_REPOSITORY_TOKEN)
@@ -32,19 +36,21 @@ export class AnalyzeReliabilityHandler implements ICommandHandler<AnalyzeReliabi
     private readonly winningNumberReader: WinningNumberReader,
     @Inject(ALGORITHM_REPOSITORY_TOKEN)
     private readonly algorithmRepository: IAlgorithmRepository,
+    @Inject(BALL_STATUS_READER_TOKEN)
+    private readonly ballStatusReader: BallStatusReader,
     private readonly publisher: EventPublisher,
     private readonly systemStatusService: SystemStatusService,
     private readonly redisService: RedisService,
   ) {}
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async execute(command: AnalyzeReliabilityCommand): Promise<void> {
+  async execute(command: AnalyzeCommand): Promise<void> {
     try {
       // Always initialize algorithms (new episodes will be processed dynamically)
       await this.initializeAlgorithms();
 
       const targetPredictions: DomainPrediction[] =
-        await this.predictionRepository.findWithoutReliability();
+        await this.predictionRepository.findWithoutAnalysis();
 
       const resultsToSave: DomainPrediction[] = [];
 
@@ -53,10 +59,15 @@ export class AnalyzeReliabilityHandler implements ICommandHandler<AnalyzeReliabi
           await this.winningNumberReader.findByEpisode(result.episode);
         if (!winningNumber || !winningNumber.isDrawn) continue;
 
+        const predictedNumbers = result.getNumberArray();
+        const temperatures =
+          await this.ballStatusReader.getBallTemperatures(predictedNumbers);
+
         const prediction = this.publisher.mergeObjectContext(result);
-        prediction.calculateReliability(
+        prediction.analyze(
           winningNumber,
           prediction.weights.toValues(),
+          temperatures,
         );
 
         resultsToSave.push(prediction);

@@ -1,4 +1,4 @@
-import { DomainWinningNumber } from '../entities/winning-number.entity';
+import { DomainWinningNumber } from '../aggregates/winning-number.entity';
 
 export const WINNING_NUMBER_REPOSITORY_TOKEN = 'IWinningNumberRepository';
 

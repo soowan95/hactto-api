@@ -33,12 +33,23 @@ export class InfraPredictionRepository implements IPredictionRepository {
     const raw = InfraPredictionMapper.toPersistence(analysis);
 
     await prisma.$transaction(async (tx) => {
-      if (analysis.reliability) {
-        const scoreVal = analysis.reliability.getScore();
-        await tx.reliability.upsert({
+      if (analysis.analysis) {
+        const data = {
+          reliability: analysis.analysis.getScore(),
+          even: analysis.analysis.even,
+          odd: analysis.analysis.odd,
+          hot: analysis.analysis.hot,
+          warm: analysis.analysis.warm,
+          cold: analysis.analysis.cold,
+          low: analysis.analysis.low,
+          high: analysis.analysis.high,
+          ac: analysis.analysis.ac,
+          consecutive: JSON.stringify(analysis.analysis.consecutive),
+        };
+        await tx.analysis.upsert({
           where: { id: raw.id },
-          update: { score: scoreVal },
-          create: { id: raw.id, score: scoreVal },
+          update: data,
+          create: { id: raw.id, ...data },
         });
       }
     });
@@ -48,7 +59,7 @@ export class InfraPredictionRepository implements IPredictionRepository {
     if (analyses.length === 0) return;
 
     const predictionsToCreate: any[] = [];
-    const reliabilityDataToCreate: { id: number; score: number }[] = [];
+    const analysisDataToCreate: any[] = [];
 
     for (const entity of analyses) {
       const raw = InfraPredictionMapper.toPersistence(entity);
@@ -62,10 +73,19 @@ export class InfraPredictionRepository implements IPredictionRepository {
           visitorId: raw.visitorId,
         });
       } else {
-        if (entity.reliability) {
-          reliabilityDataToCreate.push({
+        if (entity.analysis) {
+          analysisDataToCreate.push({
             id: raw.id,
-            score: entity.reliability.getScore(),
+            reliability: entity.analysis.getScore(),
+            even: entity.analysis.even,
+            odd: entity.analysis.odd,
+            hot: entity.analysis.hot,
+            warm: entity.analysis.warm,
+            cold: entity.analysis.cold,
+            low: entity.analysis.low,
+            high: entity.analysis.high,
+            ac: entity.analysis.ac,
+            consecutive: JSON.stringify(entity.analysis.consecutive),
           });
         }
       }
@@ -78,9 +98,9 @@ export class InfraPredictionRepository implements IPredictionRepository {
       });
     }
 
-    if (reliabilityDataToCreate.length > 0) {
-      await prisma.reliability.createMany({
-        data: reliabilityDataToCreate,
+    if (analysisDataToCreate.length > 0) {
+      await prisma.analysis.createMany({
+        data: analysisDataToCreate,
         skipDuplicates: true,
       });
     }
@@ -92,14 +112,14 @@ export class InfraPredictionRepository implements IPredictionRepository {
     const result = await prisma.prediction.findMany({
       where: {
         algorithm,
-        reliability: { isNot: null },
+        analysis: { isNot: null },
       },
       orderBy: {
         episode: 'desc',
       },
       include: {
         algorithm: true,
-        reliability: true,
+        analysis: true,
       },
     });
 
@@ -115,7 +135,7 @@ export class InfraPredictionRepository implements IPredictionRepository {
       },
       include: {
         algorithm: true,
-        reliability: true,
+        analysis: true,
       },
       orderBy: {
         id: 'desc',
@@ -136,11 +156,11 @@ export class InfraPredictionRepository implements IPredictionRepository {
       },
       include: {
         algorithm: true,
-        reliability: true,
+        analysis: true,
       },
       orderBy: {
-        reliability: {
-          score: 'desc',
+        analysis: {
+          reliability: 'desc',
         },
       },
     });
@@ -155,18 +175,18 @@ export class InfraPredictionRepository implements IPredictionRepository {
     const result = await prisma.prediction.findFirst({
       where: {
         episode,
-        reliability: {
+        analysis: {
           isNot: null,
         },
       },
       include: {
         algorithm: true,
-        reliability: true,
+        analysis: true,
         winningNumber: true,
       },
       orderBy: {
-        reliability: {
-          score: 'desc',
+        analysis: {
+          reliability: 'desc',
         },
       },
     });
@@ -175,10 +195,10 @@ export class InfraPredictionRepository implements IPredictionRepository {
     return InfraPredictionMapper.toEntity(result);
   }
 
-  async findWithoutReliability(): Promise<DomainPrediction[]> {
+  async findWithoutAnalysis(): Promise<DomainPrediction[]> {
     const results = await prisma.prediction.findMany({
       where: {
-        reliability: null,
+        analysis: null,
       },
       include: {
         algorithm: true,
@@ -197,7 +217,7 @@ export class InfraPredictionRepository implements IPredictionRepository {
   } | null> {
     return prisma.prediction.findFirst({
       where: {
-        reliability: { isNot: null },
+        analysis: { isNot: null },
       },
       orderBy: {
         episode: 'desc',
@@ -227,7 +247,7 @@ export class InfraPredictionRepository implements IPredictionRepository {
       },
       include: {
         algorithm: true,
-        reliability: true,
+        analysis: true,
       },
     });
 

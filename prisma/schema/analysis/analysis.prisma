@@ -1,0 +1,20 @@
+/**
+ * 신뢰도
+ */
+model Analysis {
+  id          Int    @id
+  reliability Int // 신뢰도 점수
+  even        Int // 짝수 갯수
+  odd         Int // 홀수 갯수
+  hot         Int // 열번호 갯수
+  warm        Int // 온번호 갯수
+  cold        Int // 냉번호 갯수
+  low         Int // 저번호 갯수
+  high        Int // 고번호 갯수
+  ac          Int // AC 값
+  consecutive String // 연속 수
+
+  prediction Prediction @relation(fields: [id], references: [id])
+
+  @@map("analysis")
+}

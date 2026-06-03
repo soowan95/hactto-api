@@ -1,6 +1,6 @@
 import { SetPersonalWeightHandler } from './command-handlers/set-personal-weight.handler';
 import { GeneratePredictionHandler } from './command-handlers/generate-prediction.handler';
-import { AnalyzeReliabilityHandler } from './command-handlers/analyze-reliability.handler';
+import { AnalyzeHandler } from './command-handlers/analyze.handler';
 import { GetPredictionHistoryHandler } from './query-handlers/get-prediction-history.handler';
 import { GetPersonalWeightHandler } from './query-handlers/get-personal-weight.handler';
 import { GetAverageReliabilityHandler } from './query-handlers/get-average-reliability.handler';
@@ -20,7 +20,7 @@ import { AlgorithmComplexityUpdatedHandler } from './event-handlers/algorithm-co
 export const CommandHandlers = [
   SetPersonalWeightHandler,
   GeneratePredictionHandler,
-  AnalyzeReliabilityHandler,
+  AnalyzeHandler,
   FetchAlgorithmHandler,
   SetAlgorithmComplexityHandler,
 ];

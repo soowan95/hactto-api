@@ -7,13 +7,15 @@ import { InfraPredictionRepository } from './infrastructure/adapters/infra-predi
 import { WinningNumberModule } from '../number/winning-number.module';
 import { CommandHandlers, QueryHandlers, EventHandlers } from './application';
 import { PREDICTION_REPOSITORY_TOKEN } from './domain/ports/prediction.repository.port';
-import { RELIABILITY_REPOSITORY_TOKEN } from './domain/ports/reliability.repository.port';
-import { InfraReliabilityRepository } from './infrastructure/adapters/infra-reliability.repository';
+import { RELIABILITY_ANALYSIS_TOKEN } from './domain/ports/analysis.repository.port';
+import { InfraAnalysisRepository } from './infrastructure/adapters/infra-analysis.repository';
 import { ALGORITHM_REPOSITORY_TOKEN } from './domain/ports/algorithm.repository.port';
 import { InfraAlgorithmRepository } from './infrastructure/adapters/infra-algorithm.repository';
 import { WINNING_NUMBER_READER_TOKEN } from './domain/ports/winning-number-reader.port';
 import { WinningNumberAdapter } from './infrastructure/adapters/winning-number.adapter';
 import { WinningNumberMapper } from './infrastructure/mappers/winning-number.mapper';
+import { BALL_STATUS_READER_TOKEN } from './domain/ports/ball-status-reader.port';
+import { BallStatusAdapter } from './infrastructure/adapters/ball-status.adapter';
 
 @Module({
   imports: [CqrsModule, WinningNumberModule],
@@ -28,8 +30,8 @@ import { WinningNumberMapper } from './infrastructure/mappers/winning-number.map
       useClass: InfraPredictionRepository,
     },
     {
-      provide: RELIABILITY_REPOSITORY_TOKEN,
-      useClass: InfraReliabilityRepository,
+      provide: RELIABILITY_ANALYSIS_TOKEN,
+      useClass: InfraAnalysisRepository,
     },
     {
       provide: ALGORITHM_REPOSITORY_TOKEN,
@@ -39,6 +41,10 @@ import { WinningNumberMapper } from './infrastructure/mappers/winning-number.map
       provide: WINNING_NUMBER_READER_TOKEN,
       useClass: WinningNumberAdapter,
     },
+    {
+      provide: BALL_STATUS_READER_TOKEN,
+      useClass: BallStatusAdapter,
+    },
     WinningNumberMapper,
     ...CommandHandlers,
     ...QueryHandlers,
@@ -46,9 +52,10 @@ import { WinningNumberMapper } from './infrastructure/mappers/winning-number.map
   ],
   exports: [
     PREDICTION_REPOSITORY_TOKEN,
-    RELIABILITY_REPOSITORY_TOKEN,
+    RELIABILITY_ANALYSIS_TOKEN,
     ALGORITHM_REPOSITORY_TOKEN,
     WINNING_NUMBER_READER_TOKEN,
+    BALL_STATUS_READER_TOKEN,
     CqrsModule,
   ],
 })
