@@ -5,7 +5,7 @@ import { plainToInstance } from 'class-transformer';
 import {
   ExternalLotteryData,
   IWinningNumberFetcher,
-} from '../../domain/ports/winning-number-fetcher.interface';
+} from '../../domain/ports/winning-number-fetcher.port';
 import {
   Lt365,
   Lt365ResponseDto,

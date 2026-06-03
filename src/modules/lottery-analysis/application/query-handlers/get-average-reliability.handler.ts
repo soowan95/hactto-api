@@ -5,7 +5,7 @@ import { RedisService } from '../../../../helpers/redis/application/redis.servic
 import {
   IReliabilityRepository,
   RELIABILITY_REPOSITORY_TOKEN,
-} from '../../domain/ports/reliability.repository.interface';
+} from '../../domain/ports/reliability.repository.port';
 
 @QueryHandler(GetAverageReliabilityQuery)
 export class GetAverageReliabilityHandler implements IQueryHandler<GetAverageReliabilityQuery> {

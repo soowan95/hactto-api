@@ -4,37 +4,37 @@ import { Inject } from '@nestjs/common';
 import {
   PREDICTION_REPOSITORY_TOKEN,
   IPredictionRepository,
-} from '../../domain/ports/prediction.repository.interface';
+} from '../../domain/ports/prediction.repository.port';
 import {
-  WINNING_NUMBER_REPOSITORY_TOKEN,
-  IWinningNumberRepository,
-} from '../../../winning-number/domain/ports/winning-number.repository.interface';
+  WINNING_NUMBER_READER_TOKEN,
+  WinningNumberReader,
+} from '../../domain/ports/winning-number-reader.port';
 import { DomainPrediction } from '../../domain/aggregates/prediction.entity';
-import { DomainWinningNumber } from '../../../winning-number/domain/entities/winning-number.entity';
+import { AnalysisWinningNumber } from '../../domain/aggregates/winning-number.entity';
 import { AlgorithmExecutor } from '../../domain/services/algorithm-executor';
 import { PredictionGeneratedEvent } from '../../domain/events/prediction-generated.event';
 import {
   ALGORITHM_REPOSITORY_TOKEN,
   IAlgorithmRepository,
-} from '../../domain/ports/algorithm.repository.interface';
+} from '../../domain/ports/algorithm.repository.port';
 
 @CommandHandler(GeneratePredictionCommand)
 export class GeneratePredictionHandler implements ICommandHandler<GeneratePredictionCommand> {
   constructor(
     @Inject(PREDICTION_REPOSITORY_TOKEN)
     private readonly repository: IPredictionRepository,
-    @Inject(WINNING_NUMBER_REPOSITORY_TOKEN)
-    private readonly winningNumberRepository: IWinningNumberRepository,
+    @Inject(WINNING_NUMBER_READER_TOKEN)
+    private readonly winningNumberReader: WinningNumberReader,
     @Inject(ALGORITHM_REPOSITORY_TOKEN)
     private readonly algorithmTypeRepository: IAlgorithmRepository,
     private readonly publisher: EventPublisher,
   ) {}
 
   async execute(command: GeneratePredictionCommand): Promise<DomainPrediction> {
-    const winningNumbers: DomainWinningNumber[] =
-      await this.winningNumberRepository.findAll();
-    const latestWinningNumber: DomainWinningNumber | null =
-      await this.winningNumberRepository.findLatestWithWinningNumber();
+    const winningNumbers: AnalysisWinningNumber[] =
+      await this.winningNumberReader.findAll();
+    const latestWinningNumber: AnalysisWinningNumber | null =
+      await this.winningNumberReader.findLatestWithWinningNumber();
     if (!latestWinningNumber) throw new Error('Not exists any winning number');
     const latestEpisode: number = latestWinningNumber.episode;
     const algorithmType = await this.algorithmTypeRepository.findByType(
@@ -44,7 +44,7 @@ export class GeneratePredictionHandler implements ICommandHandler<GeneratePredic
     const executed = await AlgorithmExecutor.execute(
       algorithmType,
       latestEpisode + 1,
-      winningNumbers.map((winningNumber) => winningNumber.getNumberArray()),
+      winningNumbers.map((winningNumber) => winningNumber.numbers),
       command.visitorId,
       command.weights,
     );

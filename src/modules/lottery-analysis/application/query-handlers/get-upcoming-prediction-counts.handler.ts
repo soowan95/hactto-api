@@ -3,24 +3,24 @@ import { GetUpcomingPredictionCountsQuery } from '../queries/get-upcoming-predic
 import {
   IPredictionRepository,
   PREDICTION_REPOSITORY_TOKEN,
-} from '../../domain/ports/prediction.repository.interface';
+} from '../../domain/ports/prediction.repository.port';
 import { Inject } from '@nestjs/common';
 import {
-  IWinningNumberRepository,
-  WINNING_NUMBER_REPOSITORY_TOKEN,
-} from '../../../winning-number/domain/ports/winning-number.repository.interface';
+  WINNING_NUMBER_READER_TOKEN,
+  WinningNumberReader,
+} from '../../domain/ports/winning-number-reader.port';
 import {
   ALGORITHM_REPOSITORY_TOKEN,
   IAlgorithmRepository,
-} from '../../domain/ports/algorithm.repository.interface';
+} from '../../domain/ports/algorithm.repository.port';
 
 @QueryHandler(GetUpcomingPredictionCountsQuery)
 export class GetUpcomingPredictionCountsHandler implements IQueryHandler<GetUpcomingPredictionCountsQuery> {
   constructor(
     @Inject(PREDICTION_REPOSITORY_TOKEN)
     private readonly predictionRepository: IPredictionRepository,
-    @Inject(WINNING_NUMBER_REPOSITORY_TOKEN)
-    private readonly winningNumberRepository: IWinningNumberRepository,
+    @Inject(WINNING_NUMBER_READER_TOKEN)
+    private readonly winningNumberReader: WinningNumberReader,
     @Inject(ALGORITHM_REPOSITORY_TOKEN)
     private readonly algorithmRepository: IAlgorithmRepository,
   ) {}
@@ -28,7 +28,7 @@ export class GetUpcomingPredictionCountsHandler implements IQueryHandler<GetUpco
   async execute(): Promise<{ algorithm: string; count: number }[]> {
     // 1. Find the latest drawn episode
     const latestDrawn =
-      await this.winningNumberRepository.findLatestWithWinningNumber();
+      await this.winningNumberReader.findLatestWithWinningNumber();
 
     const upcomingEpisode = latestDrawn ? latestDrawn.episode + 1 : 1;
 

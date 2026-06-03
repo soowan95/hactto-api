@@ -1,4 +1,4 @@
-import { IReliabilityRepository } from '../../domain/ports/reliability.repository.interface';
+import { IReliabilityRepository } from '../../domain/ports/reliability.repository.port';
 import { Injectable } from '@nestjs/common';
 import { prisma } from '../../../../lib/prisma';
 

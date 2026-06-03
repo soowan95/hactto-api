@@ -4,19 +4,19 @@ import { Inject } from '@nestjs/common';
 import {
   PREDICTION_REPOSITORY_TOKEN,
   IPredictionRepository,
-} from '../../domain/ports/prediction.repository.interface';
+} from '../../domain/ports/prediction.repository.port';
 import {
-  IWinningNumberRepository,
-  WINNING_NUMBER_REPOSITORY_TOKEN,
-} from '../../../winning-number/domain/ports/winning-number.repository.interface';
+  WINNING_NUMBER_READER_TOKEN,
+  WinningNumberReader,
+} from '../../domain/ports/winning-number-reader.port';
 
 @QueryHandler(GetLatestBestPredictionQuery)
 export class GetLatestBestPredictionHandler implements IQueryHandler<GetLatestBestPredictionQuery> {
   constructor(
     @Inject(PREDICTION_REPOSITORY_TOKEN)
     private readonly algorithmRepository: IPredictionRepository,
-    @Inject(WINNING_NUMBER_REPOSITORY_TOKEN)
-    private readonly winningNumberRepository: IWinningNumberRepository,
+    @Inject(WINNING_NUMBER_READER_TOKEN)
+    private readonly winningNumberReader: WinningNumberReader,
   ) {}
   async execute(): Promise<any | null> {
     // 1. Find the latest episode where prediction reliability is calculated
@@ -44,7 +44,7 @@ export class GetLatestBestPredictionHandler implements IQueryHandler<GetLatestBe
     }
 
     const winningNumber =
-      await this.winningNumberRepository.findByEpisode(latestEpisode);
+      await this.winningNumberReader.findByEpisode(latestEpisode);
 
     return {
       prediction: {
@@ -57,7 +57,7 @@ export class GetLatestBestPredictionHandler implements IQueryHandler<GetLatestBe
       },
       winningNumber: {
         episode: latestEpisode,
-        numbers: winningNumber.getNumberArray(),
+        numbers: winningNumber ? winningNumber.numbers : [],
       },
     };
   }

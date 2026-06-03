@@ -3,16 +3,16 @@ import { GetEpisodeBestPredictionQuery } from '../queries/get-episode-best-predi
 import {
   PREDICTION_REPOSITORY_TOKEN,
   IPredictionRepository,
-} from '../../domain/ports/prediction.repository.interface';
+} from '../../domain/ports/prediction.repository.port';
 import { Inject } from '@nestjs/common';
 import {
-  IWinningNumberRepository,
-  WINNING_NUMBER_REPOSITORY_TOKEN,
-} from '../../../winning-number/domain/ports/winning-number.repository.interface';
+  WINNING_NUMBER_READER_TOKEN,
+  WinningNumberReader,
+} from '../../domain/ports/winning-number-reader.port';
 import {
   ALGORITHM_REPOSITORY_TOKEN,
   IAlgorithmRepository,
-} from '../../domain/ports/algorithm.repository.interface';
+} from '../../domain/ports/algorithm.repository.port';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 import { DomainAlgorithm } from '../../domain/aggregates/algorithm.entity';
 
@@ -21,8 +21,8 @@ export class GetEpisodeBestPredictionHandler implements IQueryHandler<GetEpisode
   constructor(
     @Inject(PREDICTION_REPOSITORY_TOKEN)
     private readonly predictionRepository: IPredictionRepository,
-    @Inject(WINNING_NUMBER_REPOSITORY_TOKEN)
-    private readonly winningNumberRepository: IWinningNumberRepository,
+    @Inject(WINNING_NUMBER_READER_TOKEN)
+    private readonly winningNumberReader: WinningNumberReader,
     @Inject(ALGORITHM_REPOSITORY_TOKEN)
     private readonly algorithmRepository: IAlgorithmRepository,
     private readonly redisService: RedisService,
@@ -51,7 +51,7 @@ export class GetEpisodeBestPredictionHandler implements IQueryHandler<GetEpisode
     }
 
     // 2. Fetch the winning number for the same episode
-    const winningNumber = await this.winningNumberRepository.findByEpisode(
+    const winningNumber = await this.winningNumberReader.findByEpisode(
       query.episode,
     );
 
@@ -67,7 +67,7 @@ export class GetEpisodeBestPredictionHandler implements IQueryHandler<GetEpisode
       winningNumber: winningNumber
         ? {
             episode: winningNumber.episode,
-            numbers: winningNumber.getNumberArray(),
+            numbers: winningNumber.numbers,
           }
         : null,
     };

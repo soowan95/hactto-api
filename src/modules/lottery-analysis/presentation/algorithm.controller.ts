@@ -4,7 +4,7 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { AlgorithmResponsesDto } from './dtos/responses/algorithm-responses.dto';
 import { plainToInstance } from 'class-transformer';
 import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
-import { GenerateWinningNumberResponseDto } from './dtos/responses/generate-winning-number-response.dto';
+import { GeneratePredictionResponseDto } from './dtos/responses/generate-prediction-response.dto';
 import { AlgorithmHistoryResponseDto } from './dtos/responses/algorithm-history-response.dto';
 import { GeneratePredictionCommand } from '../application/commands/generate-prediction.command';
 import { GetPredictionHistoryQuery } from '../application/queries/get-prediction-history.query';
@@ -103,10 +103,10 @@ export class AlgorithmController {
     @Param('type') type: string,
     @Body() dto: GeneratePredictionRequestDto,
     @Query('visitorId') visitorId?: string,
-  ): Promise<GenerateWinningNumberResponseDto> {
+  ): Promise<GeneratePredictionResponseDto> {
     const command = new GeneratePredictionCommand(type, visitorId, dto.weights);
     const generated = await this.commandBus.execute(command);
-    return plainToInstance(GenerateWinningNumberResponseDto, {
+    return plainToInstance(GeneratePredictionResponseDto, {
       numbers: generated.getNumberArray(),
     });
   }

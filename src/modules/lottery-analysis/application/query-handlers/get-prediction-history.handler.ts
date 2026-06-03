@@ -4,12 +4,12 @@ import { Inject } from '@nestjs/common';
 import {
   PREDICTION_REPOSITORY_TOKEN,
   IPredictionRepository,
-} from '../../domain/ports/prediction.repository.interface';
+} from '../../domain/ports/prediction.repository.port';
 import {
-  WINNING_NUMBER_REPOSITORY_TOKEN,
-  IWinningNumberRepository,
-} from '../../../winning-number/domain/ports/winning-number.repository.interface';
-import { DomainWinningNumber } from '../../../winning-number/domain/entities/winning-number.entity';
+  WINNING_NUMBER_READER_TOKEN,
+  WinningNumberReader,
+} from '../../domain/ports/winning-number-reader.port';
+import { AnalysisWinningNumber } from '../../domain/aggregates/winning-number.entity';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 
 @QueryHandler(GetPredictionHistoryQuery)
@@ -17,8 +17,8 @@ export class GetPredictionHistoryHandler implements IQueryHandler<GetPredictionH
   constructor(
     @Inject(PREDICTION_REPOSITORY_TOKEN)
     private readonly repository: IPredictionRepository,
-    @Inject(WINNING_NUMBER_REPOSITORY_TOKEN)
-    private readonly winningNumberRepository: IWinningNumberRepository,
+    @Inject(WINNING_NUMBER_READER_TOKEN)
+    private readonly winningNumberReader: WinningNumberReader,
     private readonly redisService: RedisService,
   ) {}
 
@@ -38,13 +38,11 @@ export class GetPredictionHistoryHandler implements IQueryHandler<GetPredictionH
     if (results.length === 0) return [];
 
     const episodes = Array.from(new Set(results.map((r) => r.episode)));
-    const winningNumbers = await this.winningNumberRepository.findAll({
-      where: {
-        episode: { in: episodes },
-      },
+    const winningNumbers = await this.winningNumberReader.findAll({
+      episodeIn: episodes,
     });
 
-    const winningNumbersMap = new Map<number, DomainWinningNumber>();
+    const winningNumbersMap = new Map<number, AnalysisWinningNumber>();
     for (const wn of winningNumbers) {
       winningNumbersMap.set(wn.episode, wn);
     }
@@ -55,7 +53,7 @@ export class GetPredictionHistoryHandler implements IQueryHandler<GetPredictionH
 
       let matchResult: any = null;
       if (winningNumber && winningNumber.isDrawn) {
-        const winningNumbersArr = winningNumber.getNumberArray();
+        const winningNumbersArr = winningNumber.numbers;
 
         const predictedMain = predictedNumbers.slice(0, 6);
         const winningMain = winningNumbersArr.slice(0, 6);

@@ -4,11 +4,11 @@ import { Inject } from '@nestjs/common';
 import {
   IWinningNumberRepository,
   WINNING_NUMBER_REPOSITORY_TOKEN,
-} from '../../domain/ports/winning-number.repository.interface';
+} from '../../domain/ports/winning-number.repository.port';
 import {
   IWinningNumberFetcher,
   WINNING_NUMBER_FETCHER_TOKEN,
-} from '../../domain/ports/winning-number-fetcher.interface';
+} from '../../domain/ports/winning-number-fetcher.port';
 import { WinningNumberDrawer } from '../../domain/services/winning-number-drawer';
 
 @CommandHandler(FetchRecentWinningNumberCommand)

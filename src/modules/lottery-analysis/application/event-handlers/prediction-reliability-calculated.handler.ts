@@ -5,7 +5,7 @@ import { Inject } from '@nestjs/common';
 import {
   ALGORITHM_REPOSITORY_TOKEN,
   IAlgorithmRepository,
-} from '../../domain/ports/algorithm.repository.interface';
+} from '../../domain/ports/algorithm.repository.port';
 
 @EventsHandler(PredictionReliabilityCalculatedEvent)
 export class PredictionReliabilityCalculatedHandler implements IEventHandler<PredictionReliabilityCalculatedEvent> {

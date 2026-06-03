@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { CommandBus } from '@nestjs/cqrs';
 import { HacttoCronExpression } from './hactto-cron-expression.enum';
-import { FetchRecentWinningNumberCommand } from '../../modules/winning-number/application/commands/fetch-recent-winning-number.command';
+import { FetchRecentWinningNumberCommand } from '../../modules/number/application/commands/fetch-recent-winning-number.command';
 import { AnalyzeReliabilityCommand } from '../../modules/lottery-analysis/application/commands/analyze-reliability.command';
 import { SystemStatusService } from '../services/system-status.service';
 
