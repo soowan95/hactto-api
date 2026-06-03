@@ -1,5 +1,5 @@
 import { WinningNumber } from '../../../../generated/prisma/client';
-import { DomainWinningNumber } from '../../domain/entities/winning-number.entity';
+import { DomainWinningNumber } from '../../domain/aggregates/winning-number.entity';
 
 export class InfraWinningNumberMapper {
   static toEntity(raw: WinningNumber): DomainWinningNumber {

@@ -10,7 +10,7 @@ import {
   IWinningNumberFetcher,
   WINNING_NUMBER_FETCHER_TOKEN,
 } from '../../domain/ports/winning-number-fetcher.port';
-import { DomainWinningNumber } from '../../domain/entities/winning-number.entity';
+import { DomainWinningNumber } from '../../domain/aggregates/winning-number.entity';
 import { WinningNumberDrawer } from '../../domain/services/winning-number-drawer';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 

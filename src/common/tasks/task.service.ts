@@ -3,7 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { CommandBus } from '@nestjs/cqrs';
 import { HacttoCronExpression } from './hactto-cron-expression.enum';
 import { FetchRecentWinningNumberCommand } from '../../modules/number/application/commands/fetch-recent-winning-number.command';
-import { AnalyzeReliabilityCommand } from '../../modules/lottery-analysis/application/commands/analyze-reliability.command';
+import { AnalyzeCommand } from '../../modules/lottery-analysis/application/commands/analyze.command';
 import { SystemStatusService } from '../services/system-status.service';
 
 @Injectable()
@@ -53,7 +53,7 @@ export class TaskService {
           this.logger.debug(
             `🎉 Successfully drew episode ${result.episode}. Triggering reliability analysis...`,
           );
-          await this.commandBus.execute(new AnalyzeReliabilityCommand());
+          await this.commandBus.execute(new AnalyzeCommand());
           this.logger.debug(
             `Reliability analysis completed for episode ${result.episode}.`,
           );

@@ -6,7 +6,7 @@ import {
 } from '../../domain/ports/winning-number.repository.port';
 import { Inject } from '@nestjs/common';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
-import { LotteryBallStatus } from '../../domain/entities/lottery-ball-status.entity';
+import { LotteryBallStatus } from '../../domain/aggregates/lottery-ball-status.entity';
 import { getBallTemperature } from '../../domain/vos/BallTemperature';
 
 @QueryHandler(GetLotteryBallStatusQuery)

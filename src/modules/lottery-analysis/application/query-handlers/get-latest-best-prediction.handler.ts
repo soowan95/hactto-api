@@ -37,7 +37,7 @@ export class GetLatestBestPredictionHandler implements IQueryHandler<GetLatestBe
 
     if (
       !bestPrediction ||
-      !bestPrediction.reliability ||
+      !bestPrediction.analysis ||
       !bestPrediction.isNonZero()
     ) {
       return null;
@@ -53,7 +53,7 @@ export class GetLatestBestPredictionHandler implements IQueryHandler<GetLatestBe
         episode: bestPrediction.episode,
         weights: bestPrediction.getWeights(),
         numbers: bestPrediction.getNumberArray(),
-        reliabilityScore: bestPrediction.reliability.getScore(),
+        reliabilityScore: bestPrediction.analysis.getScore(),
       },
       winningNumber: {
         episode: latestEpisode,

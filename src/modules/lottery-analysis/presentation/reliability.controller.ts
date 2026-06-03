@@ -21,7 +21,7 @@ import { LatestBestPredictionResponseDto } from './dtos/responses/latest-best-pr
 import { UpcomingPredictionCountsResponseDto } from './dtos/responses/upcoming-prediction-counts-response.dto';
 import { AlgorithmReliabilityHistoryResponseDto } from './dtos/responses/algorithm-reliability-history-response.dto';
 import { plainToInstance } from 'class-transformer';
-import { AnalyzeReliabilityCommand } from '../application/commands/analyze-reliability.command';
+import { AnalyzeCommand } from '../application/commands/analyze.command';
 import { GetAverageReliabilityQuery } from '../application/queries/get-average-reliability.query';
 import { GetAverageReliabilitiesQuery } from '../application/queries/get-average-reliabilities.query';
 import { GetLatestBestPredictionQuery } from '../application/queries/get-latest-best-prediction.query';
@@ -46,7 +46,7 @@ export class ReliabilityController {
   @ResponseMessage('success.analyze')
   @Post('analyze')
   async analyze(): Promise<void> {
-    const command = new AnalyzeReliabilityCommand();
+    const command = new AnalyzeCommand();
     return await this.commandBus.execute(command);
   }
 
