@@ -1,7 +1,7 @@
 import { AggregateRoot } from '@nestjs/cqrs';
-import { LottoNumberSet } from '../../../winning-number/domain/vos/lotto-number-set.vo';
+import { LottoNumberSet } from '../../../number/domain/vos/lotto-number-set.vo';
 import { DomainReliability } from './reliability.entity';
-import { DomainWinningNumber } from '../../../winning-number/domain/entities/winning-number.entity';
+import { AnalysisWinningNumber } from './winning-number.entity';
 import { Weights } from './vos/weights.vo';
 import { PredictionReliabilityCalculatedEvent } from '../events/prediction-reliability-calculated.event';
 import { DomainAlgorithm } from './algorithm.entity';
@@ -51,7 +51,7 @@ export class DomainPrediction extends AggregateRoot {
   }
 
   calculateReliability(
-    winningNumber: DomainWinningNumber,
+    winningNumber: AnalysisWinningNumber,
     customWeights?: number[],
   ): void {
     if (!this.isNonZero()) {
@@ -70,7 +70,7 @@ export class DomainPrediction extends AggregateRoot {
     const WEIGHTS = customWeights || Array(6).fill(100 / 6);
     let score = 0;
 
-    const winningNumbers = winningNumber.getNumberArray();
+    const winningNumbers = winningNumber.numbers;
     const predictedNumbers = this.getNumberArray();
 
     for (let i = 0; i < 6; i++) {

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { WinningNumberModule } from './winning-number/winning-number.module';
+import { WinningNumberModule } from './number/winning-number.module';
 import { LotteryAnalysisModule } from './lottery-analysis/lottery-analysis.module';
 
 @Module({

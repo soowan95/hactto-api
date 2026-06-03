@@ -1,15 +1,15 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { GetWinningNumberByEpisodeQuery } from '../queries/get-winning-number-by-episode.query';
+import { GetLatestWinningNumberQuery } from '../queries/get-latest-winning-number.query';
 import { Inject } from '@nestjs/common';
 import {
   IWinningNumberRepository,
   WINNING_NUMBER_REPOSITORY_TOKEN,
-} from '../../domain/ports/winning-number.repository.interface';
+} from '../../domain/ports/winning-number.repository.port';
 import { DomainWinningNumber } from '../../domain/entities/winning-number.entity';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 
-@QueryHandler(GetWinningNumberByEpisodeQuery)
-export class GetWinningNumberByEpisodeHandler implements IQueryHandler<GetWinningNumberByEpisodeQuery> {
+@QueryHandler(GetLatestWinningNumberQuery)
+export class GetLatestWinningNumberHandler implements IQueryHandler<GetLatestWinningNumberQuery> {
   constructor(
     @Inject(WINNING_NUMBER_REPOSITORY_TOKEN)
     private readonly repository: IWinningNumberRepository,
@@ -17,9 +17,10 @@ export class GetWinningNumberByEpisodeHandler implements IQueryHandler<GetWinnin
   ) {}
 
   async execute(
-    query: GetWinningNumberByEpisodeQuery,
-  ): Promise<DomainWinningNumber> {
-    const cacheKey = `winning-number:episode:${query.episode}`;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    query: GetLatestWinningNumberQuery,
+  ): Promise<DomainWinningNumber | null> {
+    const cacheKey = 'winning-number:latest';
 
     const cachedData = await this.redisService.get(cacheKey);
     if (cachedData) {
@@ -31,7 +32,7 @@ export class GetWinningNumberByEpisodeHandler implements IQueryHandler<GetWinnin
       );
     }
 
-    const result = await this.repository.findByEpisode(query.episode);
+    const result = await this.repository.findLatestWithWinningNumber();
     if (result) {
       await this.redisService.set(
         cacheKey,
@@ -40,7 +41,7 @@ export class GetWinningNumberByEpisodeHandler implements IQueryHandler<GetWinnin
           numbers: result.getNumberArray(),
           isDrawn: result.isDrawn,
         }),
-        604800, // 7 days
+        43200, // 12 hours
       );
     }
 

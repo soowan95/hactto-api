@@ -4,7 +4,7 @@ import { Inject } from '@nestjs/common';
 import {
   IWinningNumberRepository,
   WINNING_NUMBER_REPOSITORY_TOKEN,
-} from '../../domain/ports/winning-number.repository.interface';
+} from '../../domain/ports/winning-number.repository.port';
 import { DomainWinningNumber } from '../../domain/entities/winning-number.entity';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 

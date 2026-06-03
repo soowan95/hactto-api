@@ -4,20 +4,20 @@ import { Inject, Logger } from '@nestjs/common';
 import {
   IPredictionRepository,
   PREDICTION_REPOSITORY_TOKEN,
-} from '../../domain/ports/prediction.repository.interface';
+} from '../../domain/ports/prediction.repository.port';
 import {
-  IWinningNumberRepository,
-  WINNING_NUMBER_REPOSITORY_TOKEN,
-} from '../../../winning-number/domain/ports/winning-number.repository.interface';
+  WINNING_NUMBER_READER_TOKEN,
+  WinningNumberReader,
+} from '../../domain/ports/winning-number-reader.port';
 import { DomainPrediction } from '../../domain/aggregates/prediction.entity';
-import { DomainWinningNumber } from '../../../winning-number/domain/entities/winning-number.entity';
+import { AnalysisWinningNumber } from '../../domain/aggregates/winning-number.entity';
 import { AlgorithmExecutor } from '../../domain/services/algorithm-executor';
 
 import { SystemStatusService } from '../../../../common/services/system-status.service';
 import {
   ALGORITHM_REPOSITORY_TOKEN,
   IAlgorithmRepository,
-} from '../../domain/ports/algorithm.repository.interface';
+} from '../../domain/ports/algorithm.repository.port';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 import { DomainAlgorithm } from '../../domain/aggregates/algorithm.entity';
 
@@ -28,8 +28,8 @@ export class AnalyzeReliabilityHandler implements ICommandHandler<AnalyzeReliabi
   constructor(
     @Inject(PREDICTION_REPOSITORY_TOKEN)
     private readonly predictionRepository: IPredictionRepository,
-    @Inject(WINNING_NUMBER_REPOSITORY_TOKEN)
-    private readonly winningNumberRepository: IWinningNumberRepository,
+    @Inject(WINNING_NUMBER_READER_TOKEN)
+    private readonly winningNumberReader: WinningNumberReader,
     @Inject(ALGORITHM_REPOSITORY_TOKEN)
     private readonly algorithmRepository: IAlgorithmRepository,
     private readonly publisher: EventPublisher,
@@ -49,8 +49,8 @@ export class AnalyzeReliabilityHandler implements ICommandHandler<AnalyzeReliabi
       const resultsToSave: DomainPrediction[] = [];
 
       for (const result of targetPredictions) {
-        const winningNumber: DomainWinningNumber =
-          await this.winningNumberRepository.findByEpisode(result.episode);
+        const winningNumber: AnalysisWinningNumber | null =
+          await this.winningNumberReader.findByEpisode(result.episode);
         if (!winningNumber || !winningNumber.isDrawn) continue;
 
         const prediction = this.publisher.mergeObjectContext(result);
@@ -84,12 +84,12 @@ export class AnalyzeReliabilityHandler implements ICommandHandler<AnalyzeReliabi
       await this.redisService.set(cacheKey, JSON.stringify(algorithms));
     } else algorithms = JSON.parse(cachedData);
 
-    const winningNumbers: DomainWinningNumber[] =
-      await this.winningNumberRepository.findAll({
-        orderBy: { episode: 'asc' },
+    const winningNumbers: AnalysisWinningNumber[] =
+      await this.winningNumberReader.findAll({
+        orderByEpisode: 'asc',
       });
-    const data: number[][] = winningNumbers.map((winningNumber) =>
-      winningNumber.getNumberArray(),
+    const data: number[][] = winningNumbers.map(
+      (winningNumber) => winningNumber.numbers,
     );
 
     const existingPredictions =

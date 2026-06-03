@@ -3,8 +3,8 @@ import { FetchWinningNumbersHandler } from './command-handlers/fetch-winning-num
 import { FetchRecentWinningNumberHandler } from './command-handlers/fetch-recent-winning-number.handler';
 import { GetAllWinningNumbersHandler } from './query-handlers/get-all-winning-numbers.handler';
 import { GetLatestWinningNumberHandler } from './query-handlers/get-latest-winning-number.handler';
-import { WINNING_NUMBER_REPOSITORY_TOKEN } from '../domain/ports/winning-number.repository.interface';
-import { WINNING_NUMBER_FETCHER_TOKEN } from '../domain/ports/winning-number-fetcher.interface';
+import { WINNING_NUMBER_REPOSITORY_TOKEN } from '../domain/ports/winning-number.repository.port';
+import { WINNING_NUMBER_FETCHER_TOKEN } from '../domain/ports/winning-number-fetcher.port';
 import { FetchWinningNumbersCommand } from './commands/fetch-winning-numbers.command';
 import { FetchRecentWinningNumberCommand } from './commands/fetch-recent-winning-number.command';
 import { GetAllWinningNumbersQuery } from './queries/get-all-winning-numbers.query';

@@ -3,12 +3,12 @@ import { GetAlgorithmReliabilityHistoryQuery } from '../queries/get-algorithm-re
 import {
   IPredictionRepository,
   PREDICTION_REPOSITORY_TOKEN,
-} from '../../domain/ports/prediction.repository.interface';
+} from '../../domain/ports/prediction.repository.port';
 import { Inject } from '@nestjs/common';
 import {
   ALGORITHM_REPOSITORY_TOKEN,
   IAlgorithmRepository,
-} from '../../domain/ports/algorithm.repository.interface';
+} from '../../domain/ports/algorithm.repository.port';
 import { DomainAlgorithm } from '../../domain/aggregates/algorithm.entity';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 

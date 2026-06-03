@@ -2,9 +2,9 @@ import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { WinningNumberController } from './presentation/winning-number.controller';
 import { HttpModule } from '@nestjs/axios';
-import { WINNING_NUMBER_REPOSITORY_TOKEN } from './domain/ports/winning-number.repository.interface';
+import { WINNING_NUMBER_REPOSITORY_TOKEN } from './domain/ports/winning-number.repository.port';
 import { InfraWinningNumberRepository } from './infrastructure/adapters/infra-winning-number.repository';
-import { WINNING_NUMBER_FETCHER_TOKEN } from './domain/ports/winning-number-fetcher.interface';
+import { WINNING_NUMBER_FETCHER_TOKEN } from './domain/ports/winning-number-fetcher.port';
 import { DhlotteryWinningNumberFetcher } from './infrastructure/adapters/dhlottery-winning-number.fetcher';
 import { CommandHandlers, QueryHandlers, EventHandlers } from './application';
 

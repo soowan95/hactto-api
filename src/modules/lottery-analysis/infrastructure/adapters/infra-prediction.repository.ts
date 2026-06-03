@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { prisma } from '../../../../lib/prisma';
 import { DomainPrediction } from '../../domain/aggregates/prediction.entity';
 import { InfraPredictionMapper } from '../mappers/infra-prediction.mapper';
-import { IPredictionRepository } from '../../domain/ports/prediction.repository.interface';
+import { IPredictionRepository } from '../../domain/ports/prediction.repository.port';
 import { DomainAlgorithm } from '../../domain/aggregates/algorithm.entity';
 import { InfraAlgorithmMapper } from '../mappers/infra-algorithm.mapper';
 
