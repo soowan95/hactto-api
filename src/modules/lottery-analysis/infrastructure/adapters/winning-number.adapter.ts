@@ -52,4 +52,17 @@ export class WinningNumberAdapter implements WinningNumberReader {
     if (!winningNumber) return null;
     return this.mapper.toAnalysisModel(winningNumber);
   }
+
+  async findWithoutAnalysis(): Promise<AnalysisWinningNumber[]> {
+    const results = await this.winningNumberRepository.findAll({
+      where: {
+        isDrawn: true,
+        winningNumberAnalysis: null,
+      } as any,
+      orderBy: {
+        episode: 'asc',
+      },
+    });
+    return results.map((wn) => this.mapper.toAnalysisModel(wn));
+  }
 }

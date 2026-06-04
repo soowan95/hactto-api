@@ -67,12 +67,12 @@ export class InfraPredictionRepository implements IPredictionRepository {
       }
     }
 
-    const batchSize = 100;
+    const batchSize = 50;
 
     if (predictionsToCreate.length > 0) {
       for (let i = 0; i < predictionsToCreate.length; i += batchSize) {
         const batch = predictionsToCreate.slice(i, i + batchSize);
-        await prisma.$transaction(
+        await Promise.all(
           batch.map((entity) => {
             const raw = InfraPredictionMapper.toPersistence(entity);
             return prisma.prediction.create({
@@ -105,7 +105,6 @@ export class InfraPredictionRepository implements IPredictionRepository {
               },
             });
           }),
-          { timeout: 30000 },
         );
       }
     }
@@ -113,7 +112,7 @@ export class InfraPredictionRepository implements IPredictionRepository {
     if (predictionsToUpdate.length > 0) {
       for (let i = 0; i < predictionsToUpdate.length; i += batchSize) {
         const batch = predictionsToUpdate.slice(i, i + batchSize);
-        await prisma.$transaction(
+        await Promise.all(
           batch
             .map((entity) => {
               if (entity.analysis && entity.analysis.id) {
@@ -134,8 +133,7 @@ export class InfraPredictionRepository implements IPredictionRepository {
                 });
               }
             })
-            .filter(Boolean) as any[],
-          { timeout: 30000 },
+            .filter(Boolean) as Promise<any>[],
         );
       }
     }

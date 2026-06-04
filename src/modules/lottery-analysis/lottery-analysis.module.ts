@@ -18,6 +18,8 @@ import { BALL_STATUS_READER_TOKEN } from './domain/ports/ball-status-reader.port
 import { BallStatusAdapter } from './infrastructure/adapters/ball-status.adapter';
 import { PREDICTION_ANALYSIS_REPOSITORY_TOKEN } from './domain/ports/prediction-analysis.port';
 import { InfraPredictionAnalysisRepository } from './infrastructure/adapters/infra-prediction-analysis.repository';
+import { WINNING_NUMBER_ANALYSIS_REPOSITORY_TOKEN } from './domain/ports/winning-number-analysis.port';
+import { InfraWinningNumberAnalysisRepository } from './infrastructure/adapters/infra-winning-number-analysis.repository';
 
 @Module({
   imports: [CqrsModule, WinningNumberModule],
@@ -51,6 +53,10 @@ import { InfraPredictionAnalysisRepository } from './infrastructure/adapters/inf
       provide: PREDICTION_ANALYSIS_REPOSITORY_TOKEN,
       useClass: InfraPredictionAnalysisRepository,
     },
+    {
+      provide: WINNING_NUMBER_ANALYSIS_REPOSITORY_TOKEN,
+      useClass: InfraWinningNumberAnalysisRepository,
+    },
     WinningNumberMapper,
     ...CommandHandlers,
     ...QueryHandlers,
@@ -63,6 +69,7 @@ import { InfraPredictionAnalysisRepository } from './infrastructure/adapters/inf
     WINNING_NUMBER_READER_TOKEN,
     BALL_STATUS_READER_TOKEN,
     PREDICTION_ANALYSIS_REPOSITORY_TOKEN,
+    WINNING_NUMBER_ANALYSIS_REPOSITORY_TOKEN,
     CqrsModule,
   ],
 })

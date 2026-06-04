@@ -24,6 +24,16 @@ import {
   BALL_STATUS_READER_TOKEN,
   BallStatusReader,
 } from '../../domain/ports/ball-status-reader.port';
+import {
+  ANALYSIS_REPOSITORY_TOKEN,
+  IAnalysisRepository,
+} from '../../domain/ports/analysis.port';
+import {
+  WINNING_NUMBER_ANALYSIS_REPOSITORY_TOKEN,
+  IWinningNumberAnalysisRepository,
+} from '../../domain/ports/winning-number-analysis.port';
+import { DomainWinningNumberAnalysis } from '../../domain/aggregates/winning-number-analysis.entity';
+import { DomainAnalysis } from '../../domain/aggregates/analysis.entity';
 
 @CommandHandler(AnalyzeCommand)
 export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
@@ -38,6 +48,10 @@ export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
     private readonly algorithmRepository: IAlgorithmRepository,
     @Inject(BALL_STATUS_READER_TOKEN)
     private readonly ballStatusReader: BallStatusReader,
+    @Inject(ANALYSIS_REPOSITORY_TOKEN)
+    private readonly analysisRepository: IAnalysisRepository,
+    @Inject(WINNING_NUMBER_ANALYSIS_REPOSITORY_TOKEN)
+    private readonly winningNumberAnalysisRepository: IWinningNumberAnalysisRepository,
     private readonly publisher: EventPublisher,
     private readonly systemStatusService: SystemStatusService,
     private readonly redisService: RedisService,
@@ -46,7 +60,10 @@ export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async execute(command: AnalyzeCommand): Promise<void> {
     try {
-      // Always initialize algorithms (new episodes will be processed dynamically)
+      // 1. Initialize winning number analyses first
+      await this.initializeWinningNumberAnalyses();
+
+      // 2. Always initialize algorithms (new episodes will be processed dynamically)
       await this.initializeAlgorithms();
 
       const targetPredictions: DomainPrediction[] =
@@ -77,6 +94,48 @@ export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
         '🔓 Analysis processing completed. Releasing system lock.',
       );
       await this.systemStatusService.setAnalysisStatus(false);
+    }
+  }
+
+  private async initializeWinningNumberAnalyses(): Promise<void> {
+    this.logger.debug(`Initializing winning number analyses.`);
+    const winningNumbersToAnalyze =
+      await this.winningNumberReader.findWithoutAnalysis();
+    if (winningNumbersToAnalyze.length === 0) {
+      this.logger.debug(`No new winning numbers to analyze.`);
+      return;
+    }
+
+    this.logger.debug(
+      `Found ${winningNumbersToAnalyze.length} winning numbers to analyze.`,
+    );
+
+    const batchSize = 10;
+    const accumulatedWinningNumberAnalyses: DomainWinningNumberAnalysis[] = [];
+
+    for (let i = 0; i < winningNumbersToAnalyze.length; i += batchSize) {
+      const batch = winningNumbersToAnalyze.slice(i, i + batchSize);
+      const batchResults = await Promise.all(
+        batch.map(async (wn) => {
+          const temperatures = await this.ballStatusReader.getBallTemperatures(
+            wn.numbers,
+            wn.episode,
+          );
+          const analysis = DomainAnalysis.create(wn.numbers, temperatures);
+          const savedAnalysis = await this.analysisRepository.insert(analysis);
+          return new DomainWinningNumberAnalysis(wn.episode, savedAnalysis.id!);
+        }),
+      );
+      accumulatedWinningNumberAnalyses.push(...batchResults);
+    }
+
+    if (accumulatedWinningNumberAnalyses.length > 0) {
+      this.logger.debug(
+        `Saving ${accumulatedWinningNumberAnalyses.length} winning number analyses...`,
+      );
+      await this.winningNumberAnalysisRepository.createMany(
+        accumulatedWinningNumberAnalyses,
+      );
     }
   }
 
