@@ -4,16 +4,35 @@
 model Analysis {
   id Int @id @default(autoincrement())
 
-  reliability Int    @default(0) // 신뢰도 점수
-  even        Int // 짝수 갯수
-  odd         Int // 홀수 갯수
-  hot         Int // 열번호 갯수
-  warm        Int // 온번호 갯수
-  cold        Int // 냉번호 갯수
-  low         Int // 저번호 갯수
-  high        Int // 고번호 갯수
-  ac          Int // AC 값
-  consecutive String // 연속 수
+  reliability   Int    @default(0) // 신뢰도 점수
+  sum           Int // 총합
+  cnt0s         Int    @map("cnt_0s") // 단번대 수
+  cnt10s        Int    @map("cnt_10s") // 10번대 수
+  cnt20s        Int    @map("cnt_20s") // 20번대 수
+  cnt30s        Int    @map("cnt_30s") // 30번대 수
+  cnt40s        Int    @map("cnt_40s") // 40번대 수
+  sumLastDigits Int    @map("sum_last_digits") //끝자리 합
+  lastDigit0    String @map("last_digit0") // 끝자리 0
+  lastDigit1    String @map("last_digit1") // 끝자리 1
+  lastDigit2    String @map("last_digit2") // 끝자리 2
+  lastDigit3    String @map("last_digit3") // 끝자리 3
+  lastDigit4    String @map("last_digit4") // 끝자리 4
+  lastDigit5    String @map("last_digit5") // 끝자리 5
+  lastDigit6    String @map("last_digit6") // 끝자리 6
+  lastDigit7    String @map("last_digit7") // 끝자리 7
+  lastDigit8    String @map("last_digit8") // 끝자리 8
+  lastDigit9    String @map("last_digit9") // 끝자리 9
+  even          Int // 짝수 갯수
+  odd           Int // 홀수 갯수
+  hot           Int // 열번호 갯수
+  warm          Int // 온번호 갯수
+  cold          Int // 냉번호 갯수
+  low           Int // 저번호 갯수
+  high          Int // 고번호 갯수
+  ac            Int // AC 값
+  consecutive   String // 연속 수
+
+  createdAt DateTime @default(now())
 
   predictionAnalysis    PredictionAnalysis?
   winningNumberAnalysis WinningNumberAnalysis?
