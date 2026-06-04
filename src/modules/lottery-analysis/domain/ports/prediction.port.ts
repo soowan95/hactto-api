@@ -11,8 +11,8 @@ export interface IPredictionRepository {
     algorithm: DomainAlgorithm,
   ): Promise<DomainPrediction[]>;
   findByUser(visitorId?: string): Promise<DomainPrediction[]>;
-  findWithoutAnalysis(): Promise<DomainPrediction[]>;
-  findRecentEpisodeByReliabilityIsNotNull(): Promise<{
+  findWithoutAnalysisReliability(): Promise<DomainPrediction[]>;
+  findRecentEpisodeByReliabilityIsNotZero(): Promise<{
     episode: number;
   } | null>;
   findBestByEpisodeAndAlgorithm(
@@ -23,6 +23,6 @@ export interface IPredictionRepository {
     episode: number,
   ): Promise<DomainPrediction | null>;
   count(): Promise<number>;
-  findAllSystemPredictions(): Promise<DomainPrediction[]>;
+  findAllSystemPredictionsByAnalysisIsNull(): Promise<DomainPrediction[]>;
   groupByAlgorithmTypeHavingEpisode(episode: number): Promise<any>;
 }

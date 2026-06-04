@@ -8,6 +8,7 @@ import {
 } from '@hactto/algorithm';
 import { DomainPrediction } from '../aggregates/prediction.entity';
 import { DomainAlgorithm } from '../aggregates/algorithm.entity';
+import { DomainAnalysis } from '../aggregates/analysis.entity';
 
 export class AlgorithmExecutor {
   static async execute(
@@ -41,6 +42,7 @@ export class AlgorithmExecutor {
       episode,
       weights,
       result,
+      DomainAnalysis.create(result),
       undefined,
       visitorId,
     );

@@ -13,7 +13,7 @@ model Prediction {
   winningNumber WinningNumber @relation(fields: [episode], references: [episode])
   algorithm     Algorithm     @relation(fields: [algorithmType], references: [type])
 
-  analysis Analysis?
+  predictionAnalysis PredictionAnalysis?
 
   @@map("prediction")
 }

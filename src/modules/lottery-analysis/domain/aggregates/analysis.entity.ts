@@ -1,8 +1,8 @@
 import { ReliabilityScore } from '../vos/reliability-score.vo';
 
 export class DomainAnalysis {
-  public readonly id: number;
-  public readonly reliability: ReliabilityScore;
+  public readonly id?: number;
+  public reliability: ReliabilityScore;
   public readonly even: number;
   public readonly odd: number;
   public readonly hot: number;
@@ -14,7 +14,6 @@ export class DomainAnalysis {
   public readonly consecutive: number[][];
 
   constructor(
-    id: number,
     reliability: number,
     even: number,
     odd: number,
@@ -25,8 +24,8 @@ export class DomainAnalysis {
     high: number,
     ac: number,
     consecutive: number[][],
+    id?: number,
   ) {
-    this.id = id;
     this.reliability = new ReliabilityScore(reliability);
     this.even = even;
     this.odd = odd;
@@ -37,11 +36,10 @@ export class DomainAnalysis {
     this.high = high;
     this.ac = ac;
     this.consecutive = consecutive;
+    this.id = id;
   }
 
   static create(
-    id: number,
-    reliability: number,
     prediction: number[],
     temperatures?: Record<number, 'HOT' | 'WARM' | 'COLD'>,
   ): DomainAnalysis {
@@ -64,8 +62,7 @@ export class DomainAnalysis {
     }
 
     return new DomainAnalysis(
-      id,
-      reliability,
+      0,
       even.length,
       odd.length,
       hot,
@@ -78,7 +75,27 @@ export class DomainAnalysis {
     );
   }
 
-  getScore() {
+  static dummy() {
+    return {
+      id: 0,
+      reliability: 0,
+      even: 0,
+      odd: 0,
+      hot: 0,
+      warm: 0,
+      cold: 0,
+      low: 0,
+      high: 0,
+      ac: 0,
+      consecutive: '{}',
+    };
+  }
+
+  setReliability(score: number) {
+    this.reliability = new ReliabilityScore(score);
+  }
+
+  getReliability() {
     return this.reliability.getScore();
   }
 
@@ -118,7 +135,7 @@ export class DomainAnalysis {
         }
       }
     }
-    // Handle case where consecutive numbers end at the last index
+
     if (consecutiveNumberSet.size > 1) {
       consecutiveNumbers.push([...consecutiveNumberSet]);
     }

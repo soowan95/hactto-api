@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { prisma } from '../../../../lib/prisma';
 import { InfraAlgorithmMapper } from '../mappers/infra-algorithm.mapper';
 import { DomainAlgorithm } from '../../domain/aggregates/algorithm.entity';
-import { IAlgorithmRepository } from '../../domain/ports/algorithm.repository.port';
+import { IAlgorithmRepository } from '../../domain/ports/algorithm.port';
 
 @Injectable()
 export class InfraAlgorithmRepository implements IAlgorithmRepository {

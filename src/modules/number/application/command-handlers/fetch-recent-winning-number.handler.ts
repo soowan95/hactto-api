@@ -4,7 +4,7 @@ import { Inject } from '@nestjs/common';
 import {
   IWinningNumberRepository,
   WINNING_NUMBER_REPOSITORY_TOKEN,
-} from '../../domain/ports/winning-number.repository.port';
+} from '../../domain/ports/winning-number.port';
 import {
   IWinningNumberFetcher,
   WINNING_NUMBER_FETCHER_TOKEN,

@@ -4,15 +4,11 @@ import { Inject, Logger } from '@nestjs/common';
 import {
   IPredictionRepository,
   PREDICTION_REPOSITORY_TOKEN,
-} from '../../domain/ports/prediction.repository.port';
+} from '../../domain/ports/prediction.port';
 import {
   WINNING_NUMBER_READER_TOKEN,
   WinningNumberReader,
 } from '../../domain/ports/winning-number-reader.port';
-import {
-  BALL_STATUS_READER_TOKEN,
-  BallStatusReader,
-} from '../../domain/ports/ball-status-reader.port';
 import { DomainPrediction } from '../../domain/aggregates/prediction.entity';
 import { AnalysisWinningNumber } from '../../domain/aggregates/winning-number.entity';
 import { AlgorithmExecutor } from '../../domain/services/algorithm-executor';
@@ -21,7 +17,7 @@ import { SystemStatusService } from '../../../../common/services/system-status.s
 import {
   ALGORITHM_REPOSITORY_TOKEN,
   IAlgorithmRepository,
-} from '../../domain/ports/algorithm.repository.port';
+} from '../../domain/ports/algorithm.port';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 import { DomainAlgorithm } from '../../domain/aggregates/algorithm.entity';
 
@@ -36,8 +32,6 @@ export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
     private readonly winningNumberReader: WinningNumberReader,
     @Inject(ALGORITHM_REPOSITORY_TOKEN)
     private readonly algorithmRepository: IAlgorithmRepository,
-    @Inject(BALL_STATUS_READER_TOKEN)
-    private readonly ballStatusReader: BallStatusReader,
     private readonly publisher: EventPublisher,
     private readonly systemStatusService: SystemStatusService,
     private readonly redisService: RedisService,
@@ -50,7 +44,7 @@ export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
       await this.initializeAlgorithms();
 
       const targetPredictions: DomainPrediction[] =
-        await this.predictionRepository.findWithoutAnalysis();
+        await this.predictionRepository.findWithoutAnalysisReliability();
 
       const resultsToSave: DomainPrediction[] = [];
 
@@ -59,15 +53,10 @@ export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
           await this.winningNumberReader.findByEpisode(result.episode);
         if (!winningNumber || !winningNumber.isDrawn) continue;
 
-        const predictedNumbers = result.getNumberArray();
-        const temperatures =
-          await this.ballStatusReader.getBallTemperatures(predictedNumbers);
-
         const prediction = this.publisher.mergeObjectContext(result);
-        prediction.analyze(
+        prediction.calculateReliability(
           winningNumber,
           prediction.weights.toValues(),
-          temperatures,
         );
 
         resultsToSave.push(prediction);
@@ -104,7 +93,7 @@ export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
     );
 
     const existingPredictions =
-      await this.predictionRepository.findAllSystemPredictions();
+      await this.predictionRepository.findAllSystemPredictionsByAnalysisIsNull();
     const existingSet = new Set<string>();
     for (const p of existingPredictions) {
       existingSet.add(`${p.episode}:${p.algorithm.type}`);

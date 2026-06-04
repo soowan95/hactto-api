@@ -4,7 +4,7 @@ import { Inject } from '@nestjs/common';
 import {
   PREDICTION_REPOSITORY_TOKEN,
   IPredictionRepository,
-} from '../../domain/ports/prediction.repository.port';
+} from '../../domain/ports/prediction.port';
 import {
   WINNING_NUMBER_READER_TOKEN,
   WinningNumberReader,
@@ -16,13 +16,13 @@ import { PredictionGeneratedEvent } from '../../domain/events/prediction-generat
 import {
   ALGORITHM_REPOSITORY_TOKEN,
   IAlgorithmRepository,
-} from '../../domain/ports/algorithm.repository.port';
+} from '../../domain/ports/algorithm.port';
 
 @CommandHandler(GeneratePredictionCommand)
 export class GeneratePredictionHandler implements ICommandHandler<GeneratePredictionCommand> {
   constructor(
     @Inject(PREDICTION_REPOSITORY_TOKEN)
-    private readonly repository: IPredictionRepository,
+    private readonly predictionRepository: IPredictionRepository,
     @Inject(WINNING_NUMBER_READER_TOKEN)
     private readonly winningNumberReader: WinningNumberReader,
     @Inject(ALGORITHM_REPOSITORY_TOKEN)
@@ -49,15 +49,16 @@ export class GeneratePredictionHandler implements ICommandHandler<GeneratePredic
       command.weights,
     );
 
-    const created = await this.repository.create(executed);
+    const created = await this.predictionRepository.create(executed);
     const prediction = this.publisher.mergeObjectContext(created);
 
     prediction.apply(
       new PredictionGeneratedEvent(
-        prediction.getId(),
+        prediction.id as number,
         prediction.algorithm.type,
         prediction.episode,
         prediction.visitorId,
+        prediction.getNumberArray(),
       ),
     );
     prediction.commit();

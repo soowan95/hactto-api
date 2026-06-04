@@ -10,12 +10,13 @@ import { GetUpcomingPredictionCountsHandler } from './query-handlers/get-upcomin
 import { GetAlgorithmReliabilityHistoryHandler } from './query-handlers/get-algorithm-reliability-history.handler';
 import { GetEpisodeBestPredictionHandler } from './query-handlers/get-episode-best-prediction.handler';
 import { PredictionGeneratedHandler } from './event-handlers/prediction-generated.handler';
-import { PredictionReliabilityCalculatedHandler } from './event-handlers/prediction-reliability-calculated.handler';
 import { GetAlgorithmTypeHandler } from './query-handlers/get-algorithm-type.handler';
 import { FetchAlgorithmHandler } from './command-handlers/fetch-algorithm.hanlder';
 import { SetAlgorithmComplexityHandler } from './command-handlers/set-algorithm-complexity.handler';
 import { AlgorithmFetchedHandler } from './event-handlers/algorithm-fetched.handler';
 import { AlgorithmComplexityUpdatedHandler } from './event-handlers/algorithm-complexity-updated.handler';
+import { PredictionAnalyzedHandler } from './event-handlers/prediction-analyzed.handler';
+import { AnalysisCreatedHandler } from './event-handlers/analysis-created.handler';
 
 export const CommandHandlers = [
   SetPersonalWeightHandler,
@@ -39,7 +40,8 @@ export const QueryHandlers = [
 
 export const EventHandlers = [
   PredictionGeneratedHandler,
-  PredictionReliabilityCalculatedHandler,
   AlgorithmFetchedHandler,
   AlgorithmComplexityUpdatedHandler,
+  PredictionAnalyzedHandler,
+  AnalysisCreatedHandler,
 ];

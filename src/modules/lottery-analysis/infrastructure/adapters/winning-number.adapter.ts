@@ -6,7 +6,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   IWinningNumberRepository,
   WINNING_NUMBER_REPOSITORY_TOKEN,
-} from '../../../number/domain/ports/winning-number.repository.port';
+} from '../../../number/domain/ports/winning-number.port';
 import { WinningNumberMapper } from '../mappers/winning-number.mapper';
 
 import { AnalysisWinningNumber } from '../../domain/aggregates/winning-number.entity';

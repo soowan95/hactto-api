@@ -2,14 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { prisma } from '../../../../lib/prisma';
 import { DomainPrediction } from '../../domain/aggregates/prediction.entity';
 import { InfraPredictionMapper } from '../mappers/infra-prediction.mapper';
-import { IPredictionRepository } from '../../domain/ports/prediction.repository.port';
+import { IPredictionRepository } from '../../domain/ports/prediction.port';
 import { DomainAlgorithm } from '../../domain/aggregates/algorithm.entity';
 import { InfraAlgorithmMapper } from '../mappers/infra-algorithm.mapper';
+import { DomainAnalysis } from '../../domain/aggregates/analysis.entity';
 
 @Injectable()
 export class InfraPredictionRepository implements IPredictionRepository {
-  async create(analysis: DomainPrediction): Promise<DomainPrediction> {
-    const raw = InfraPredictionMapper.toPersistence(analysis);
+  async create(prediction: DomainPrediction): Promise<DomainPrediction> {
+    const raw = InfraPredictionMapper.toPersistence(prediction);
 
     const data: any = {
       algorithmType: raw.algorithmType,
@@ -26,7 +27,10 @@ export class InfraPredictionRepository implements IPredictionRepository {
       },
     });
 
-    return InfraPredictionMapper.toEntity(result);
+    return InfraPredictionMapper.toEntity({
+      ...result,
+      analysis: DomainAnalysis.dummy(),
+    });
   }
 
   async save(analysis: DomainPrediction): Promise<void> {
@@ -35,7 +39,7 @@ export class InfraPredictionRepository implements IPredictionRepository {
     await prisma.$transaction(async (tx) => {
       if (analysis.analysis) {
         const data = {
-          reliability: analysis.analysis.getScore(),
+          reliability: analysis.analysis.getReliability(),
           even: analysis.analysis.even,
           odd: analysis.analysis.odd,
           hot: analysis.analysis.hot,
@@ -76,7 +80,7 @@ export class InfraPredictionRepository implements IPredictionRepository {
         if (entity.analysis) {
           analysisDataToCreate.push({
             id: raw.id,
-            reliability: entity.analysis.getScore(),
+            reliability: entity.analysis.getReliability(),
             even: entity.analysis.even,
             odd: entity.analysis.odd,
             hot: entity.analysis.hot,
@@ -112,18 +116,26 @@ export class InfraPredictionRepository implements IPredictionRepository {
     const result = await prisma.prediction.findMany({
       where: {
         algorithm,
-        analysis: { isNot: null },
+        predictionAnalysis: { isNot: null },
       },
       orderBy: {
         episode: 'desc',
       },
       include: {
         algorithm: true,
-        analysis: true,
+        predictionAnalysis: {
+          include: { analysis: true },
+        },
       },
     });
 
-    return result.map((pr) => InfraPredictionMapper.toEntity(pr));
+    return result.map((pr) => {
+      const predictionAnalysis = pr.predictionAnalysis;
+      return InfraPredictionMapper.toEntity({
+        ...pr,
+        analysis: predictionAnalysis!.analysis,
+      });
+    });
   }
 
   async findByUser(visitorId?: string): Promise<DomainPrediction[]> {
@@ -135,14 +147,20 @@ export class InfraPredictionRepository implements IPredictionRepository {
       },
       include: {
         algorithm: true,
-        analysis: true,
+        predictionAnalysis: { include: { analysis: true } },
       },
       orderBy: {
         id: 'desc',
       },
     });
 
-    return results.map((r) => InfraPredictionMapper.toEntity(r));
+    return results.map((pr) => {
+      const predictionAnalysis = pr.predictionAnalysis;
+      return InfraPredictionMapper.toEntity({
+        ...pr,
+        analysis: predictionAnalysis!.analysis,
+      });
+    });
   }
 
   async findBestByEpisodeAndAlgorithm(
@@ -156,17 +174,25 @@ export class InfraPredictionRepository implements IPredictionRepository {
       },
       include: {
         algorithm: true,
-        analysis: true,
+        predictionAnalysis: { include: { analysis: true } },
       },
       orderBy: {
-        analysis: {
-          reliability: 'desc',
+        predictionAnalysis: {
+          analysis: {
+            reliability: 'desc',
+          },
         },
       },
     });
 
     if (!result) return null;
-    return InfraPredictionMapper.toEntity(result);
+
+    const predictionAnalysis = result.predictionAnalysis;
+
+    return InfraPredictionMapper.toEntity({
+      ...result,
+      analysis: predictionAnalysis!.analysis,
+    });
   }
 
   async findBestByEpisodeAndReliabilityIsNotNull(
@@ -175,49 +201,78 @@ export class InfraPredictionRepository implements IPredictionRepository {
     const result = await prisma.prediction.findFirst({
       where: {
         episode,
-        analysis: {
+        predictionAnalysis: {
           isNot: null,
         },
       },
       include: {
         algorithm: true,
-        analysis: true,
+        predictionAnalysis: { include: { analysis: true } },
         winningNumber: true,
       },
       orderBy: {
-        analysis: {
-          reliability: 'desc',
+        predictionAnalysis: {
+          analysis: {
+            reliability: 'desc',
+          },
         },
       },
     });
 
     if (!result) return null;
-    return InfraPredictionMapper.toEntity(result);
+
+    const predictionAnalysis = result.predictionAnalysis;
+
+    return InfraPredictionMapper.toEntity({
+      ...result,
+      analysis: predictionAnalysis!.analysis,
+    });
   }
 
-  async findWithoutAnalysis(): Promise<DomainPrediction[]> {
+  async findWithoutAnalysisReliability(): Promise<DomainPrediction[]> {
     const results = await prisma.prediction.findMany({
       where: {
-        analysis: null,
+        visitorId: {
+          not: null,
+        },
+        predictionAnalysis: {
+          analysis: {
+            reliability: 0,
+          },
+        },
       },
       include: {
         algorithm: true,
+        predictionAnalysis: { include: { analysis: true } },
       },
     });
 
-    return results.map((r) => InfraPredictionMapper.toEntity(r));
+    return results.map((pr) => {
+      const predictionAnalysis = pr.predictionAnalysis;
+
+      return InfraPredictionMapper.toEntity({
+        ...pr,
+        analysis: predictionAnalysis!.analysis,
+      });
+    });
   }
 
   async count(): Promise<number> {
     return prisma.prediction.count();
   }
 
-  async findRecentEpisodeByReliabilityIsNotNull(): Promise<{
+  async findRecentEpisodeByReliabilityIsNotZero(): Promise<{
     episode: number;
   } | null> {
     return prisma.prediction.findFirst({
       where: {
-        analysis: { isNot: null },
+        predictionAnalysis: {
+          analysis: {
+            reliability: {
+              not: 0,
+            },
+          },
+        },
       },
       orderBy: {
         episode: 'desc',
@@ -240,17 +295,24 @@ export class InfraPredictionRepository implements IPredictionRepository {
     });
   }
 
-  async findAllSystemPredictions(): Promise<DomainPrediction[]> {
+  async findAllSystemPredictionsByAnalysisIsNull(): Promise<
+    DomainPrediction[]
+  > {
     const results = await prisma.prediction.findMany({
       where: {
         visitorId: null,
+        predictionAnalysis: undefined,
       },
       include: {
         algorithm: true,
-        analysis: true,
       },
     });
 
-    return results.map((r) => InfraPredictionMapper.toEntity(r));
+    return results.map((pr) => {
+      return InfraPredictionMapper.toEntity({
+        ...pr,
+        analysis: DomainAnalysis.dummy(),
+      });
+    });
   }
 }

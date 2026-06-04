@@ -4,7 +4,7 @@ import { Inject } from '@nestjs/common';
 import {
   PREDICTION_REPOSITORY_TOKEN,
   IPredictionRepository,
-} from '../../domain/ports/prediction.repository.port';
+} from '../../domain/ports/prediction.port';
 import {
   WINNING_NUMBER_READER_TOKEN,
   WinningNumberReader,

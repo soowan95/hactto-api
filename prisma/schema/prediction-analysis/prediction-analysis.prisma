@@ -1,0 +1,11 @@
+model PredictionAnalysis {
+  id Int @id @default(autoincrement())
+
+  analysisId   Int @unique @map("analysis_id")
+  predictionId Int @unique @map("prediction_id")
+
+  analysis   Analysis   @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  prediction Prediction @relation(fields: [predictionId], references: [id], onDelete: Cascade)
+
+  @@map("prediction_analysis")
+}

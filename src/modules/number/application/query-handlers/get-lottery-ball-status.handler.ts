@@ -3,7 +3,7 @@ import { GetLotteryBallStatusQuery } from '../queries/get-lottery-ball-status.qu
 import {
   IWinningNumberRepository,
   WINNING_NUMBER_REPOSITORY_TOKEN,
-} from '../../domain/ports/winning-number.repository.port';
+} from '../../domain/ports/winning-number.port';
 import { Inject } from '@nestjs/common';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 import { LotteryBallStatus } from '../../domain/aggregates/lottery-ball-status.entity';

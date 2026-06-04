@@ -31,9 +31,9 @@ import { GetEpisodeBestPredictionQuery } from '../application/queries/get-episod
 
 import { GuestAllowed } from '../../../common/decorators/guest-allowed.decorator';
 
-@ApiTags('- Reliability')
-@Controller('reliability')
-export class ReliabilityController {
+@ApiTags('- Analysis')
+@Controller('Analysis')
+export class AnalysisController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
