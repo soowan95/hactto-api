@@ -1,0 +1,11 @@
+model WinningNumberAnalysis {
+  id Int @id @default(autoincrement())
+
+  analysisId Int @unique @map("analysis_id")
+  episode    Int @unique
+
+  analysis      Analysis      @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  winningNumber WinningNumber @relation(fields: [episode], references: [episode], onDelete: Cascade)
+
+  @@map("winning_number_analysis")
+}

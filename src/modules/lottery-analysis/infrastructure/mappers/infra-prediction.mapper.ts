@@ -1,7 +1,7 @@
 import {
   Algorithm,
-  Prediction,
   Analysis,
+  Prediction,
 } from '../../../../generated/prisma/client';
 import { DomainPrediction } from '../../domain/aggregates/prediction.entity';
 import { DomainAnalysis } from '../../domain/aggregates/analysis.entity';
@@ -11,7 +11,7 @@ export class InfraPredictionMapper {
   static toEntity(
     raw: Prediction & {
       algorithm: Algorithm;
-      analysis?: Analysis | null;
+      analysis: Analysis;
     },
   ): DomainPrediction {
     let numbersArray = [0, 0, 0, 0, 0, 0];
@@ -31,31 +31,28 @@ export class InfraPredictionMapper {
       console.warn(`Failed to parse prediction numbers for id ${raw.id}:`, e);
     }
 
-    let domainReliability: DomainAnalysis | undefined = undefined;
-    if (raw.analysis) {
-      domainReliability = new DomainAnalysis(
-        raw.analysis.id,
-        raw.analysis.reliability,
-        raw.analysis.even,
-        raw.analysis.odd,
-        raw.analysis.hot,
-        raw.analysis.warm,
-        raw.analysis.cold,
-        raw.analysis.low,
-        raw.analysis.high,
-        raw.analysis.ac,
-        JSON.parse(raw.analysis.consecutive),
-      );
-    }
+    let domainAnalysis: DomainAnalysis = new DomainAnalysis(
+      raw.analysis.reliability,
+      raw.analysis.even,
+      raw.analysis.odd,
+      raw.analysis.hot,
+      raw.analysis.warm,
+      raw.analysis.cold,
+      raw.analysis.low,
+      raw.analysis.high,
+      raw.analysis.ac,
+      JSON.parse(raw.analysis.consecutive),
+      raw.analysis.id,
+    );
 
     return new DomainPrediction(
       InfraAlgorithmMapper.toEntity(raw.algorithm),
       raw.episode,
       JSON.parse(raw.weights),
       numbersArray,
+      domainAnalysis,
       raw.id,
       raw.visitorId ?? undefined,
-      domainReliability,
     );
   }
 

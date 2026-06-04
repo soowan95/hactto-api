@@ -3,7 +3,7 @@ import { LottoNumberSet } from '../../../number/domain/vos/lotto-number-set.vo';
 import { DomainAnalysis } from './analysis.entity';
 import { AnalysisWinningNumber } from './winning-number.entity';
 import { Weights } from '../vos/weights.vo';
-import { PredictionReliabilityCalculatedEvent } from '../events/prediction-reliability-calculated.event';
+import { PredictionAnalyzedEvent } from '../events/prediction-analyzed.event';
 import { DomainAlgorithm } from './algorithm.entity';
 
 export class DomainPrediction extends AggregateRoot {
@@ -13,16 +13,16 @@ export class DomainPrediction extends AggregateRoot {
   public readonly weights: Weights;
   public readonly numberSet: LottoNumberSet;
   public readonly visitorId?: string;
-  public analysis?: DomainAnalysis;
+  public analysis: DomainAnalysis;
 
   constructor(
     algorithm: DomainAlgorithm,
     episode: number,
     weights: number[],
     numbers: number[],
+    analysis: DomainAnalysis,
     id?: number,
     visitorId?: string,
-    analysis?: DomainAnalysis,
   ) {
     super();
     this.algorithm = algorithm;
@@ -32,10 +32,6 @@ export class DomainPrediction extends AggregateRoot {
     this.id = id;
     this.visitorId = visitorId;
     this.analysis = analysis;
-  }
-
-  getId(): number {
-    return this.id as number;
   }
 
   isNonZero(): boolean {
@@ -50,26 +46,13 @@ export class DomainPrediction extends AggregateRoot {
     return this.weights.toValues();
   }
 
-  analyze(
+  calculateReliability(
     winningNumber: AnalysisWinningNumber,
     customWeights?: number[],
-    temperatures?: Record<number, 'HOT' | 'WARM' | 'COLD'>,
   ): void {
     if (!this.isNonZero()) {
-      this.analysis = DomainAnalysis.create(
-        this.getId(),
-        -1,
-        this.getNumberArray(),
-        temperatures,
-      );
-      this.apply(
-        new PredictionReliabilityCalculatedEvent(
-          this.getId(),
-          this.episode,
-          this.visitorId,
-          -1,
-        ),
-      );
+      this.analysis.setReliability(-1);
+      this.apply(new PredictionAnalyzedEvent(this.visitorId, this.analysis));
       return;
     }
 
@@ -85,21 +68,9 @@ export class DomainPrediction extends AggregateRoot {
       score += WEIGHTS[i] / (1 + distance);
     }
 
-    const finalScore = Math.round(score * 100) / 100;
+    const finalScore = Math.round(score * 10) / 10;
 
-    this.analysis = DomainAnalysis.create(
-      this.getId(),
-      finalScore,
-      this.getNumberArray(),
-      temperatures,
-    );
-    this.apply(
-      new PredictionReliabilityCalculatedEvent(
-        this.getId(),
-        this.episode,
-        this.visitorId,
-        finalScore,
-      ),
-    );
+    this.analysis.setReliability(finalScore);
+    this.apply(new PredictionAnalyzedEvent(this.visitorId, this.analysis));
   }
 }

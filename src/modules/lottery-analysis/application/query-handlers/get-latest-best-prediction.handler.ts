@@ -4,7 +4,7 @@ import { Inject } from '@nestjs/common';
 import {
   PREDICTION_REPOSITORY_TOKEN,
   IPredictionRepository,
-} from '../../domain/ports/prediction.repository.port';
+} from '../../domain/ports/prediction.port';
 import {
   WINNING_NUMBER_READER_TOKEN,
   WinningNumberReader,
@@ -21,7 +21,7 @@ export class GetLatestBestPredictionHandler implements IQueryHandler<GetLatestBe
   async execute(): Promise<any | null> {
     // 1. Find the latest episode where prediction reliability is calculated
     const latestPrediction =
-      await this.algorithmRepository.findRecentEpisodeByReliabilityIsNotNull();
+      await this.algorithmRepository.findRecentEpisodeByReliabilityIsNotZero();
 
     if (!latestPrediction) {
       return null;
@@ -53,7 +53,7 @@ export class GetLatestBestPredictionHandler implements IQueryHandler<GetLatestBe
         episode: bestPrediction.episode,
         weights: bestPrediction.getWeights(),
         numbers: bestPrediction.getNumberArray(),
-        reliabilityScore: bestPrediction.analysis.getScore(),
+        reliabilityScore: bestPrediction.analysis.getReliability(),
       },
       winningNumber: {
         episode: latestEpisode,

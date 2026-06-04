@@ -2,8 +2,9 @@
  * 신뢰도
  */
 model Analysis {
-  id          Int    @id
-  reliability Int // 신뢰도 점수
+  id Int @id @default(autoincrement())
+
+  reliability Int    @default(0) // 신뢰도 점수
   even        Int // 짝수 갯수
   odd         Int // 홀수 갯수
   hot         Int // 열번호 갯수
@@ -14,7 +15,8 @@ model Analysis {
   ac          Int // AC 값
   consecutive String // 연속 수
 
-  prediction Prediction @relation(fields: [id], references: [id])
+  predictionAnalysis    PredictionAnalysis?
+  winningNumberAnalysis WinningNumberAnalysis?
 
   @@map("analysis")
 }

@@ -3,11 +3,11 @@ import { GetLotteryBallStatusQuery } from '../queries/get-lottery-ball-status.qu
 import {
   IWinningNumberRepository,
   WINNING_NUMBER_REPOSITORY_TOKEN,
-} from '../../domain/ports/winning-number.repository.port';
+} from '../../domain/ports/winning-number.port';
 import { Inject } from '@nestjs/common';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 import { LotteryBallStatus } from '../../domain/aggregates/lottery-ball-status.entity';
-import { getBallTemperature } from '../../domain/vos/BallTemperature';
+import { getBallTemperature, BallTemperature } from '../../domain/vos/BallTemperature';
 
 @QueryHandler(GetLotteryBallStatusQuery)
 export class GetLotteryBallStatusHandler implements IQueryHandler<GetLotteryBallStatusQuery> {
@@ -18,7 +18,7 @@ export class GetLotteryBallStatusHandler implements IQueryHandler<GetLotteryBall
   ) {}
 
   async execute(query: GetLotteryBallStatusQuery): Promise<LotteryBallStatus> {
-    const cacheKey = `lottery-ball:status:${query.ball}`;
+    const cacheKey = `lottery-ball:status:${query.ball}:${query.beforeEpisode ?? 'latest'}`;
 
     const cachedData = await this.redisService.get(cacheKey);
     if (cachedData) {
@@ -33,14 +33,25 @@ export class GetLotteryBallStatusHandler implements IQueryHandler<GetLotteryBall
       );
     }
 
+    const whereClause: any = {
+      isDrawn: true,
+    };
+    if (query.beforeEpisode !== undefined) {
+      whereClause.episode = {
+        lt: query.beforeEpisode,
+      };
+    }
+
     const winningNumbers = await this.repository.findAll({
-      where: {
-        isDrawn: true,
-      },
+      where: whereClause,
       orderBy: {
         episode: 'desc',
       },
     });
+
+    if (winningNumbers.length === 0) {
+      return new LotteryBallStatus(0, 0, BallTemperature.COLD, 0, [], 0);
+    }
 
     let recentTen = 0;
     let recentThirty = 0;

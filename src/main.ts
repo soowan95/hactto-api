@@ -26,7 +26,7 @@ async function bootstrap() {
   // Global Pipes
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // Remove properties not defined in the DTO
+      whitelist: true, // Remove properties aren't defined in the DTO
       transform: true, // Automatically convert incoming types to DTO types
     }),
   );
@@ -50,8 +50,7 @@ async function bootstrap() {
       .setDescription('로또 분석 백엔드 API description')
       .setVersion('1.0.0')
       .addTag('- Algorithm', 'Algorithm API Documentation')
-      .addTag('- Allowed Client', 'Managing allowed IPs, master keys')
-      .addTag('- Reliability', 'Reliability API Documentation')
+      .addTag('- Analysis', 'Analysis API Documentation')
       .addTag('- Winning Number', 'Winning Number API Documentation')
       .build();
     const document = SwaggerModule.createDocument(app, config);

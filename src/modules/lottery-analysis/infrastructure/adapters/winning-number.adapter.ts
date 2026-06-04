@@ -6,7 +6,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   IWinningNumberRepository,
   WINNING_NUMBER_REPOSITORY_TOKEN,
-} from '../../../number/domain/ports/winning-number.repository.port';
+} from '../../../number/domain/ports/winning-number.port';
 import { WinningNumberMapper } from '../mappers/winning-number.mapper';
 
 import { AnalysisWinningNumber } from '../../domain/aggregates/winning-number.entity';
@@ -51,5 +51,18 @@ export class WinningNumberAdapter implements WinningNumberReader {
       await this.winningNumberRepository.findLatestWithWinningNumber();
     if (!winningNumber) return null;
     return this.mapper.toAnalysisModel(winningNumber);
+  }
+
+  async findWithoutAnalysis(): Promise<AnalysisWinningNumber[]> {
+    const results = await this.winningNumberRepository.findAll({
+      where: {
+        isDrawn: true,
+        winningNumberAnalysis: null,
+      } as any,
+      orderBy: {
+        episode: 'asc',
+      },
+    });
+    return results.map((wn) => this.mapper.toAnalysisModel(wn));
   }
 }

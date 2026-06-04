@@ -13,4 +13,5 @@ export interface WinningNumberReader {
     options?: FindAllWinningNumbersOptions,
   ): Promise<AnalysisWinningNumber[]>;
   findLatestWithWinningNumber(): Promise<AnalysisWinningNumber | null>;
+  findWithoutAnalysis(): Promise<AnalysisWinningNumber[]>;
 }

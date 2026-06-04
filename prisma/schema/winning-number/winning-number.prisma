@@ -15,5 +15,7 @@ model WinningNumber {
 
   predictions Prediction[] // 회차 별 각 알고리즘에 대한 결과
 
+  winningNumberAnalysis WinningNumberAnalysis?
+
   @@map("winning_number")
 }

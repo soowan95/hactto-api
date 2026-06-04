@@ -5,7 +5,7 @@ import { Inject } from '@nestjs/common';
 import {
   ALGORITHM_REPOSITORY_TOKEN,
   IAlgorithmRepository,
-} from '../../domain/ports/algorithm.repository.port';
+} from '../../domain/ports/algorithm.port';
 import { DomainAlgorithm } from '../../domain/aggregates/algorithm.entity';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 

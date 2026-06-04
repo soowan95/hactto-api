@@ -3,7 +3,7 @@ import { GetEpisodeBestPredictionQuery } from '../queries/get-episode-best-predi
 import {
   PREDICTION_REPOSITORY_TOKEN,
   IPredictionRepository,
-} from '../../domain/ports/prediction.repository.port';
+} from '../../domain/ports/prediction.port';
 import { Inject } from '@nestjs/common';
 import {
   WINNING_NUMBER_READER_TOKEN,
@@ -12,7 +12,7 @@ import {
 import {
   ALGORITHM_REPOSITORY_TOKEN,
   IAlgorithmRepository,
-} from '../../domain/ports/algorithm.repository.port';
+} from '../../domain/ports/algorithm.port';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 import { DomainAlgorithm } from '../../domain/aggregates/algorithm.entity';
 
@@ -62,7 +62,7 @@ export class GetEpisodeBestPredictionHandler implements IQueryHandler<GetEpisode
         episode: bestPrediction.episode,
         weights: bestPrediction.getWeights(),
         numbers: bestPrediction.getNumberArray(),
-        reliabilityScore: bestPrediction.analysis?.getScore() ?? 0,
+        reliabilityScore: bestPrediction.analysis?.getReliability() ?? 0,
       },
       winningNumber: winningNumber
         ? {

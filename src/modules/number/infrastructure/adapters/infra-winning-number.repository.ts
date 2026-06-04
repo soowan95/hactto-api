@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { IWinningNumberRepository } from '../../domain/ports/winning-number.repository.port';
+import { IWinningNumberRepository } from '../../domain/ports/winning-number.port';
 import { prisma } from '../../../../lib/prisma';
 import { Prisma, WinningNumber } from '../../../../generated/prisma/client';
 import { DomainWinningNumber } from '../../domain/aggregates/winning-number.entity';

@@ -3,7 +3,7 @@ import { GetUpcomingPredictionCountsQuery } from '../queries/get-upcoming-predic
 import {
   IPredictionRepository,
   PREDICTION_REPOSITORY_TOKEN,
-} from '../../domain/ports/prediction.repository.port';
+} from '../../domain/ports/prediction.port';
 import { Inject } from '@nestjs/common';
 import {
   WINNING_NUMBER_READER_TOKEN,
@@ -12,7 +12,7 @@ import {
 import {
   ALGORITHM_REPOSITORY_TOKEN,
   IAlgorithmRepository,
-} from '../../domain/ports/algorithm.repository.port';
+} from '../../domain/ports/algorithm.port';
 
 @QueryHandler(GetUpcomingPredictionCountsQuery)
 export class GetUpcomingPredictionCountsHandler implements IQueryHandler<GetUpcomingPredictionCountsQuery> {

@@ -4,13 +4,13 @@ import { Inject } from '@nestjs/common';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 import {
   IAnalysisRepository,
-  RELIABILITY_ANALYSIS_TOKEN,
-} from '../../domain/ports/analysis.repository.port';
+  ANALYSIS_REPOSITORY_TOKEN,
+} from '../../domain/ports/analysis.port';
 
 @QueryHandler(GetAverageReliabilityQuery)
 export class GetAverageReliabilityHandler implements IQueryHandler<GetAverageReliabilityQuery> {
   constructor(
-    @Inject(RELIABILITY_ANALYSIS_TOKEN)
+    @Inject(ANALYSIS_REPOSITORY_TOKEN)
     private readonly repository: IAnalysisRepository,
     private readonly redisService: RedisService,
   ) {}

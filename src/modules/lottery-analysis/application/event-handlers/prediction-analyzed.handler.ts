@@ -1,21 +1,27 @@
 import { EventsHandler, IEventHandler } from '@nestjs/cqrs';
-import { PredictionReliabilityCalculatedEvent } from '../../domain/events/prediction-reliability-calculated.event';
+import { PredictionAnalyzedEvent } from '../../domain/events/prediction-analyzed.event';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 import { Inject } from '@nestjs/common';
 import {
   ALGORITHM_REPOSITORY_TOKEN,
   IAlgorithmRepository,
-} from '../../domain/ports/algorithm.repository.port';
+} from '../../domain/ports/algorithm.port';
+import {
+  ANALYSIS_REPOSITORY_TOKEN,
+  IAnalysisRepository,
+} from '../../domain/ports/analysis.port';
 
-@EventsHandler(PredictionReliabilityCalculatedEvent)
-export class PredictionReliabilityCalculatedHandler implements IEventHandler<PredictionReliabilityCalculatedEvent> {
+@EventsHandler(PredictionAnalyzedEvent)
+export class PredictionAnalyzedHandler implements IEventHandler<PredictionAnalyzedEvent> {
   constructor(
     @Inject(ALGORITHM_REPOSITORY_TOKEN)
     private readonly algorithmRepository: IAlgorithmRepository,
+    @Inject(ANALYSIS_REPOSITORY_TOKEN)
+    private readonly analysisRepository: IAnalysisRepository,
     private readonly redisService: RedisService,
   ) {}
 
-  async handle(event: PredictionReliabilityCalculatedEvent): Promise<void> {
+  async handle(event: PredictionAnalyzedEvent): Promise<void> {
     // 1. 사용자 예측 이력 캐시 무효화
     if (event.visitorId && event.visitorId !== 'guest') {
       const cacheKey = `user:${event.visitorId}:predictions:history`;
@@ -30,5 +36,8 @@ export class PredictionReliabilityCalculatedHandler implements IEventHandler<Pre
     for (const type of types) {
       await this.redisService.del(`algorithm:${type}:average-reliability`);
     }
+
+    // 3. Analysis reliability 저장
+    await this.analysisRepository;
   }
 }

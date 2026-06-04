@@ -3,12 +3,12 @@ import { GetAlgorithmReliabilityHistoryQuery } from '../queries/get-algorithm-re
 import {
   IPredictionRepository,
   PREDICTION_REPOSITORY_TOKEN,
-} from '../../domain/ports/prediction.repository.port';
+} from '../../domain/ports/prediction.port';
 import { Inject } from '@nestjs/common';
 import {
   ALGORITHM_REPOSITORY_TOKEN,
   IAlgorithmRepository,
-} from '../../domain/ports/algorithm.repository.port';
+} from '../../domain/ports/algorithm.port';
 import { DomainAlgorithm } from '../../domain/aggregates/algorithm.entity';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 
@@ -49,7 +49,7 @@ export class GetAlgorithmReliabilityHistoryHandler implements IQueryHandler<GetA
         episodeGroups[p.episode] = [];
       }
       if (p.analysis) {
-        episodeGroups[p.episode].push(p.analysis.getScore());
+        episodeGroups[p.episode].push(p.analysis.getReliability());
       }
     }
 
