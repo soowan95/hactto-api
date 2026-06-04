@@ -20,16 +20,59 @@ export class InfraPredictionRepository implements IPredictionRepository {
       visitorId: raw.visitorId,
     };
 
+    if (prediction.analysis && prediction.analysis.sum !== 0) {
+      data.predictionAnalysis = {
+        create: {
+          analysis: {
+            create: {
+              reliability: prediction.analysis.getReliability(),
+              sum: prediction.analysis.sum,
+              cnt0s: prediction.analysis.cnt0s,
+              cnt10s: prediction.analysis.cnt10s,
+              cnt20s: prediction.analysis.cnt20s,
+              cnt30s: prediction.analysis.cnt30s,
+              cnt40s: prediction.analysis.cnt40s,
+              sumLastDigits: prediction.analysis.sumLastDigits,
+              lastDigit0: prediction.analysis.lastDigit0,
+              lastDigit1: prediction.analysis.lastDigit1,
+              lastDigit2: prediction.analysis.lastDigit2,
+              lastDigit3: prediction.analysis.lastDigit3,
+              lastDigit4: prediction.analysis.lastDigit4,
+              lastDigit5: prediction.analysis.lastDigit5,
+              lastDigit6: prediction.analysis.lastDigit6,
+              lastDigit7: prediction.analysis.lastDigit7,
+              lastDigit8: prediction.analysis.lastDigit8,
+              lastDigit9: prediction.analysis.lastDigit9,
+              even: prediction.analysis.even,
+              odd: prediction.analysis.odd,
+              hot: prediction.analysis.hot,
+              warm: prediction.analysis.warm,
+              cold: prediction.analysis.cold,
+              low: prediction.analysis.low,
+              high: prediction.analysis.high,
+              ac: prediction.analysis.ac,
+              consecutive: JSON.stringify(prediction.analysis.consecutive),
+            },
+          },
+        },
+      };
+    }
+
     const result = await prisma.prediction.create({
       data,
       include: {
         algorithm: true,
+        predictionAnalysis: {
+          include: {
+            analysis: true,
+          },
+        },
       },
     });
 
     return InfraPredictionMapper.toEntity({
       ...result,
-      analysis: DomainAnalysis.dummy(),
+      analysis: result.predictionAnalysis?.analysis || DomainAnalysis.dummy(),
     });
   }
 

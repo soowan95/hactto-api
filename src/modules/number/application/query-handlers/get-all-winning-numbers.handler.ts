@@ -25,10 +25,17 @@ export class GetAllWinningNumbersHandler implements IQueryHandler<GetAllWinningN
     const cachedData = await this.redisService.get(cacheKey);
     if (cachedData) {
       const parsedList = JSON.parse(cachedData);
-      return parsedList.map(
-        (item: any) =>
-          new DomainWinningNumber(item.episode, item.numbers, item.isDrawn),
-      );
+      return parsedList.map((item: any) => {
+        const entity = new DomainWinningNumber(
+          item.episode,
+          item.numbers,
+          item.isDrawn,
+        );
+        if (item.analysis) {
+          entity.analysis = item.analysis;
+        }
+        return entity;
+      });
     }
 
     const result = await this.repository.findAll();
@@ -36,6 +43,7 @@ export class GetAllWinningNumbersHandler implements IQueryHandler<GetAllWinningN
       episode: wn.episode,
       numbers: wn.getNumberArray(),
       isDrawn: wn.isDrawn,
+      analysis: wn.analysis,
     }));
     await this.redisService.set(cacheKey, JSON.stringify(serialized), 86400); // 24 hours
 

@@ -11,4 +11,7 @@ export class WinningNumberShowResponseDto {
 
   @Expose()
   isDrawn: boolean;
+
+  @Expose()
+  analysis?: any;
 }

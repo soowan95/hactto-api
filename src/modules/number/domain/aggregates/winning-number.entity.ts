@@ -6,6 +6,7 @@ export class DomainWinningNumber extends AggregateRoot {
   public readonly episode: number;
   public numberSet: LottoNumberSet;
   public isDrawn: boolean;
+  public analysis?: any;
 
   constructor(episode: number, numbers: number[], isDrawn: boolean) {
     super();

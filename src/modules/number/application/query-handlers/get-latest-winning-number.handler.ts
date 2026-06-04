@@ -25,11 +25,15 @@ export class GetLatestWinningNumberHandler implements IQueryHandler<GetLatestWin
     const cachedData = await this.redisService.get(cacheKey);
     if (cachedData) {
       const parsed = JSON.parse(cachedData);
-      return new DomainWinningNumber(
+      const entity = new DomainWinningNumber(
         parsed.episode,
         parsed.numbers,
         parsed.isDrawn,
       );
+      if (parsed.analysis) {
+        entity.analysis = parsed.analysis;
+      }
+      return entity;
     }
 
     const result = await this.repository.findLatestWithWinningNumber();
@@ -40,6 +44,7 @@ export class GetLatestWinningNumberHandler implements IQueryHandler<GetLatestWin
           episode: result.episode,
           numbers: result.getNumberArray(),
           isDrawn: result.isDrawn,
+          analysis: result.analysis,
         }),
         43200, // 12 hours
       );

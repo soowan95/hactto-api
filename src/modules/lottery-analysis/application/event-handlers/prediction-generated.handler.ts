@@ -12,6 +12,7 @@ import {
   BallStatusReader,
 } from '../../domain/ports/ball-status-reader.port';
 import { AnalysisCreatedEvent } from '../../domain/events/analysis-created.event';
+import { prisma } from '../../../../lib/prisma';
 
 @EventsHandler(PredictionGeneratedEvent)
 export class PredictionGeneratedHandler implements IEventHandler<PredictionGeneratedEvent> {
@@ -28,6 +29,14 @@ export class PredictionGeneratedHandler implements IEventHandler<PredictionGener
     if (event.visitorId && event.visitorId !== 'guest') {
       const cacheKey = `user:${event.visitorId}:predictions:history`;
       await this.redisService.del(cacheKey);
+    }
+
+    // Check if prediction already has an analysis associated
+    const existing = await prisma.predictionAnalysis.findUnique({
+      where: { predictionId: event.predictionId },
+    });
+    if (existing) {
+      return; // Already created synchronously
     }
 
     const temperatures = await this.ballStatusReader.getBallTemperatures(
