@@ -29,8 +29,6 @@ import { GetUpcomingPredictionCountsQuery } from '../application/queries/get-upc
 import { GetAlgorithmReliabilityHistoryQuery } from '../application/queries/get-algorithm-reliability-history.query';
 import { GetEpisodeBestPredictionQuery } from '../application/queries/get-episode-best-prediction.query';
 
-import { GuestAllowed } from '../../../common/decorators/guest-allowed.decorator';
-
 @ApiTags('- Analysis')
 @Controller('Analysis')
 export class AnalysisController {
@@ -59,7 +57,6 @@ export class AnalysisController {
     required: false,
     description: '알고리즘 타입',
   })
-  @GuestAllowed()
   @ResponseMessage('success.read')
   @Get('average')
   async getAverage(
@@ -78,7 +75,6 @@ export class AnalysisController {
     summary: 'Get the average reliability leaderboard of all algorithms',
   })
   @ApiOkResponse({ type: [ReliabilityLeaderboardResponseDto] })
-  @GuestAllowed()
   @ResponseMessage('success.read')
   @Get('averages')
   async getAverages(): Promise<ReliabilityLeaderboardResponseDto[]> {
@@ -92,7 +88,6 @@ export class AnalysisController {
       'Get the highest reliability prediction from the latest drawn round',
   })
   @ApiOkResponse({ type: LatestBestPredictionResponseDto })
-  @GuestAllowed()
   @ResponseMessage('success.read')
   @Get('latest-best')
   async getLatestBest(): Promise<LatestBestPredictionResponseDto | null> {
@@ -106,7 +101,6 @@ export class AnalysisController {
       'Get counts of generated predictions for the upcoming episode by algorithm',
   })
   @ApiOkResponse({ type: [UpcomingPredictionCountsResponseDto] })
-  @GuestAllowed()
   @ResponseMessage('success.read')
   @Get('upcoming-counts')
   async getUpcomingCounts(): Promise<UpcomingPredictionCountsResponseDto[]> {
@@ -124,7 +118,6 @@ export class AnalysisController {
     required: true,
     description: '알고리즘 타입',
   })
-  @GuestAllowed()
   @ResponseMessage('success.read')
   @Get('history')
   async getHistory(
@@ -139,7 +132,6 @@ export class AnalysisController {
   @ApiOperation({
     summary: 'Get the best prediction for a specific episode and algorithm',
   })
-  @GuestAllowed()
   @ResponseMessage('success.read')
   @Get('best')
   async getBest(

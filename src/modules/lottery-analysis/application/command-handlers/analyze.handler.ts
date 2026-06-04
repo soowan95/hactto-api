@@ -20,6 +20,10 @@ import {
 } from '../../domain/ports/algorithm.port';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 import { DomainAlgorithm } from '../../domain/aggregates/algorithm.entity';
+import {
+  BALL_STATUS_READER_TOKEN,
+  BallStatusReader,
+} from '../../domain/ports/ball-status-reader.port';
 
 @CommandHandler(AnalyzeCommand)
 export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
@@ -32,6 +36,8 @@ export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
     private readonly winningNumberReader: WinningNumberReader,
     @Inject(ALGORITHM_REPOSITORY_TOKEN)
     private readonly algorithmRepository: IAlgorithmRepository,
+    @Inject(BALL_STATUS_READER_TOKEN)
+    private readonly ballStatusReader: BallStatusReader,
     private readonly publisher: EventPublisher,
     private readonly systemStatusService: SystemStatusService,
     private readonly redisService: RedisService,
@@ -93,7 +99,7 @@ export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
     );
 
     const existingPredictions =
-      await this.predictionRepository.findAllSystemPredictionsByAnalysisIsNull();
+      await this.predictionRepository.findAllSystemPredictions();
     const existingSet = new Set<string>();
     for (const p of existingPredictions) {
       existingSet.add(`${p.episode}:${p.algorithm.type}`);
@@ -115,6 +121,9 @@ export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
           algorithm,
           episode,
           subData,
+          undefined,
+          undefined,
+          this.ballStatusReader,
         );
         predictionsToCreate.push(executed);
       }

@@ -23,6 +23,6 @@ export interface IPredictionRepository {
     episode: number,
   ): Promise<DomainPrediction | null>;
   count(): Promise<number>;
-  findAllSystemPredictionsByAnalysisIsNull(): Promise<DomainPrediction[]>;
+  findAllSystemPredictions(): Promise<DomainPrediction[]>;
   groupByAlgorithmTypeHavingEpisode(episode: number): Promise<any>;
 }

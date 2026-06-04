@@ -32,6 +32,7 @@ export class PredictionGeneratedHandler implements IEventHandler<PredictionGener
 
     const temperatures = await this.ballStatusReader.getBallTemperatures(
       event.generatedNumbers,
+      event.episode,
     );
 
     const analysis: DomainAnalysis = await this.analysisRepository.insert(

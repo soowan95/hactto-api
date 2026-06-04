@@ -11,20 +11,21 @@ import { BallTemperature as NumberBallTemperature } from '../../../number/domain
 export class BallStatusAdapter implements BallStatusReader {
   constructor(private readonly queryBus: QueryBus) {}
 
-  async getBallTemperature(ball: number): Promise<AnalysisBallTemperature> {
+  async getBallTemperature(ball: number, beforeEpisode?: number): Promise<AnalysisBallTemperature> {
     const result = await this.queryBus.execute(
-      new GetLotteryBallStatusQuery(ball),
+      new GetLotteryBallStatusQuery(ball, beforeEpisode),
     );
     return this.mapToAnalysisTemperature(result.status);
   }
 
   async getBallTemperatures(
     balls: number[],
+    beforeEpisode?: number,
   ): Promise<Record<number, AnalysisBallTemperature>> {
     const temperatures: Record<number, AnalysisBallTemperature> = {};
     await Promise.all(
       balls.map(async (ball) => {
-        temperatures[ball] = await this.getBallTemperature(ball);
+        temperatures[ball] = await this.getBallTemperature(ball, beforeEpisode);
       }),
     );
     return temperatures;

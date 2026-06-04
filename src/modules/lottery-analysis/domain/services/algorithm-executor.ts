@@ -9,6 +9,7 @@ import {
 import { DomainPrediction } from '../aggregates/prediction.entity';
 import { DomainAlgorithm } from '../aggregates/algorithm.entity';
 import { DomainAnalysis } from '../aggregates/analysis.entity';
+import { BallStatusReader } from '../ports/ball-status-reader.port';
 
 export class AlgorithmExecutor {
   static async execute(
@@ -17,6 +18,7 @@ export class AlgorithmExecutor {
     data: number[][],
     visitorId?: string,
     weights?: number[],
+    ballStatusReader?: BallStatusReader,
   ): Promise<DomainPrediction> {
     if (!weights) weights = [25, 20, 18, 15, 12, 10];
     let command: ExecutableCommand;
@@ -37,12 +39,18 @@ export class AlgorithmExecutor {
         throw new Error(`Unsupported algorithm type: ${algorithm.type}`);
     }
     const result: number[] = await hacttoExecute(command);
+
+    let temperatures;
+    if (ballStatusReader) {
+      temperatures = await ballStatusReader.getBallTemperatures(result, episode);
+    }
+
     return new DomainPrediction(
       algorithm,
       episode,
       weights,
       result,
-      DomainAnalysis.create(result),
+      DomainAnalysis.create(result, temperatures),
       undefined,
       visitorId,
     );

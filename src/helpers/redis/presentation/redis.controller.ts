@@ -6,7 +6,7 @@ import { RedisManager } from '../../../common/decorators/redis-manager.decorator
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RequestParser } from '../../../common/utils/request-parser';
 
-@ApiTags('- Allowed Client')
+@ApiTags('- Redis')
 @Controller()
 export class RedisController {
   private readonly logger = new Logger(RedisController.name);

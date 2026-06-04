@@ -33,80 +33,111 @@ export class InfraPredictionRepository implements IPredictionRepository {
     });
   }
 
-  async save(analysis: DomainPrediction): Promise<void> {
-    const raw = InfraPredictionMapper.toPersistence(analysis);
-
-    await prisma.$transaction(async (tx) => {
-      if (analysis.analysis) {
-        const data = {
-          reliability: analysis.analysis.getReliability(),
-          even: analysis.analysis.even,
-          odd: analysis.analysis.odd,
-          hot: analysis.analysis.hot,
-          warm: analysis.analysis.warm,
-          cold: analysis.analysis.cold,
-          low: analysis.analysis.low,
-          high: analysis.analysis.high,
-          ac: analysis.analysis.ac,
-          consecutive: JSON.stringify(analysis.analysis.consecutive),
-        };
-        await tx.analysis.upsert({
-          where: { id: raw.id },
-          update: data,
-          create: { id: raw.id, ...data },
-        });
-      }
-    });
+  async save(prediction: DomainPrediction): Promise<void> {
+    if (prediction.analysis && prediction.analysis.id) {
+      await prisma.analysis.update({
+        where: { id: prediction.analysis.id },
+        data: {
+          reliability: prediction.analysis.getReliability(),
+          even: prediction.analysis.even,
+          odd: prediction.analysis.odd,
+          hot: prediction.analysis.hot,
+          warm: prediction.analysis.warm,
+          cold: prediction.analysis.cold,
+          low: prediction.analysis.low,
+          high: prediction.analysis.high,
+          ac: prediction.analysis.ac,
+          consecutive: JSON.stringify(prediction.analysis.consecutive),
+        },
+      });
+    }
   }
 
   async saveMany(analyses: DomainPrediction[]): Promise<void> {
     if (analyses.length === 0) return;
 
-    const predictionsToCreate: any[] = [];
-    const analysisDataToCreate: any[] = [];
+    const predictionsToCreate: DomainPrediction[] = [];
+    const predictionsToUpdate: DomainPrediction[] = [];
 
     for (const entity of analyses) {
-      const raw = InfraPredictionMapper.toPersistence(entity);
-
-      if (!raw.id) {
-        predictionsToCreate.push({
-          algorithmType: raw.algorithmType,
-          episode: raw.episode,
-          weights: raw.weights,
-          numbers: raw.numbers,
-          visitorId: raw.visitorId,
-        });
+      if (!entity.id) {
+        predictionsToCreate.push(entity);
       } else {
-        if (entity.analysis) {
-          analysisDataToCreate.push({
-            id: raw.id,
-            reliability: entity.analysis.getReliability(),
-            even: entity.analysis.even,
-            odd: entity.analysis.odd,
-            hot: entity.analysis.hot,
-            warm: entity.analysis.warm,
-            cold: entity.analysis.cold,
-            low: entity.analysis.low,
-            high: entity.analysis.high,
-            ac: entity.analysis.ac,
-            consecutive: JSON.stringify(entity.analysis.consecutive),
-          });
-        }
+        predictionsToUpdate.push(entity);
       }
     }
 
+    const batchSize = 100;
+
     if (predictionsToCreate.length > 0) {
-      await prisma.prediction.createMany({
-        data: predictionsToCreate,
-        skipDuplicates: true,
-      });
+      for (let i = 0; i < predictionsToCreate.length; i += batchSize) {
+        const batch = predictionsToCreate.slice(i, i + batchSize);
+        await prisma.$transaction(
+          batch.map((entity) => {
+            const raw = InfraPredictionMapper.toPersistence(entity);
+            return prisma.prediction.create({
+              data: {
+                algorithmType: raw.algorithmType,
+                episode: raw.episode,
+                weights: raw.weights,
+                numbers: raw.numbers,
+                visitorId: raw.visitorId,
+                predictionAnalysis: {
+                  create: {
+                    analysis: {
+                      create: {
+                        reliability: entity.analysis.getReliability(),
+                        even: entity.analysis.even,
+                        odd: entity.analysis.odd,
+                        hot: entity.analysis.hot,
+                        warm: entity.analysis.warm,
+                        cold: entity.analysis.cold,
+                        low: entity.analysis.low,
+                        high: entity.analysis.high,
+                        ac: entity.analysis.ac,
+                        consecutive: JSON.stringify(
+                          entity.analysis.consecutive,
+                        ),
+                      },
+                    },
+                  },
+                },
+              },
+            });
+          }),
+          { timeout: 30000 },
+        );
+      }
     }
 
-    if (analysisDataToCreate.length > 0) {
-      await prisma.analysis.createMany({
-        data: analysisDataToCreate,
-        skipDuplicates: true,
-      });
+    if (predictionsToUpdate.length > 0) {
+      for (let i = 0; i < predictionsToUpdate.length; i += batchSize) {
+        const batch = predictionsToUpdate.slice(i, i + batchSize);
+        await prisma.$transaction(
+          batch
+            .map((entity) => {
+              if (entity.analysis && entity.analysis.id) {
+                return prisma.analysis.update({
+                  where: { id: entity.analysis.id },
+                  data: {
+                    reliability: entity.analysis.getReliability(),
+                    even: entity.analysis.even,
+                    odd: entity.analysis.odd,
+                    hot: entity.analysis.hot,
+                    warm: entity.analysis.warm,
+                    cold: entity.analysis.cold,
+                    low: entity.analysis.low,
+                    high: entity.analysis.high,
+                    ac: entity.analysis.ac,
+                    consecutive: JSON.stringify(entity.analysis.consecutive),
+                  },
+                });
+              }
+            })
+            .filter(Boolean) as any[],
+          { timeout: 30000 },
+        );
+      }
     }
   }
 
@@ -232,9 +263,6 @@ export class InfraPredictionRepository implements IPredictionRepository {
   async findWithoutAnalysisReliability(): Promise<DomainPrediction[]> {
     const results = await prisma.prediction.findMany({
       where: {
-        visitorId: {
-          not: null,
-        },
         predictionAnalysis: {
           analysis: {
             reliability: 0,
@@ -295,23 +323,22 @@ export class InfraPredictionRepository implements IPredictionRepository {
     });
   }
 
-  async findAllSystemPredictionsByAnalysisIsNull(): Promise<
-    DomainPrediction[]
-  > {
+  async findAllSystemPredictions(): Promise<DomainPrediction[]> {
     const results = await prisma.prediction.findMany({
       where: {
         visitorId: null,
-        predictionAnalysis: undefined,
       },
       include: {
         algorithm: true,
+        predictionAnalysis: { include: { analysis: true } },
       },
     });
 
     return results.map((pr) => {
+      const predictionAnalysis = pr.predictionAnalysis;
       return InfraPredictionMapper.toEntity({
         ...pr,
-        analysis: DomainAnalysis.dummy(),
+        analysis: predictionAnalysis?.analysis || DomainAnalysis.dummy(),
       });
     });
   }

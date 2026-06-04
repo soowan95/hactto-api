@@ -42,6 +42,7 @@ export class InfraPredictionMapper {
       raw.analysis.high,
       raw.analysis.ac,
       JSON.parse(raw.analysis.consecutive),
+      raw.analysis.id,
     );
 
     return new DomainPrediction(

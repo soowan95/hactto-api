@@ -10,7 +10,7 @@ import { GeneratePredictionCommand } from '../application/commands/generate-pred
 import { GetPredictionHistoryQuery } from '../application/queries/get-prediction-history.query';
 import { GeneratePredictionRequestDto } from './dtos/requests/generate-prediction-request.dto';
 
-import { GuestAllowed } from '../../../common/decorators/guest-allowed.decorator';
+
 import { GetAlgorithmTypeQuery } from '../application/queries/get-algorithm-type.query';
 import { RedisManager } from '../../../common/decorators/redis-manager.decorator';
 import { FetchAlgorithmCommand } from '../application/commands/fetch-algorithm.command';
@@ -28,7 +28,6 @@ export class AlgorithmController {
   @ApiOperation({
     summary: 'Get all algorithm types',
   })
-  @GuestAllowed()
   @ResponseMessage('success.read')
   @Get()
   async getAllAlgorithmTypes(): Promise<AlgorithmResponsesDto> {
@@ -53,7 +52,6 @@ export class AlgorithmController {
   @ApiOperation({
     summary: 'Get specific algorithm type',
   })
-  @GuestAllowed()
   @ResponseMessage('success.read')
   @Get(':type')
   async getAlgorithmType(
@@ -67,7 +65,6 @@ export class AlgorithmController {
   @ApiOperation({
     summary: 'Set algorithm',
   })
-  @GuestAllowed()
   @ResponseMessage('success.save')
   @Put(':type')
   async setAlgorithmComplexity(
