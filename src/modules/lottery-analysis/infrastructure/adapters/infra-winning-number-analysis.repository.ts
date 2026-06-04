@@ -4,9 +4,7 @@ import { prisma } from '../../../../lib/prisma';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
-export class InfraWinningNumberAnalysisRepository
-  implements IWinningNumberAnalysisRepository
-{
+export class InfraWinningNumberAnalysisRepository implements IWinningNumberAnalysisRepository {
   async create(
     winningNumberAnalysis: DomainWinningNumberAnalysis,
   ): Promise<void> {

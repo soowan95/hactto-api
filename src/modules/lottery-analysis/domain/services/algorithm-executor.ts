@@ -42,7 +42,10 @@ export class AlgorithmExecutor {
 
     let temperatures;
     if (ballStatusReader) {
-      temperatures = await ballStatusReader.getBallTemperatures(result, episode);
+      temperatures = await ballStatusReader.getBallTemperatures(
+        result,
+        episode,
+      );
     }
 
     return new DomainPrediction(

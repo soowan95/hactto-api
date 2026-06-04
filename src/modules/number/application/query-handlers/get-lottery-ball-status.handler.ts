@@ -7,7 +7,10 @@ import {
 import { Inject } from '@nestjs/common';
 import { RedisService } from '../../../../helpers/redis/application/redis.service';
 import { LotteryBallStatus } from '../../domain/aggregates/lottery-ball-status.entity';
-import { getBallTemperature, BallTemperature } from '../../domain/vos/BallTemperature';
+import {
+  getBallTemperature,
+  BallTemperature,
+} from '../../domain/vos/BallTemperature';
 
 @QueryHandler(GetLotteryBallStatusQuery)
 export class GetLotteryBallStatusHandler implements IQueryHandler<GetLotteryBallStatusQuery> {
