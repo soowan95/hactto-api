@@ -54,6 +54,7 @@ export class GeneratePredictionHandler implements ICommandHandler<GeneratePredic
       winningNumbers.map((winningNumber) => winningNumber.numbers),
       command.visitorId,
       command.weights,
+      command.oddCount,
     );
 
     // Compute temperatures and analysis synchronously

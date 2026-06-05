@@ -1,4 +1,6 @@
 import {
+  BalanceCommand,
+  BalanceType,
   ExecutableCommand,
   FrequencyCommand,
   FrequencyType,
@@ -18,9 +20,11 @@ export class AlgorithmExecutor {
     data: number[][],
     visitorId?: string,
     weights?: number[],
+    oddCount?: number,
     ballStatusReader?: BallStatusReader,
   ): Promise<DomainPrediction> {
     if (!weights) weights = [25, 20, 18, 15, 12, 10];
+    if (!oddCount) oddCount = 3;
     let command: ExecutableCommand;
     const parts = algorithm.type.split('_');
     const suffix = parts[parts.length - 1];
@@ -34,6 +38,13 @@ export class AlgorithmExecutor {
         break;
       case 'FREQUENCY':
         command = new FrequencyCommand(algorithm.type as FrequencyType, data);
+        break;
+      case 'BALANCE':
+        command = new BalanceCommand(
+          algorithm.type as BalanceType,
+          data,
+          oddCount,
+        );
         break;
       default:
         throw new Error(`Unsupported algorithm type: ${algorithm.type}`);

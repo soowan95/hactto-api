@@ -4,7 +4,7 @@ import { CommandBus } from '@nestjs/cqrs';
 import { HacttoCronExpression } from './hactto-cron-expression.enum';
 import { FetchRecentWinningNumberCommand } from '../../modules/number/application/commands/fetch-recent-winning-number.command';
 import { AnalyzeCommand } from '../../modules/lottery-analysis/application/commands/analyze.command';
-import { SystemStatusService } from '../services/system-status.service';
+import { SystemStatusService } from '../utils/system-status/system-status.service';
 
 @Injectable()
 export class TaskService {

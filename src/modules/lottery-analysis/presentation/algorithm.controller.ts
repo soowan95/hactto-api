@@ -100,7 +100,12 @@ export class AlgorithmController {
     @Body() dto: GeneratePredictionRequestDto,
     @Query('visitorId') visitorId?: string,
   ): Promise<GeneratePredictionResponseDto> {
-    const command = new GeneratePredictionCommand(type, visitorId, dto.weights);
+    const command = new GeneratePredictionCommand(
+      type,
+      visitorId,
+      dto.weights,
+      dto.oddCount,
+    );
     const generated = await this.commandBus.execute(command);
     return plainToInstance(GeneratePredictionResponseDto, {
       numbers: generated.getNumberArray(),

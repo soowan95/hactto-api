@@ -13,7 +13,7 @@ import { DomainPrediction } from '../../domain/aggregates/prediction.entity';
 import { AnalysisWinningNumber } from '../../domain/aggregates/winning-number.entity';
 import { AlgorithmExecutor } from '../../domain/services/algorithm-executor';
 
-import { SystemStatusService } from '../../../../common/services/system-status.service';
+import { SystemStatusService } from '../../../../common/utils/system-status/system-status.service';
 import {
   ALGORITHM_REPOSITORY_TOKEN,
   IAlgorithmRepository,
@@ -164,35 +164,44 @@ export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
       existingSet.add(`${p.episode}:${p.algorithm.type}`);
     }
 
-    const predictionsToCreate: DomainPrediction[] = [];
+    const CONCURRENCY = 100;
 
     for (const algorithm of algorithms) {
+      const episodes: { episode: number; i: number }[] = [];
       for (let i = 1; i < data.length; i++) {
         const episode = i + 1;
         const key = `${episode}:${algorithm.type}`;
 
-        if (existingSet.has(key)) {
-          continue;
+        if (!existingSet.has(key)) {
+          episodes.push({ episode, i });
         }
-
-        const subData: number[][] = data.slice(0, i);
-        const executed = await AlgorithmExecutor.execute(
-          algorithm,
-          episode,
-          subData,
-          undefined,
-          undefined,
-          this.ballStatusReader,
-        );
-        predictionsToCreate.push(executed);
       }
-    }
 
-    if (predictionsToCreate.length > 0) {
-      this.logger.debug(
-        `Bulk inserting ${predictionsToCreate.length} predictions...`,
-      );
-      await this.predictionRepository.saveMany(predictionsToCreate);
+      const results: DomainPrediction[] = [];
+      for (let i = 0; i < episodes.length; i += CONCURRENCY) {
+        const batch = episodes.slice(i, i + CONCURRENCY);
+        const batchResults = await Promise.all(
+          batch.map(({ episode, i }) =>
+            AlgorithmExecutor.execute(
+              algorithm,
+              episode,
+              data.slice(0, i),
+              undefined,
+              undefined,
+              undefined,
+              this.ballStatusReader,
+            ),
+          ),
+        );
+        results.push(...batchResults);
+      }
+
+      if (results.length > 0) {
+        this.logger.debug(
+          `[${algorithm.type}] Bulk inserting ${results.length} predictions...`,
+        );
+        await this.predictionRepository.saveMany(results);
+      }
     }
   }
 }
