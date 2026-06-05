@@ -23,7 +23,7 @@ export class PredictionAnalyzedHandler implements IEventHandler<PredictionAnalyz
 
   async handle(event: PredictionAnalyzedEvent): Promise<void> {
     // 1. 사용자 예측 이력 캐시 무효화
-    if (event.visitorId && event.visitorId !== 'guest') {
+    if (event.visitorId) {
       const cacheKey = `user:${event.visitorId}:predictions:history`;
       await this.redisService.del(cacheKey);
     }

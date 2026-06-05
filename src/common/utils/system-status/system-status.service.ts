@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { RedisService } from '../../helpers/redis/application/redis.service';
+import { RedisService } from '../../../helpers/redis/application/redis.service';
 
 @Injectable()
 export class SystemStatusService implements OnModuleInit {

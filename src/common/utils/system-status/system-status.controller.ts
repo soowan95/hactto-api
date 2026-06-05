@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { SystemStatusService } from '../services/system-status.service';
+import { SystemStatusService } from './system-status.service';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('- System Status')

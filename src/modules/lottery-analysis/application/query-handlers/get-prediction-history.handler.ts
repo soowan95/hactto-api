@@ -29,7 +29,7 @@ export class GetPredictionHistoryHandler implements IQueryHandler<GetPredictionH
   ) {}
 
   async execute(query: GetPredictionHistoryQuery): Promise<any[]> {
-    if (!query.visitorId || query.visitorId === 'guest') {
+    if (!query.visitorId) {
       return [];
     }
 

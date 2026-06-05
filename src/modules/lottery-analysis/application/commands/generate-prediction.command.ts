@@ -3,5 +3,6 @@ export class GeneratePredictionCommand {
     public readonly type: string,
     public readonly visitorId?: string,
     public readonly weights?: number[],
+    public readonly oddCount?: number,
   ) {}
 }
