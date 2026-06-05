@@ -3,5 +3,6 @@ export class AnalysisWinningNumber {
     public readonly episode: number,
     public readonly numbers: number[],
     public readonly isDrawn: boolean,
+    public readonly analysis?: any,
   ) {}
 }

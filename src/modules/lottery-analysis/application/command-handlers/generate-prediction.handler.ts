@@ -9,7 +9,12 @@ import {
   WINNING_NUMBER_READER_TOKEN,
   WinningNumberReader,
 } from '../../domain/ports/winning-number-reader.port';
+import {
+  BALL_STATUS_READER_TOKEN,
+  BallStatusReader,
+} from '../../domain/ports/ball-status-reader.port';
 import { DomainPrediction } from '../../domain/aggregates/prediction.entity';
+import { DomainAnalysis } from '../../domain/aggregates/analysis.entity';
 import { AnalysisWinningNumber } from '../../domain/aggregates/winning-number.entity';
 import { AlgorithmExecutor } from '../../domain/services/algorithm-executor';
 import { PredictionGeneratedEvent } from '../../domain/events/prediction-generated.event';
@@ -25,6 +30,8 @@ export class GeneratePredictionHandler implements ICommandHandler<GeneratePredic
     private readonly predictionRepository: IPredictionRepository,
     @Inject(WINNING_NUMBER_READER_TOKEN)
     private readonly winningNumberReader: WinningNumberReader,
+    @Inject(BALL_STATUS_READER_TOKEN)
+    private readonly ballStatusReader: BallStatusReader,
     @Inject(ALGORITHM_REPOSITORY_TOKEN)
     private readonly algorithmTypeRepository: IAlgorithmRepository,
     private readonly publisher: EventPublisher,
@@ -47,6 +54,16 @@ export class GeneratePredictionHandler implements ICommandHandler<GeneratePredic
       winningNumbers.map((winningNumber) => winningNumber.numbers),
       command.visitorId,
       command.weights,
+    );
+
+    // Compute temperatures and analysis synchronously
+    const temperatures = await this.ballStatusReader.getBallTemperatures(
+      executed.getNumberArray(),
+      executed.episode,
+    );
+    executed.analysis = DomainAnalysis.create(
+      executed.getNumberArray(),
+      temperatures,
     );
 
     const created = await this.predictionRepository.create(executed);

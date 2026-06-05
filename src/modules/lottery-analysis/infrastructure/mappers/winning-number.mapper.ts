@@ -9,6 +9,7 @@ export class WinningNumberMapper {
       winningNumber.episode,
       winningNumber.getNumberArray(),
       winningNumber.isDrawn,
+      winningNumber.analysis,
     );
   }
 }

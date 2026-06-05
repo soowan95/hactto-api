@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { IWinningNumberRepository } from '../../domain/ports/winning-number.port';
 import { prisma } from '../../../../lib/prisma';
-import { Prisma, WinningNumber } from '../../../../generated/prisma/client';
+import { Prisma } from '../../../../generated/prisma/client';
 import { DomainWinningNumber } from '../../domain/aggregates/winning-number.entity';
 import { InfraWinningNumberMapper } from '../mappers/infra-winning-number.mapper';
 import { WinningNumberDrawer } from '../../domain/services/winning-number-drawer';
@@ -11,27 +11,48 @@ export class InfraWinningNumberRepository implements IWinningNumberRepository {
   async findAll(
     options?: Prisma.WinningNumberFindManyArgs,
   ): Promise<DomainWinningNumber[]> {
+    const includeOption = {
+      include: {
+        winningNumberAnalysis: {
+          include: {
+            analysis: true,
+          },
+        },
+      },
+    };
     const results = options
-      ? await prisma.winningNumber.findMany(options)
-      : await prisma.winningNumber.findMany();
+      ? await prisma.winningNumber.findMany({ ...options, ...includeOption })
+      : await prisma.winningNumber.findMany(includeOption);
     return results.map((wn) => InfraWinningNumberMapper.toEntity(wn));
   }
 
   async findByEpisode(episode: number): Promise<DomainWinningNumber> {
-    const winningNumber: WinningNumber | null =
-      await prisma.winningNumber.findUnique({
-        where: { episode: episode },
-      });
+    const winningNumber = await prisma.winningNumber.findUnique({
+      where: { episode: episode },
+      include: {
+        winningNumberAnalysis: {
+          include: {
+            analysis: true,
+          },
+        },
+      },
+    });
     if (!winningNumber) return WinningNumberDrawer.drawPlaceholder(episode);
     return InfraWinningNumberMapper.toEntity(winningNumber);
   }
 
   async findLatestWithWinningNumber(): Promise<DomainWinningNumber | null> {
-    const winningNumber: WinningNumber | null =
-      await prisma.winningNumber.findFirst({
-        where: { isDrawn: true },
-        orderBy: { episode: 'desc' },
-      });
+    const winningNumber = await prisma.winningNumber.findFirst({
+      where: { isDrawn: true },
+      orderBy: { episode: 'desc' },
+      include: {
+        winningNumberAnalysis: {
+          include: {
+            analysis: true,
+          },
+        },
+      },
+    });
     if (!winningNumber) return null;
     return InfraWinningNumberMapper.toEntity(winningNumber);
   }

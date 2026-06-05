@@ -104,6 +104,39 @@ export class AlgorithmController {
     const generated = await this.commandBus.execute(command);
     return plainToInstance(GeneratePredictionResponseDto, {
       numbers: generated.getNumberArray(),
+      analysis: generated.analysis
+        ? {
+            id: generated.analysis.id,
+            reliability: generated.analysis.getReliability(),
+            sum: generated.analysis.sum,
+            cnt0s: generated.analysis.cnt0s,
+            cnt10s: generated.analysis.cnt10s,
+            cnt20s: generated.analysis.cnt20s,
+            cnt30s: generated.analysis.cnt30s,
+            cnt40s: generated.analysis.cnt40s,
+            sumLastDigits: generated.analysis.sumLastDigits,
+            lastDigit0: JSON.parse(generated.analysis.lastDigit0),
+            lastDigit1: JSON.parse(generated.analysis.lastDigit1),
+            lastDigit2: JSON.parse(generated.analysis.lastDigit2),
+            lastDigit3: JSON.parse(generated.analysis.lastDigit3),
+            lastDigit4: JSON.parse(generated.analysis.lastDigit4),
+            lastDigit5: JSON.parse(generated.analysis.lastDigit5),
+            lastDigit6: JSON.parse(generated.analysis.lastDigit6),
+            lastDigit7: JSON.parse(generated.analysis.lastDigit7),
+            lastDigit8: JSON.parse(generated.analysis.lastDigit8),
+            lastDigit9: JSON.parse(generated.analysis.lastDigit9),
+            even: generated.analysis.even,
+            odd: generated.analysis.odd,
+            hot: generated.analysis.hot,
+            warm: generated.analysis.warm,
+            cold: generated.analysis.cold,
+            low: generated.analysis.low,
+            high: generated.analysis.high,
+            ac: generated.analysis.ac,
+            consecutive: generated.analysis.consecutive,
+            temperatures: generated.analysis.temperatures,
+          }
+        : undefined,
     });
   }
 }

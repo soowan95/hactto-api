@@ -18,6 +18,9 @@ export class PredictionDetailDto {
 
   @ApiProperty({ example: 88.5 })
   reliabilityScore: number;
+
+  @ApiProperty({ required: false })
+  analysis?: any;
 }
 
 export class WinningNumberDetailDto {
@@ -26,6 +29,9 @@ export class WinningNumberDetailDto {
 
   @ApiProperty({ example: [4, 11, 18, 28, 32, 44, 8] })
   numbers: number[];
+
+  @ApiProperty({ required: false })
+  analysis?: any;
 }
 
 export class LatestBestPredictionResponseDto {

@@ -29,6 +29,7 @@ export class DomainAnalysis {
   public readonly high: number;
   public readonly ac: number;
   public readonly consecutive: number[][];
+  public temperatures?: Record<number, 'HOT' | 'WARM' | 'COLD'>;
 
   constructor(
     reliability: number,
@@ -113,7 +114,7 @@ export class DomainAnalysis {
       }
     }
 
-    return new DomainAnalysis(
+    const analysis = new DomainAnalysis(
       0,
       prediction.reduce((a, b) => a + b, 0),
       this.countByMultiOfTen(prediction, 0),
@@ -142,6 +143,8 @@ export class DomainAnalysis {
       ac,
       consecutive,
     );
+    analysis.temperatures = temperatures;
+    return analysis;
   }
 
   static dummy() {

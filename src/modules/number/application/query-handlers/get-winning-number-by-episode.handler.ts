@@ -24,11 +24,15 @@ export class GetWinningNumberByEpisodeHandler implements IQueryHandler<GetWinnin
     const cachedData = await this.redisService.get(cacheKey);
     if (cachedData) {
       const parsed = JSON.parse(cachedData);
-      return new DomainWinningNumber(
+      const entity = new DomainWinningNumber(
         parsed.episode,
         parsed.numbers,
         parsed.isDrawn,
       );
+      if (parsed.analysis) {
+        entity.analysis = parsed.analysis;
+      }
+      return entity;
     }
 
     const result = await this.repository.findByEpisode(query.episode);
@@ -39,6 +43,7 @@ export class GetWinningNumberByEpisodeHandler implements IQueryHandler<GetWinnin
           episode: result.episode,
           numbers: result.getNumberArray(),
           isDrawn: result.isDrawn,
+          analysis: result.analysis,
         }),
         604800, // 7 days
       );

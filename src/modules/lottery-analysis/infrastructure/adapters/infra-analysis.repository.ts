@@ -27,8 +27,8 @@ export class InfraAnalysisRepository implements IAnalysisRepository {
   async getAverageScore(algorithm?: string): Promise<number> {
     const whereClause: any = {};
     if (algorithm) {
-      whereClause.prediction = {
-        is: {
+      whereClause.predictionAnalysis = {
+        prediction: {
           algorithmType: algorithm,
         },
       };
