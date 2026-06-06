@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { prisma } from '../../../../lib/prisma';
+import { prisma } from '../../../../libs/prisma';
 import { DomainPrediction } from '../../domain/aggregates/prediction.entity';
 import { InfraPredictionMapper } from '../mappers/infra-prediction.mapper';
 import { IPredictionRepository } from '../../domain/ports/prediction.port';

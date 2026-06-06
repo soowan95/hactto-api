@@ -1,6 +1,6 @@
 import { IAnalysisRepository } from '../../domain/ports/analysis.port';
 import { Injectable } from '@nestjs/common';
-import { prisma } from '../../../../lib/prisma';
+import { prisma } from '../../../../libs/prisma';
 import { DomainAnalysis } from '../../domain/aggregates/analysis.entity';
 import { InfraAnalysisMapper } from '../mappers/infra-analysis.mapper';
 

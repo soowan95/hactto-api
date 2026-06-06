@@ -12,7 +12,7 @@ import {
   BallStatusReader,
 } from '../../domain/ports/ball-status-reader.port';
 import { AnalysisCreatedEvent } from '../../domain/events/analysis-created.event';
-import { prisma } from '../../../../lib/prisma';
+import { prisma } from '../../../../libs/prisma';
 
 @EventsHandler(PredictionGeneratedEvent)
 export class PredictionGeneratedHandler implements IEventHandler<PredictionGeneratedEvent> {

@@ -1,4 +1,5 @@
 import { ReliabilityScore } from '../vos/reliability-score.vo';
+import { LotteryAnalyzer } from '../../../../libs/lottery-analyzer';
 
 export class DomainAnalysis {
   public readonly id?: number;
@@ -95,10 +96,10 @@ export class DomainAnalysis {
     temperatures?: Record<number, 'HOT' | 'WARM' | 'COLD'>,
   ): DomainAnalysis {
     if (prediction.length === 7) prediction = prediction.slice(0, 6);
-    const { even, odd } = this.countEvenOdd(prediction);
-    const { low, high } = this.countLowHigh(prediction);
-    const ac = this.calculateArithmeticComplexity(prediction);
-    const consecutive = this.getConsecutiveNumbers(prediction);
+    const { even, odd } = LotteryAnalyzer.countEvenOdd(prediction);
+    const { low, high } = LotteryAnalyzer.countLowHigh(prediction);
+    const ac = LotteryAnalyzer.calculateArithmeticComplexity(prediction);
+    const consecutive = LotteryAnalyzer.getConsecutiveNumbers(prediction);
 
     let hot = 0;
     let warm = 0;
@@ -116,22 +117,22 @@ export class DomainAnalysis {
     return new DomainAnalysis(
       0,
       prediction.reduce((a, b) => a + b, 0),
-      this.countByMultiOfTen(prediction, 0),
-      this.countByMultiOfTen(prediction, 1),
-      this.countByMultiOfTen(prediction, 2),
-      this.countByMultiOfTen(prediction, 3),
-      this.countByMultiOfTen(prediction, 4),
-      this.sumOfLastDigits(prediction),
-      this.getLastDigitGroup(prediction, 0),
-      this.getLastDigitGroup(prediction, 1),
-      this.getLastDigitGroup(prediction, 2),
-      this.getLastDigitGroup(prediction, 3),
-      this.getLastDigitGroup(prediction, 4),
-      this.getLastDigitGroup(prediction, 5),
-      this.getLastDigitGroup(prediction, 6),
-      this.getLastDigitGroup(prediction, 7),
-      this.getLastDigitGroup(prediction, 8),
-      this.getLastDigitGroup(prediction, 9),
+      LotteryAnalyzer.countByMultiOfTen(prediction, 0),
+      LotteryAnalyzer.countByMultiOfTen(prediction, 1),
+      LotteryAnalyzer.countByMultiOfTen(prediction, 2),
+      LotteryAnalyzer.countByMultiOfTen(prediction, 3),
+      LotteryAnalyzer.countByMultiOfTen(prediction, 4),
+      LotteryAnalyzer.sumOfLastDigits(prediction),
+      LotteryAnalyzer.getLastDigitGroup(prediction, 0),
+      LotteryAnalyzer.getLastDigitGroup(prediction, 1),
+      LotteryAnalyzer.getLastDigitGroup(prediction, 2),
+      LotteryAnalyzer.getLastDigitGroup(prediction, 3),
+      LotteryAnalyzer.getLastDigitGroup(prediction, 4),
+      LotteryAnalyzer.getLastDigitGroup(prediction, 5),
+      LotteryAnalyzer.getLastDigitGroup(prediction, 6),
+      LotteryAnalyzer.getLastDigitGroup(prediction, 7),
+      LotteryAnalyzer.getLastDigitGroup(prediction, 8),
+      LotteryAnalyzer.getLastDigitGroup(prediction, 9),
       even.length,
       odd.length,
       hot,
@@ -184,60 +185,5 @@ export class DomainAnalysis {
 
   getReliability() {
     return this.reliability.getScore();
-  }
-
-  private static countByMultiOfTen(prediction: number[], multi: number) {
-    return prediction.filter((n) => Math.floor(n / 10) === multi).length;
-  }
-
-  private static sumOfLastDigits(prediction: number[]) {
-    return prediction.reduce((sum, n) => sum + (n % 10), 0);
-  }
-
-  private static getLastDigitGroup(prediction: number[], group: number) {
-    return prediction.filter((n) => n % 10 === group);
-  }
-
-  private static countEvenOdd(prediction: number[]) {
-    const even = prediction.filter((n) => n % 2 === 0);
-    const odd = prediction.filter((n) => n % 2 !== 0);
-    return { even, odd };
-  }
-
-  private static countLowHigh(prediction: number[]) {
-    const low = prediction.filter((n) => n < 23);
-    const high = prediction.filter((n) => n >= 23);
-    return { low, high };
-  }
-
-  private static calculateArithmeticComplexity(prediction: number[]) {
-    const numSet = new Set<number>();
-    for (let i = 0; i < prediction.length - 1; i++) {
-      for (let j = i + 1; j < prediction.length; j++) {
-        numSet.add(prediction[j] - prediction[i]);
-      }
-    }
-    return numSet.size;
-  }
-
-  private static getConsecutiveNumbers(prediction: number[]) {
-    const consecutiveNumbers: number[][] = [];
-    const consecutiveNumberSet = new Set<number>();
-    for (let i = 0; i < prediction.length - 1; i++) {
-      if (prediction[i + 1] - prediction[i] === 1) {
-        consecutiveNumberSet.add(prediction[i]);
-        consecutiveNumberSet.add(prediction[i + 1]);
-      } else {
-        if (consecutiveNumberSet.size > 1) {
-          consecutiveNumbers.push([...consecutiveNumberSet]);
-          consecutiveNumberSet.clear();
-        }
-      }
-    }
-
-    if (consecutiveNumberSet.size > 1) {
-      consecutiveNumbers.push([...consecutiveNumberSet]);
-    }
-    return consecutiveNumbers;
   }
 }
