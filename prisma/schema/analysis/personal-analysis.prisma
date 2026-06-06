@@ -1,10 +1,6 @@
-/**
- * 신뢰도
- */
-model Analysis {
-  id Int @id @default(autoincrement())
+model PersonalAnalysis {
+  id Int @id
 
-  reliability   Int    @default(0) // 신뢰도 점수
   sum           Int // 총합
   cnt0s         Int    @map("cnt_0s") // 단번대 수
   cnt10s        Int    @map("cnt_10s") // 10번대 수
@@ -30,12 +26,18 @@ model Analysis {
   low           Int // 저번호 개수
   high          Int // 고번호 개수
   ac            Int // AC 값
-  consecutive   String // 연속 수
+  consecutive   String @db.Text // 연속 수
+  pair          String @db.Text // 연관 수
+  prime         Int // 소수 개수
+  composite     Int // 합성수 개수
+  mul3          Int // 3의 배수 개수
+  win1          Int // 1등 횟수
+  win2          Int // 2등 횟수
+  win3          Int // 3등 횟수
+  win4          Int // 4등 횟수
+  win5          Int // 5등 횟수
 
-  createdAt DateTime @default(now())
+  personalPrediction PersonalPrediction @relation(fields: [id], references: [id])
 
-  predictionAnalysis    PredictionAnalysis?
-  winningNumberAnalysis WinningNumberAnalysis?
-
-  @@map("analysis")
+  @@map("personal_analysis")
 }

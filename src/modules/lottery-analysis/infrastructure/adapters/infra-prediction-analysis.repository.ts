@@ -1,6 +1,6 @@
 import { IPredictionAnalysisRepository } from '../../domain/ports/prediction-analysis.port';
 import { DomainPredictionAnalysis } from '../../domain/aggregates/prediction-analysis.entity';
-import { prisma } from '../../../../lib/prisma';
+import { prisma } from '../../../../libs/prisma';
 
 export class InfraPredictionAnalysisRepository implements IPredictionAnalysisRepository {
   async insert(predictionAnalysis: DomainPredictionAnalysis): Promise<void> {

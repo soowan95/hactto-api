@@ -1,0 +1,17 @@
+model PersonalPrediction {
+  id Int @id @default(autoincrement())
+
+  visitorId String @map("visitor_id") // 방문자 식별자
+  episode   Int
+  pp1WnNo   Int    @map("pp1_wn_no")
+  pp2WnNo   Int    @map("pp2_wn_no")
+  pp3WnNo   Int    @map("pp3_wn_no")
+  pp4WnNo   Int    @map("pp4_wn_no")
+  pp5WnNo   Int    @map("pp5_wn_no")
+  pp6WnNo   Int    @map("pp6_wn_no")
+
+  winningNumber    WinningNumber     @relation(fields: [episode], references: [episode])
+  personalAnalysis PersonalAnalysis? // 1:1 분석 결과
+
+  @@map("personal_prediction")
+}

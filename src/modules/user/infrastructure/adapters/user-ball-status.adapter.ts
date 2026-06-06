@@ -1,42 +1,32 @@
 import { Injectable } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import {
-  BallStatusReader,
-  AnalysisBallTemperature,
+  UserBallStatusReader,
+  UserBallTemperature,
 } from '../../domain/ports/ball-status-reader.port';
 import { GetLotteryBallStatusQuery } from '../../../number/application/queries/get-lottery-ball-status.query';
 import { BallTemperature as NumberBallTemperature } from '../../../number/domain/vos/ball.temperature.vo';
 
 @Injectable()
-export class BallStatusAdapter implements BallStatusReader {
+export class UserBallStatusAdapter implements UserBallStatusReader {
   constructor(private readonly queryBus: QueryBus) {}
-
-  async getBallTemperature(
-    ball: number,
-    beforeEpisode?: number,
-  ): Promise<AnalysisBallTemperature> {
-    const result = await this.queryBus.execute(
-      new GetLotteryBallStatusQuery(ball, beforeEpisode),
-    );
-    return this.mapToAnalysisTemperature(result.status);
-  }
 
   async getBallTemperatures(
     balls: number[],
-    beforeEpisode?: number,
-  ): Promise<Record<number, AnalysisBallTemperature>> {
-    const temperatures: Record<number, AnalysisBallTemperature> = {};
+  ): Promise<Record<number, UserBallTemperature>> {
+    const temperatures: Record<number, UserBallTemperature> = {};
     await Promise.all(
       balls.map(async (ball) => {
-        temperatures[ball] = await this.getBallTemperature(ball, beforeEpisode);
+        const result = await this.queryBus.execute(
+          new GetLotteryBallStatusQuery(ball),
+        );
+        temperatures[ball] = this.mapTemperature(result.status);
       }),
     );
     return temperatures;
   }
 
-  private mapToAnalysisTemperature(
-    status: NumberBallTemperature,
-  ): AnalysisBallTemperature {
+  private mapTemperature(status: NumberBallTemperature): UserBallTemperature {
     switch (status) {
       case NumberBallTemperature.HOT:
         return 'HOT';

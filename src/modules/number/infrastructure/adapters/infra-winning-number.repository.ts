@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { IWinningNumberRepository } from '../../domain/ports/winning-number.port';
-import { prisma } from '../../../../lib/prisma';
+import { prisma } from '../../../../libs/prisma';
 import { Prisma } from '../../../../generated/prisma/client';
 import { DomainWinningNumber } from '../../domain/aggregates/winning-number.entity';
 import { InfraWinningNumberMapper } from '../mappers/infra-winning-number.mapper';
@@ -63,6 +63,37 @@ export class InfraWinningNumberRepository implements IWinningNumberRepository {
       where: { episode: winningNumber.episode },
       update: data,
       create: data,
+    });
+  }
+
+  async countByPair(pair: [number, number]): Promise<number> {
+    const [a, b] = pair;
+
+    return prisma.winningNumber.count({
+      where: {
+        AND: [
+          {
+            OR: [
+              { lt1WnNo: a },
+              { lt2WnNo: a },
+              { lt3WnNo: a },
+              { lt4WnNo: a },
+              { lt5WnNo: a },
+              { lt6WnNo: a },
+            ],
+          },
+          {
+            OR: [
+              { lt1WnNo: b },
+              { lt2WnNo: b },
+              { lt3WnNo: b },
+              { lt4WnNo: b },
+              { lt5WnNo: b },
+              { lt6WnNo: b },
+            ],
+          },
+        ],
+      },
     });
   }
 }

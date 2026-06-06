@@ -10,7 +10,7 @@ import { LotteryBallStatus } from '../../domain/aggregates/lottery-ball-status.e
 import {
   getBallTemperature,
   BallTemperature,
-} from '../../domain/vos/BallTemperature';
+} from '../../domain/vos/ball.temperature.vo';
 
 @QueryHandler(GetLotteryBallStatusQuery)
 export class GetLotteryBallStatusHandler implements IQueryHandler<GetLotteryBallStatusQuery> {

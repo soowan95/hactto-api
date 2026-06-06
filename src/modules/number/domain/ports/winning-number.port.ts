@@ -7,4 +7,5 @@ export interface IWinningNumberRepository {
   findByEpisode(episode: number): Promise<DomainWinningNumber>;
   findLatestWithWinningNumber(): Promise<DomainWinningNumber | null>;
   upsert(winningNumber: DomainWinningNumber): Promise<void>;
+  countByPair(pair: [number, number]): Promise<number>;
 }

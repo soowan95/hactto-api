@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { prisma } from '../../../../lib/prisma';
+import { prisma } from '../../../../libs/prisma';
 import { InfraAlgorithmMapper } from '../mappers/infra-algorithm.mapper';
 import { DomainAlgorithm } from '../../domain/aggregates/algorithm.entity';
 import { IAlgorithmRepository } from '../../domain/ports/algorithm.port';

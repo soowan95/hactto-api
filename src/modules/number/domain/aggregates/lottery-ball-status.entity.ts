@@ -1,5 +1,5 @@
 import { LottoNumber } from '../vos/lotto-number.vo';
-import { BallTemperature } from '../vos/BallTemperature';
+import { BallTemperature } from '../vos/ball.temperature.vo';
 
 export class LotteryBallStatus {
   public readonly recentTen: number; // 최근 10회 등장 횟수

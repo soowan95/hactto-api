@@ -1,6 +1,6 @@
 import { IWinningNumberAnalysisRepository } from '../../domain/ports/winning-number-analysis.port';
 import { DomainWinningNumberAnalysis } from '../../domain/aggregates/winning-number-analysis.entity';
-import { prisma } from '../../../../lib/prisma';
+import { prisma } from '../../../../libs/prisma';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()

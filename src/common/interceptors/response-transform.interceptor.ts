@@ -20,10 +20,7 @@ export class ResponseTransformInterceptor<T> implements NestInterceptor<
   Response<T>
 > {
   constructor(private reflector: Reflector) {}
-  intercept(
-    context: ExecutionContext,
-    next: CallHandler,
-  ): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest();
     if (
       request.headers['accept'] === 'text/event-stream' ||

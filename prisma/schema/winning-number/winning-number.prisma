@@ -13,7 +13,8 @@ model WinningNumber {
   ltBnsWnNo Int     @default(0) @map("lt_bns_wn_no")
   isDrawn   Boolean @default(true) @map("is_drawn")
 
-  predictions Prediction[] // 회차 별 각 알고리즘에 대한 결과
+  predictions         Prediction[] // 회차 별 각 알고리즘에 대한 결과
+  personalPredictions PersonalPrediction[] // 개인 예측번호 결과
 
   winningNumberAnalysis WinningNumberAnalysis?
 
