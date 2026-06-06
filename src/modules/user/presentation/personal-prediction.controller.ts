@@ -1,5 +1,5 @@
 import { ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Body, Controller, Get, Headers, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Post } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
 import { SavePersonalPredictionRequestDto } from './dtos/requests/save-personal-prediction-request.dto';
@@ -15,9 +15,16 @@ export class PersonalPredictionController {
   ) {}
 
   @ApiOperation({ summary: '개인 예측 당첨이력 조회' })
+  @ApiHeader({
+    name: 'x-visitor-id',
+    required: false,
+    description: '방문자 식별자',
+  })
   @ResponseMessage('success.read')
   @Get('history')
-  async getHistory(@Query('visitorId') visitorId?: string): Promise<any[]> {
+  async getHistory(
+    @Headers('x-visitor-id') visitorId?: string,
+  ): Promise<any[]> {
     const query = new GetPersonalPredictionHistoryQuery(visitorId);
     return this.queryBus.execute(query);
   }

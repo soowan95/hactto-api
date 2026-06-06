@@ -59,8 +59,9 @@ export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async execute(command: AnalyzeCommand): Promise<void> {
-    await this.systemStatusService.syncFromRedis();
-    if (this.systemStatusService.getAnalysisStatus()) {
+    const runningLockKey = 'system:status:analysis-running';
+    const isRunning = await this.redisService.get(runningLockKey);
+    if (isRunning === 'true') {
       this.logger.warn(
         '⚠️ Analysis is already in progress. Skipping duplicate run.',
       );
@@ -68,6 +69,7 @@ export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
     }
 
     try {
+      await this.redisService.set(runningLockKey, 'true', 1800); // 30-minute safety TTL
       // Lock system status so users see the maintenance/analyzing page
       await this.systemStatusService.setAnalysisStatus(true);
 
@@ -101,6 +103,7 @@ export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
         resultsToSave.forEach((prediction) => prediction.commit());
       }
     } finally {
+      await this.redisService.del(runningLockKey);
       this.logger.debug(
         '🔓 Analysis processing completed. Releasing system lock.',
       );

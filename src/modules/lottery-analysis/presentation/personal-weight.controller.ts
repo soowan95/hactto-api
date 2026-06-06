@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Headers, Post, Query } from '@nestjs/common';
+import { ApiHeader, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { SetPersonalWeightRequestDto } from './dtos/requests/set-personal-weight-request.dto';
 import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
@@ -15,11 +15,19 @@ export class PersonalWeightController {
   ) {}
 
   @ApiOperation({ summary: '개인화 가중치 저장' })
+  @ApiHeader({
+    name: 'x-visitor-id',
+    required: true,
+    description: '방문자 식별자',
+  })
   @ResponseMessage('success.create')
   @Post()
-  async setWeights(@Body() dto: SetPersonalWeightRequestDto): Promise<void> {
+  async setWeights(
+    @Headers('x-visitor-id') visitorId: string,
+    @Body() dto: SetPersonalWeightRequestDto,
+  ): Promise<void> {
     const command = new SetPersonalWeightCommand(
-      dto.visitorId,
+      visitorId,
       dto.algorithm,
       dto.weights,
     );
@@ -27,12 +35,16 @@ export class PersonalWeightController {
   }
 
   @ApiOperation({ summary: '개인화 가중치 조회' })
-  @ApiQuery({ name: 'visitorId', type: String, required: true })
+  @ApiHeader({
+    name: 'x-visitor-id',
+    required: true,
+    description: '방문자 식별자',
+  })
   @ApiQuery({ name: 'algorithm', required: true })
   @ResponseMessage('success.read')
   @Get()
   async getWeights(
-    @Query('visitorId') visitorId: string,
+    @Headers('x-visitor-id') visitorId: string,
     @Query('algorithm')
     algorithm: string,
   ): Promise<number[]> {

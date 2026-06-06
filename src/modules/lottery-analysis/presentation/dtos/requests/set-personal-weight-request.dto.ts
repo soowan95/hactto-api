@@ -1,12 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty, IsString } from 'class-validator';
+import { IsArray, IsNotEmpty } from 'class-validator';
 
 export class SetPersonalWeightRequestDto {
-  @ApiProperty({ description: '방문자 식별자' })
-  @IsString()
-  @IsNotEmpty()
-  visitorId: string;
-
   @ApiProperty({ description: '알고리즘 타입' })
   @IsNotEmpty()
   algorithm: string;

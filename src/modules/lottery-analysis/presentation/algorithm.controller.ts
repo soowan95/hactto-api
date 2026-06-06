@@ -1,5 +1,13 @@
-import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
+import { ApiHeader, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { AlgorithmResponsesDto } from './dtos/responses/algorithm-responses.dto';
 import { plainToInstance } from 'class-transformer';
@@ -38,10 +46,15 @@ export class AlgorithmController {
   @ApiOperation({
     summary: 'Get prediction history for a user',
   })
+  @ApiHeader({
+    name: 'x-visitor-id',
+    required: false,
+    description: '방문자 식별자',
+  })
   @ResponseMessage('success.read')
   @Get('history')
   async getHistory(
-    @Query('visitorId') visitorId?: string,
+    @Headers('x-visitor-id') visitorId?: string,
   ): Promise<AlgorithmHistoryResponseDto[]> {
     const query = new GetPredictionHistoryQuery(visitorId);
     const results: any[] = await this.queryBus.execute(query);
@@ -98,12 +111,17 @@ export class AlgorithmController {
     name: 'type',
     description: '알고리즘 타입',
   })
+  @ApiHeader({
+    name: 'x-visitor-id',
+    required: false,
+    description: '방문자 식별자',
+  })
   @ResponseMessage('success.generate')
   @Post(':type/generate')
   async generatePrediction(
     @Param('type') type: string,
     @Body() dto: GeneratePredictionRequestDto,
-    @Query('visitorId') visitorId?: string,
+    @Headers('x-visitor-id') visitorId?: string,
   ): Promise<GeneratePredictionResponseDto> {
     const command = new GeneratePredictionCommand(
       type,
