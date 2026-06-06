@@ -12,9 +12,8 @@ import { GetEpisodeBestPredictionHandler } from './query-handlers/get-episode-be
 import { PredictionGeneratedHandler } from './event-handlers/prediction-generated.handler';
 import { GetAlgorithmTypeHandler } from './query-handlers/get-algorithm-type.handler';
 import { FetchAlgorithmHandler } from './command-handlers/fetch-algorithm.hanlder';
-import { SetAlgorithmComplexityHandler } from './command-handlers/set-algorithm-complexity.handler';
+import { UpdateAlgorithmHandler } from './command-handlers/update-algorithm.handler';
 import { AlgorithmFetchedHandler } from './event-handlers/algorithm-fetched.handler';
-import { AlgorithmComplexityUpdatedHandler } from './event-handlers/algorithm-complexity-updated.handler';
 import { PredictionAnalyzedHandler } from './event-handlers/prediction-analyzed.handler';
 import { AnalysisCreatedHandler } from './event-handlers/analysis-created.handler';
 
@@ -23,7 +22,7 @@ export const CommandHandlers = [
   GeneratePredictionHandler,
   AnalyzeHandler,
   FetchAlgorithmHandler,
-  SetAlgorithmComplexityHandler,
+  UpdateAlgorithmHandler,
 ];
 
 export const QueryHandlers = [
@@ -41,7 +40,6 @@ export const QueryHandlers = [
 export const EventHandlers = [
   PredictionGeneratedHandler,
   AlgorithmFetchedHandler,
-  AlgorithmComplexityUpdatedHandler,
   PredictionAnalyzedHandler,
   AnalysisCreatedHandler,
 ];

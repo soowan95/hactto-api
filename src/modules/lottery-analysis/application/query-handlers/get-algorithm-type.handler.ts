@@ -16,8 +16,22 @@ export class GetAlgorithmTypeHandler implements IQueryHandler<GetAlgorithmTypeQu
     private readonly redisService: RedisService,
   ) {}
 
-  async execute(query: GetAlgorithmTypeQuery): Promise<DomainAlgorithm[]> {
-    const cacheKey = query.type ? `algorithm:${query.type}` : 'algorithm:all';
+  async execute(
+    query: GetAlgorithmTypeQuery,
+  ): Promise<DomainAlgorithm | DomainAlgorithm[]> {
+    if (query.type) {
+      const cacheKey = `algorithm:${query.type}`;
+      const cachedData = await this.redisService.get(cacheKey);
+      if (cachedData) {
+        return JSON.parse(cachedData);
+      }
+
+      const data = await this.algorithmTypeRepository.findByType(query.type);
+      await this.redisService.set(cacheKey, JSON.stringify(data));
+      return data;
+    }
+
+    const cacheKey = 'algorithm:all';
     const cachedData = await this.redisService.get(cacheKey);
     if (cachedData) {
       return JSON.parse(cachedData);
@@ -26,13 +40,11 @@ export class GetAlgorithmTypeHandler implements IQueryHandler<GetAlgorithmTypeQu
     const data = await this.algorithmTypeRepository.findAll();
 
     await this.redisService.set(cacheKey, JSON.stringify(data));
-    if (!query.type) {
-      for (const algorithm of data) {
-        await this.redisService.set(
-          `algorithm:${algorithm.type}`,
-          JSON.stringify(algorithm),
-        );
-      }
+    for (const algorithm of data) {
+      await this.redisService.set(
+        `algorithm:${algorithm.type}`,
+        JSON.stringify(algorithm),
+      );
     }
 
     return data;

@@ -15,7 +15,9 @@ export class RequestParser {
 
     if (ip.includes(',')) ip = ip.split(',')[0].trim();
 
-    if (ip.startsWith('::ffff:')) ip = ip.replace('::ffff:', '');
+    ip = ip.replace(/^IP:\s*/i, '');
+    ip = ip.replace(/^::ffff:/, '');
+    ip = ip.trim();
 
     return ip;
   }
@@ -38,10 +40,18 @@ export class RequestParser {
   }
 
   getVisitorId() {
-    return this.request.query?.visitorId || this.request.body?.visitorId;
+    return (
+      (this.request.headers['x-visitor-id'] as string) ||
+      (this.request.query?.visitorId as string) ||
+      (this.request.body?.visitorId as string)
+    );
   }
 
   getMasterKey() {
-    return this.request.query?.mk || this.request.body?.mk;
+    return (
+      (this.request.headers['x-master-key'] as string) ||
+      (this.request.query?.mk as string) ||
+      (this.request.body?.mk as string)
+    );
   }
 }

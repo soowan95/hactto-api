@@ -7,7 +7,7 @@ export class AlgorithmFetchedHandler implements IEventHandler<AlgorithmFetchedEv
   constructor(private readonly redisService: RedisService) {}
 
   async handle(event: AlgorithmFetchedEvent): Promise<void> {
-    const cachedKey = `algorithm:${event.type}`;
-    await this.redisService.del(cachedKey);
+    await this.redisService.del(`algorithm:${event.type}`);
+    await this.redisService.del('algorithm:all');
   }
 }

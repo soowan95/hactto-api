@@ -14,7 +14,7 @@ import { GetWinningNumberByEpisodeHandler } from './query-handlers/get-winning-n
 import { DomainWinningNumber } from '../domain/aggregates/winning-number.entity';
 import { WinningNumberDrawer } from '../domain/services/winning-number-drawer';
 import { RedisService } from '../../../helpers/redis/application/redis.service';
-import { EventPublisher } from '@nestjs/cqrs';
+import { EventPublisher, QueryBus } from '@nestjs/cqrs';
 
 describe('WinningNumber CQRS Handlers', () => {
   let fetchWinningNumbersHandler: FetchWinningNumbersHandler;
@@ -27,6 +27,7 @@ describe('WinningNumber CQRS Handlers', () => {
   let mockFetcher: any;
   let mockRedisService: any;
   let mockEventPublisher: any;
+  let mockQueryBus: any;
 
   beforeEach(async () => {
     mockRepository = {
@@ -54,6 +55,10 @@ describe('WinningNumber CQRS Handlers', () => {
       }),
     };
 
+    mockQueryBus = {
+      execute: jest.fn().mockResolvedValue({ status: 'HOT' }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FetchWinningNumbersHandler,
@@ -76,6 +81,10 @@ describe('WinningNumber CQRS Handlers', () => {
         {
           provide: EventPublisher,
           useValue: mockEventPublisher,
+        },
+        {
+          provide: QueryBus,
+          useValue: mockQueryBus,
         },
       ],
     }).compile();

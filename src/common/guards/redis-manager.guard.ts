@@ -13,7 +13,9 @@ export class RedisManagerGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const masterKey: string = request.query.mk;
+    const masterKey: string =
+      (request.query.mk as string) ||
+      (request.headers['x-master-key'] as string);
 
     if (!masterKey) throw new BadRequestException('Master key is required');
 
