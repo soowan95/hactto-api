@@ -206,6 +206,9 @@ export class InfraPredictionRepository implements IPredictionRepository {
       where: {
         algorithm,
         predictionAnalysis: { isNot: null },
+        winningNumber: {
+          isDrawn: true,
+        },
       },
       orderBy: {
         episode: 'desc',

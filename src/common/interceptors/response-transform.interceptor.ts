@@ -23,7 +23,15 @@ export class ResponseTransformInterceptor<T> implements NestInterceptor<
   intercept(
     context: ExecutionContext,
     next: CallHandler,
-  ): Observable<Response<T>> {
+  ): Observable<any> {
+    const request = context.switchToHttp().getRequest();
+    if (
+      request.headers['accept'] === 'text/event-stream' ||
+      request.url.includes('/sse')
+    ) {
+      return next.handle();
+    }
+
     const message = this.reflector.get<string>(
       'response-message',
       context.getHandler(),

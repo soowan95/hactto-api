@@ -1,7 +1,9 @@
 model Algorithm {
   type String @id
 
-  complexity Int @default(0)
+  name        String? // 한글 이름
+  complexity  Int     @default(0)
+  description String? // 설명
 
   predictions Prediction[]
 

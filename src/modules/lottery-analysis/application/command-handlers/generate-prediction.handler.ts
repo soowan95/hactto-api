@@ -66,8 +66,12 @@ export class GeneratePredictionHandler implements ICommandHandler<GeneratePredic
       executed.getNumberArray(),
       temperatures,
     );
+    (executed.analysis as any).temperatures = temperatures;
 
     const created = await this.predictionRepository.create(executed);
+    if (created.analysis) {
+      (created.analysis as any).temperatures = temperatures;
+    }
     const prediction = this.publisher.mergeObjectContext(created);
 
     prediction.apply(

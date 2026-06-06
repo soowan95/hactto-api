@@ -13,8 +13,8 @@ import { GeneratePredictionRequestDto } from './dtos/requests/generate-predictio
 import { GetAlgorithmTypeQuery } from '../application/queries/get-algorithm-type.query';
 import { RedisManager } from '../../../common/decorators/redis-manager.decorator';
 import { FetchAlgorithmCommand } from '../application/commands/fetch-algorithm.command';
-import { SetAlgorithmComplexityRequest } from './dtos/requests/set-algorithm-complexity-request.dto';
-import { SetAlgorithmComplexityCommand } from '../application/commands/set-algorithm-complexity.command';
+import { UpdateAlgorithmRequestDto } from './dtos/requests/update-algorithm-request.dto';
+import { UpdateAlgorithmCommand } from '../application/commands/update-algorithm.command';
 
 @ApiTags('- Algorithm')
 @Controller('algorithms')
@@ -66,11 +66,16 @@ export class AlgorithmController {
   })
   @ResponseMessage('success.save')
   @Put(':type')
-  async setAlgorithmComplexity(
+  async updateAlgorithm(
     @Param('type') type: string,
-    @Body() dto: SetAlgorithmComplexityRequest,
+    @Body() dto: UpdateAlgorithmRequestDto,
   ): Promise<AlgorithmResponsesDto> {
-    const command = new SetAlgorithmComplexityCommand(type, dto.complexity);
+    const command = new UpdateAlgorithmCommand(
+      type,
+      dto.complexity,
+      dto.name,
+      dto.description,
+    );
     const result = await this.commandBus.execute(command);
     return plainToInstance(AlgorithmResponsesDto, result);
   }

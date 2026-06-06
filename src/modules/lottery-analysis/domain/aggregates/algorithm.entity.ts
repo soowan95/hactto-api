@@ -5,6 +5,8 @@ export class DomainAlgorithm extends AggregateRoot {
   constructor(
     public readonly type: string,
     public complexity: number,
+    public name?: string,
+    public description?: string,
   ) {
     super();
   }
@@ -13,7 +15,7 @@ export class DomainAlgorithm extends AggregateRoot {
     this.apply(new AlgorithmFetchedEvent(this.type));
   }
 
-  complexityUpdated() {
+  updated() {
     this.apply(new AlgorithmFetchedEvent(this.type));
   }
 }

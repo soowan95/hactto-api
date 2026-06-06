@@ -59,7 +59,18 @@ export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async execute(command: AnalyzeCommand): Promise<void> {
+    await this.systemStatusService.syncFromRedis();
+    if (this.systemStatusService.getAnalysisStatus()) {
+      this.logger.warn(
+        '⚠️ Analysis is already in progress. Skipping duplicate run.',
+      );
+      return;
+    }
+
     try {
+      // Lock system status so users see the maintenance/analyzing page
+      await this.systemStatusService.setAnalysisStatus(true);
+
       // 1. Initialize winning number analyses first
       await this.initializeWinningNumberAnalyses();
 

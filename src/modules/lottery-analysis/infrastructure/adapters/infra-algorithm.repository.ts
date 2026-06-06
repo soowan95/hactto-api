@@ -26,10 +26,14 @@ export class InfraAlgorithmRepository implements IAlgorithmRepository {
       where: { type: algorithm.type },
       update: {
         complexity: data.complexity,
+        name: data.name,
+        description: data.description,
       },
       create: {
         type: data.type,
         complexity: data.complexity,
+        name: data.name,
+        description: data.description,
       },
     });
   }
@@ -40,6 +44,8 @@ export class InfraAlgorithmRepository implements IAlgorithmRepository {
       where: { type: algorithm.type },
       data: {
         complexity: data.complexity,
+        name: data.name,
+        description: data.description,
       },
     });
     return InfraAlgorithmMapper.toEntity(result);
