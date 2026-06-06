@@ -65,7 +65,7 @@ export class GetPersonalPredictionHistoryHandler implements IQueryHandler<GetPer
 
         let matchResult: any = null;
         if (winningNumber && winningNumber.isDrawn) {
-          const winningNumbersArr = winningNumber.numbers;
+          const winningNumbersArr = winningNumber.getNumberArray();
 
           const predictedMain = predictedNumbers.slice(0, 6);
           const winningMain = winningNumbersArr.slice(0, 6);
