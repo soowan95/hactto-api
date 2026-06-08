@@ -1,5 +1,6 @@
 import {
   CanActivate,
+  ExecutionContext,
   ForbiddenException,
   Inject,
   Injectable,
@@ -12,6 +13,8 @@ import {
   IVisitorRepository,
   VISITOR_REPOSITORY_TOKEN,
 } from '../../modules/user/domain/ports/visitor.port';
+import { Response } from 'express';
+import * as crypto from 'crypto';
 
 @Injectable({ scope: Scope.REQUEST })
 export class KoreaIpGuard implements CanActivate {
@@ -24,7 +27,7 @@ export class KoreaIpGuard implements CanActivate {
     private readonly redisService: RedisService,
   ) {}
 
-  async canActivate(): Promise<boolean> {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     let ip = '';
     try {
       ip = this.requestParser.getIpOrThrow();
@@ -39,7 +42,14 @@ export class KoreaIpGuard implements CanActivate {
       throw new ForbiddenException('IP 주소를 식별할 수 없습니다.');
     }
 
-    const visitorId = this.requestParser.getVisitorId();
+    let visitorId = this.requestParser.getVisitorId();
+    if (!visitorId) {
+      visitorId = crypto
+        .createHash('sha256')
+        .update(ip)
+        .digest('hex')
+        .substring(0, 16);
+    }
 
     if (visitorId) {
       const redisKey = `visitor-ip:${visitorId}`;
@@ -51,9 +61,11 @@ export class KoreaIpGuard implements CanActivate {
       }
 
       if (!savedIp) {
-        // 처음 페이지 진입했을 때 redis 에 ip:visitorId 없으면 저장
-        await this.redisService.set(redisKey, ip, 604800); // 7 days expiration
-        await this.repository.insert(visitorId, ip); // DB 에 저장.
+        // 처음 진입 시에는 헤더만 설정하고 실제 저장은 동의 후 register API에서 진행
+        const response = context.switchToHttp().getResponse<Response>();
+        if (response && typeof response.setHeader === 'function') {
+          response.setHeader('x-first-visit', 'true');
+        }
       } else if (savedIp !== ip) {
         // 그 다음부터는 visitorId 검증해서 다른 IP 에서는 해당 visitorId 사용못하게 처리
         this.logger.warn(

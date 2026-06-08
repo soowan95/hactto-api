@@ -9,9 +9,16 @@ import { KoreaIpGuard } from './common/guards/korea-ip.guard';
 import expressStatusMonitor from 'express-status-monitor';
 import { StatusMonitorMiddleware } from './common/middlewares/status-monitor.middleware';
 import { CommonModule } from './common/common.module';
+import { CqrsModule } from '@nestjs/cqrs';
 
 @Module({
-  imports: [ScheduleModule.forRoot(), RootModule, RedisModule, CommonModule],
+  imports: [
+    ScheduleModule.forRoot(),
+    CqrsModule,
+    RootModule,
+    RedisModule,
+    CommonModule,
+  ],
   providers: [
     TaskService,
     AdminGuard,

@@ -62,7 +62,7 @@ export class LotteryAnalyzer {
         numSet.add(prediction[j] - prediction[i]);
       }
     }
-    return numSet.size;
+    return numSet.size - 5;
   }
 
   static getConsecutiveNumbers(prediction: number[]) {
