@@ -12,10 +12,15 @@ import { PersonalAnalysisController } from './presentation/personal-analysis.con
 import { PersonalPredictionController } from './presentation/personal-prediction.controller';
 import { VISITOR_REPOSITORY_TOKEN } from './domain/ports/visitor.port';
 import { InfraVisitorRepository } from './infrastructure/adapters/infra-visitor.repository';
+import { VisitorController } from './presentation/visitor.controller';
 
 @Module({
   imports: [CqrsModule, WinningNumberModule],
-  controllers: [PersonalAnalysisController, PersonalPredictionController],
+  controllers: [
+    PersonalAnalysisController,
+    PersonalPredictionController,
+    VisitorController,
+  ],
   providers: [
     {
       provide: PERSONAL_ANALYSIS_REPOSITORY_TOKEN,
