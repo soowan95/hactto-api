@@ -1,0 +1,7 @@
+model Visitor {
+  id String @id
+
+  ip String
+
+  @@map("visitor")
+}

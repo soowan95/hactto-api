@@ -1,17 +1,25 @@
 import {
   CanActivate,
   ForbiddenException,
+  Inject,
   Injectable,
   Logger,
+  Scope,
 } from '@nestjs/common';
 import { RequestParser } from '../utils/request-parser';
 import { RedisService } from '../../helpers/redis/application/redis.service';
+import {
+  IVisitorRepository,
+  VISITOR_REPOSITORY_TOKEN,
+} from '../../modules/user/domain/ports/visitor.port';
 
-@Injectable()
+@Injectable({ scope: Scope.REQUEST })
 export class KoreaIpGuard implements CanActivate {
   private readonly logger = new Logger(KoreaIpGuard.name);
 
   constructor(
+    @Inject(VISITOR_REPOSITORY_TOKEN)
+    private readonly repository: IVisitorRepository,
     private readonly requestParser: RequestParser,
     private readonly redisService: RedisService,
   ) {}
@@ -35,11 +43,17 @@ export class KoreaIpGuard implements CanActivate {
 
     if (visitorId) {
       const redisKey = `visitor-ip:${visitorId}`;
-      const savedIp = await this.redisService.get(redisKey);
+      let savedIp = await this.redisService.get(redisKey);
+      // redis cache 에 없으면 DB 조회.
+      if (!savedIp) {
+        const visitorEntity = await this.repository.findById(visitorId);
+        if (visitorEntity) savedIp = visitorEntity.ip;
+      }
 
       if (!savedIp) {
         // 처음 페이지 진입했을 때 redis 에 ip:visitorId 없으면 저장
         await this.redisService.set(redisKey, ip, 604800); // 7 days expiration
+        await this.repository.insert(visitorId, ip); // DB 에 저장.
       } else if (savedIp !== ip) {
         // 그 다음부터는 visitorId 검증해서 다른 IP 에서는 해당 visitorId 사용못하게 처리
         this.logger.warn(
