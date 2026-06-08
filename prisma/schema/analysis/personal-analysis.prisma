@@ -26,8 +26,8 @@ model PersonalAnalysis {
   low           Int // 저번호 개수
   high          Int // 고번호 개수
   ac            Int // AC 값
-  consecutive   String @db.Text // 연속 수
-  pair          String @db.Text // 연관 수
+  consecutive   String // 연속 수
+  pair          String // 연관 수
   prime         Int // 소수 개수
   composite     Int // 합성수 개수
   mul3          Int // 3의 배수 개수

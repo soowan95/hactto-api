@@ -10,6 +10,8 @@ import { WinningNumberModule } from '../number/winning-number.module';
 import { CommandHandlers, QueryHandlers } from './application';
 import { PersonalAnalysisController } from './presentation/personal-analysis.controller';
 import { PersonalPredictionController } from './presentation/personal-prediction.controller';
+import { VISITOR_REPOSITORY_TOKEN } from './domain/ports/visitor.port';
+import { InfraVisitorRepository } from './infrastructure/adapters/infra-visitor.repository';
 
 @Module({
   imports: [CqrsModule, WinningNumberModule],
@@ -27,9 +29,13 @@ import { PersonalPredictionController } from './presentation/personal-prediction
       provide: USER_BALL_STATUS_READER_TOKEN,
       useClass: UserBallStatusAdapter,
     },
+    {
+      provide: VISITOR_REPOSITORY_TOKEN,
+      useClass: InfraVisitorRepository,
+    },
     ...CommandHandlers,
     ...QueryHandlers,
   ],
-  exports: [PERSONAL_ANALYSIS_REPOSITORY_TOKEN],
+  exports: [PERSONAL_ANALYSIS_REPOSITORY_TOKEN, VISITOR_REPOSITORY_TOKEN],
 })
 export class UserModule {}
