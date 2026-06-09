@@ -1,0 +1,31 @@
+/**
+ * 방문자의 혼(Hon) 잔액 모델
+ */
+model Hon {
+  visitorId String   @id @map("visitor_id")
+  balance   Int      @default(0) @map("balance") // 보유 혼(Hon) 개수
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  visitor   Visitor  @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+
+  @@map("hon")
+}
+
+/**
+ * 방문자의 정기 구독 상태 모델
+ */
+model Subscription {
+  visitorId     String    @id @map("visitor_id")
+  plan          String    @map("plan")           // MONTHLY, YEARLY
+  status        String    @map("status")         // ACTIVE, CANCELLED, EXPIRED
+  billingKey    String    @map("billing_key")    // 포트원 빌링키
+  nextPaymentAt DateTime  @map("next_payment_at")// 다음 결제 예정일
+  startsAt      DateTime  @map("starts_at")
+  endsAt        DateTime  @map("ends_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  visitor       Visitor   @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+
+  @@map("subscription")
+}

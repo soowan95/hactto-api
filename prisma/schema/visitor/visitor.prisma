@@ -3,5 +3,8 @@ model Visitor {
 
   ip String
 
+  hon          Hon?
+  subscription Subscription?
+
   @@map("visitor")
 }
