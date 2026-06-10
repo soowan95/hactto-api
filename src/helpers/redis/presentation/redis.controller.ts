@@ -5,6 +5,7 @@ import { ResponseMessage } from '../../../common/decorators/response-message.dec
 import { RedisManager } from '../../../common/decorators/redis-manager.decorator';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RequestParser } from '../../../common/utils/request-parser';
+import { HonService } from '../../modules/user/application/hon.service';
 
 @ApiTags('- Redis')
 @Controller()
@@ -14,6 +15,7 @@ export class RedisController {
   constructor(
     private readonly redisService: RedisService,
     private readonly requestParser: RequestParser,
+    private readonly honService: HonService,
   ) {}
 
   @ApiOperation({ summary: 'Generate master key' })
@@ -39,6 +41,8 @@ export class RedisController {
     pending: boolean;
     ip: string;
     visitorId: string;
+    hon?: any | null;
+    subscription?: any | null;
   }> {
     let ip = '';
     try {
@@ -53,15 +57,25 @@ export class RedisController {
       .digest('hex')
       .substring(0, 16);
 
+    const hon = await this.honService.getHon(visitorId);
+    const subscription = await this.honService.getSubscription(visitorId);
+
     // 마스터 키(?mk=키) 유효성 검증 우선 처리
     if (queryMk) {
       const isValidMasterKey = await this.redisService.isMemberOfSet(
         'manager:k',
         queryMk,
       );
-      return { allowed: isValidMasterKey, pending: false, ip, visitorId };
+      return {
+        allowed: isValidMasterKey,
+        pending: false,
+        ip,
+        visitorId,
+        hon,
+        subscription,
+      };
     }
 
-    return { allowed: true, pending: false, ip, visitorId };
+    return { allowed: true, pending: false, ip, visitorId, hon, subscription };
   }
 }

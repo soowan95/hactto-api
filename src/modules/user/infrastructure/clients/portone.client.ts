@@ -8,6 +8,9 @@ export class PortoneClient {
 
   constructor() {
     const apiSecret = process.env.PORTONE_API_SECRET || 'test_secret_key';
+    this.logger.log(
+      `Initializing PortoneClient with API secret starting with: ${apiSecret ? apiSecret.substring(0, 8) : 'null'}`,
+    );
     this.paymentClient = PaymentClient({ secret: apiSecret });
   }
 
@@ -21,10 +24,39 @@ export class PortoneClient {
   ): Promise<{ success: boolean; failReason?: string; approvedAt?: Date }> {
     try {
       this.logger.log(
-        `Confirming payment via Portone SDK: orderId=${orderId}, amount=${amount}`,
+        `Confirming payment via Portone SDK: orderId=${orderId}, paymentKey=${paymentKey}, amount=${amount}`,
       );
 
-      // SDK를 사용하여 결제 승인 호출 (V2 수동 승인 API 호출 시 paymentToken(paymentKey) 명시 필수)
+      // paymentKey가 orderId와 같거나 없는 경우 -> 즉시 승인(Instant confirmation) 건으로 판단하고 단건 조회 검증 진행
+      if (paymentKey === orderId || !paymentKey) {
+        this.logger.log(
+          `Instant payment detected. Querying payment details from PortOne...`,
+        );
+        const payment = await this.paymentClient.getPayment({
+          paymentId: orderId,
+        });
+
+        if (payment.status === 'PAID') {
+          // 결제 금액 검증
+          if (payment.amount.total !== amount) {
+            return {
+              success: false,
+              failReason: `Amount mismatch: expected ${amount}, got ${payment.amount.total}`,
+            };
+          }
+          return {
+            success: true,
+            approvedAt: payment.paidAt ? new Date(payment.paidAt) : new Date(),
+          };
+        }
+
+        return {
+          success: false,
+          failReason: `Payment status is ${String(payment.status)}, expected PAID`,
+        };
+      }
+
+      // 수동 승인 건: paymentToken(paymentKey)를 활용하여 결제 승인 호출
       await this.paymentClient.confirmPayment({
         paymentId: orderId,
         paymentToken: paymentKey,

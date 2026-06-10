@@ -78,4 +78,41 @@ export class HonService {
       endsAt,
     });
   }
+
+  /**
+   * 3. 방문자 혼 정보 조회
+   */
+  async getHon(visitorId: string) {
+    return this.honRepository.getHon(visitorId);
+  }
+
+  /**
+   * 4. 방문자 정기 구독 조회
+   */
+  async getSubscription(visitorId: string) {
+    return this.honRepository.getSubscription(visitorId);
+  }
+
+  /**
+   * 5. 방문자 혼 차감 (구독자인 경우 면제)
+   */
+  async deductHon(visitorId: string, amount: number): Promise<void> {
+    const subscription = await this.honRepository.getSubscription(visitorId);
+    if (subscription && subscription.status === 'ACTIVE') {
+      return; // ACTIVE 구독자는 무제한
+    }
+
+    const hon = await this.honRepository.getHon(visitorId);
+    const balance = hon ? hon.balance : 0;
+    if (balance < amount) {
+      throw new Error(
+        `HON이 부족합니다. 충전 후 이용해 주세요. (필요: ${amount} HON, 보유: ${balance} HON)`,
+      );
+    }
+
+    await this.honRepository.saveHon({
+      visitorId,
+      balance: balance - amount,
+    });
+  }
 }
