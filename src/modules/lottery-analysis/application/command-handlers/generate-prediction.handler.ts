@@ -1,6 +1,7 @@
 import { CommandHandler, EventPublisher, ICommandHandler } from '@nestjs/cqrs';
 import { GeneratePredictionCommand } from '../commands/generate-prediction.command';
 import { Inject } from '@nestjs/common';
+import { HonService } from '../../../user/application/hon.service';
 import {
   PREDICTION_REPOSITORY_TOKEN,
   IPredictionRepository,
@@ -35,6 +36,7 @@ export class GeneratePredictionHandler implements ICommandHandler<GeneratePredic
     @Inject(ALGORITHM_REPOSITORY_TOKEN)
     private readonly algorithmTypeRepository: IAlgorithmRepository,
     private readonly publisher: EventPublisher,
+    private readonly honService: HonService,
   ) {}
 
   async execute(command: GeneratePredictionCommand): Promise<DomainPrediction> {
@@ -46,6 +48,15 @@ export class GeneratePredictionHandler implements ICommandHandler<GeneratePredic
     const latestEpisode: number = latestWinningNumber.episode;
     const algorithmType = await this.algorithmTypeRepository.findByType(
       command.type,
+    );
+
+    if (!command.visitorId) {
+      throw new Error('Visitor ID가 필요합니다.');
+    }
+
+    await this.honService.deductHon(
+      command.visitorId,
+      algorithmType.complexity,
     );
 
     const executed = await AlgorithmExecutor.execute(

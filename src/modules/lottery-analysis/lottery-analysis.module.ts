@@ -21,8 +21,10 @@ import { InfraPredictionAnalysisRepository } from './infrastructure/adapters/inf
 import { WINNING_NUMBER_ANALYSIS_REPOSITORY_TOKEN } from './domain/ports/winning-number-analysis.port';
 import { InfraWinningNumberAnalysisRepository } from './infrastructure/adapters/infra-winning-number-analysis.repository';
 
+import { UserModule } from '../user/user.module';
+
 @Module({
-  imports: [CqrsModule, WinningNumberModule],
+  imports: [CqrsModule, WinningNumberModule, UserModule],
   controllers: [
     AlgorithmController,
     PersonalWeightController,

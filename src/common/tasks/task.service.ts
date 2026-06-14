@@ -1,10 +1,20 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { CommandBus } from '@nestjs/cqrs';
 import { HacttoCronExpression } from './hactto-cron-expression.enum';
 import { FetchRecentWinningNumberCommand } from '../../modules/number/application/commands/fetch-recent-winning-number.command';
 import { AnalyzeCommand } from '../../modules/lottery-analysis/application/commands/analyze.command';
 import { SystemStatusService } from '../utils/system-status/system-status.service';
+import {
+  IHonRepository,
+  HON_REPOSITORY_TOKEN,
+} from '../../modules/user/domain/ports/hon.port';
+import {
+  IPaymentRepository,
+  PAYMENT_REPOSITORY_TOKEN,
+} from '../../modules/user/domain/ports/payment.port';
+import { PortoneClient } from '../../modules/user/infrastructure/clients/portone.client';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class TaskService {
@@ -13,6 +23,11 @@ export class TaskService {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly systemStatusService: SystemStatusService,
+    @Inject(HON_REPOSITORY_TOKEN)
+    private readonly honRepository: IHonRepository,
+    @Inject(PAYMENT_REPOSITORY_TOKEN)
+    private readonly paymentRepository: IPaymentRepository,
+    private readonly portoneClient: PortoneClient,
   ) {}
 
   @Cron(HacttoCronExpression.SATURDAY_AT_8PM_30M, {
@@ -87,5 +102,146 @@ export class TaskService {
       '⚠️ Reached max retries without drawing new numbers. Unlocking site as fallback.',
     );
     await this.systemStatusService.setAnalysisStatus(false);
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, {
+    timeZone: 'Asia/Seoul',
+  })
+  async renewSubscriptions() {
+    this.logger.debug('🔄 Starting daily subscription renewal batch job...');
+    const now = new Date();
+    try {
+      const expiredSubs =
+        await this.honRepository.findExpiredSubscriptions(now);
+      this.logger.debug(`Found ${expiredSubs.length} subscriptions to renew.`);
+
+      for (const sub of expiredSubs) {
+        try {
+          this.logger.log(`Processing renewal for visitor: ${sub.visitorId}`);
+
+          // 1. 새로운 결제 ID 및 관련 파라미터 생성
+          const paymentId = randomUUID();
+          const amount = sub.plan === 'MONTHLY' ? 12000 : 100000;
+          const orderName =
+            sub.plan === 'MONTHLY'
+              ? '월간 무제한 구독 (갱신)'
+              : '연간 무제한 구독 (갱신)';
+
+          // 2. 포트원 빌링 결제 요청
+          const portoneResult = await this.portoneClient.payWithBillingKey(
+            paymentId,
+            sub.billingKey,
+            amount,
+            orderName,
+          );
+
+          if (portoneResult.success) {
+            // 결제 이벤트 기록 (PaymentRequested -> PaymentApproved -> SubscriptionRenewed)
+            await this.paymentRepository.saveEvent({
+              paymentId,
+              version: 1,
+              eventType: 'PaymentRequested',
+              payload: {
+                visitorId: sub.visitorId,
+                amount,
+                orderId: `renew-${paymentId}`,
+                orderName,
+              },
+            });
+
+            await this.paymentRepository.saveEvent({
+              paymentId,
+              version: 2,
+              eventType: 'PaymentApproved',
+              payload: {
+                paymentKey: sub.billingKey,
+                approvedAt: portoneResult.approvedAt || new Date(),
+              },
+            });
+
+            // Projection 생성
+            await this.paymentRepository.saveProjection({
+              paymentId,
+              visitorId: sub.visitorId,
+              amount,
+              orderId: `renew-${paymentId}`,
+              orderName,
+              status: 'PAID',
+              paymentKey: sub.billingKey,
+              approvedAt: portoneResult.approvedAt || new Date(),
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            });
+
+            // 다음 결제일 및 종료일 연장 계산
+            const nextPaymentAt = new Date(sub.nextPaymentAt);
+            const endsAt = new Date(sub.endsAt);
+            if (sub.plan === 'MONTHLY') {
+              nextPaymentAt.setMonth(nextPaymentAt.getMonth() + 1);
+              endsAt.setMonth(endsAt.getMonth() + 1);
+            } else {
+              nextPaymentAt.setFullYear(nextPaymentAt.getFullYear() + 1);
+              endsAt.setFullYear(endsAt.getFullYear() + 1);
+            }
+
+            await this.paymentRepository.saveEvent({
+              paymentId,
+              version: 3,
+              eventType: 'SubscriptionRenewed',
+              payload: {
+                visitorId: sub.visitorId,
+                plan: sub.plan,
+                nextPaymentAt,
+              },
+            });
+
+            await this.honRepository.saveSubscription({
+              visitorId: sub.visitorId,
+              plan: sub.plan,
+              status: 'ACTIVE',
+              billingKey: sub.billingKey,
+              nextPaymentAt,
+              startsAt: sub.startsAt,
+              endsAt,
+            });
+
+            this.logger.log(
+              `Successfully renewed subscription for visitor: ${sub.visitorId}`,
+            );
+          } else {
+            // 결제 실패 시 구독 만료 처리 및 실패 이벤트 기록
+            this.logger.warn(
+              `Subscription renewal failed for visitor: ${sub.visitorId}. Reason: ${portoneResult.failReason}`,
+            );
+
+            await this.paymentRepository.saveEvent({
+              paymentId,
+              version: 1,
+              eventType: 'SubscriptionRenewalFailed',
+              payload: {
+                visitorId: sub.visitorId,
+                reason: portoneResult.failReason || 'Renewal payment failed',
+              },
+            });
+
+            await this.honRepository.saveSubscription({
+              ...sub,
+              status: 'EXPIRED',
+              updatedAt: new Date(),
+            });
+          }
+        } catch (subError) {
+          this.logger.error(
+            `Error renewing subscription for visitor ${sub.visitorId}:`,
+            subError,
+          );
+        }
+      }
+    } catch (error) {
+      this.logger.error(
+        'Error occurred during subscription renewal job:',
+        error,
+      );
+    }
   }
 }

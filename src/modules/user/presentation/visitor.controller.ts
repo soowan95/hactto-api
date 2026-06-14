@@ -7,6 +7,7 @@ import {
 import { RedisService } from '../../../helpers/redis/application/redis.service';
 import { RequestParser } from '../../../common/utils/request-parser';
 import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
+import { HonService } from '../application/hon.service';
 
 @ApiTags('- Visitor')
 @Controller('visitor')
@@ -15,6 +16,7 @@ export class VisitorController {
     @Inject(VISITOR_REPOSITORY_TOKEN)
     private readonly visitorRepository: IVisitorRepository,
     private readonly redisService: RedisService,
+    private readonly honService: HonService,
     private readonly requestParser: RequestParser,
   ) {}
 
@@ -32,5 +34,6 @@ export class VisitorController {
     const redisKey = `visitor-ip:${visitorId}`;
     await this.redisService.set(redisKey, ip, 604800); // 7 days expiration
     await this.visitorRepository.insert(visitorId, ip);
+    await this.honService.chargeHon(`${visitorId}-register`, visitorId, 50);
   }
 }

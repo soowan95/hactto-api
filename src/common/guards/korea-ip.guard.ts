@@ -66,6 +66,10 @@ export class KoreaIpGuard implements CanActivate {
         if (response && typeof response.setHeader === 'function') {
           response.setHeader('x-first-visit', 'true');
         }
+      } else if (savedIp === '0.0.0.0') {
+        // 결제 모듈 등에서 0.0.0.0으로 임시 저장된 경우, 현재 실제 IP로 업데이트 후 통과
+        await this.repository.updateIp(visitorId, ip);
+        await this.redisService.set(redisKey, ip, 86400 * 30);
       } else if (savedIp !== ip) {
         // 그 다음부터는 visitorId 검증해서 다른 IP 에서는 해당 visitorId 사용못하게 처리
         this.logger.warn(
