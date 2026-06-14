@@ -67,6 +67,9 @@ import { PaymentController } from './presentation/payment.controller';
     VISITOR_REPOSITORY_TOKEN,
     HonService,
     PaymentService,
+    HON_REPOSITORY_TOKEN,
+    PAYMENT_REPOSITORY_TOKEN,
+    PortoneClient,
   ],
 })
 export class UserModule {}

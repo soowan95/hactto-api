@@ -5,7 +5,7 @@ import { ResponseMessage } from '../../../common/decorators/response-message.dec
 import { RedisManager } from '../../../common/decorators/redis-manager.decorator';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RequestParser } from '../../../common/utils/request-parser';
-import { HonService } from '../../modules/user/application/hon.service';
+import { HonService } from '../../../modules/user/application/hon.service';
 
 @ApiTags('- Redis')
 @Controller()

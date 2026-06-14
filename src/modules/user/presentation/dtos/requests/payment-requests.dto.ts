@@ -35,3 +35,13 @@ export class CancelPaymentRequestDto {
   @IsNotEmpty()
   reason: string;
 }
+
+export class FailPaymentRequestDto {
+  @IsString()
+  @IsNotEmpty()
+  orderId: string;
+
+  @IsString()
+  @IsNotEmpty()
+  failReason: string;
+}

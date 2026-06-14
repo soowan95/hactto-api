@@ -41,3 +41,4 @@ export class PaymentResponseDto {
 }
 export class ConfirmPaymentResponseDto extends PaymentResponseDto {}
 export class CancelPaymentResponseDto extends PaymentResponseDto {}
+export class FailPaymentResponseDto extends PaymentResponseDto {}

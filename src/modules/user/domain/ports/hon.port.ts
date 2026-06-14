@@ -38,4 +38,9 @@ export interface IHonRepository {
    * 방문자의 구독 정보를 저장/갱신합니다.
    */
   saveSubscription(data: SubscriptionData): Promise<void>;
+
+  /**
+   * 만료된(또는 만료 예정인) 활성 구독 목록을 조회합니다.
+   */
+  findExpiredSubscriptions(now: Date): Promise<SubscriptionData[]>;
 }

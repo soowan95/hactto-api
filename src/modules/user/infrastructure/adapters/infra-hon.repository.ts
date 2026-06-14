@@ -82,4 +82,15 @@ export class InfraHonRepository implements IHonRepository {
       },
     });
   }
+
+  async findExpiredSubscriptions(now: Date): Promise<SubscriptionData[]> {
+    return prisma.subscription.findMany({
+      where: {
+        status: 'ACTIVE',
+        nextPaymentAt: {
+          lte: now,
+        },
+      },
+    });
+  }
 }

@@ -111,4 +111,44 @@ export class PortoneClient {
       };
     }
   }
+
+  /**
+   * 포트원 빌링키 결제 승인 요청
+   */
+  async payWithBillingKey(
+    paymentId: string,
+    billingKey: string,
+    amount: number,
+    orderName: string,
+  ): Promise<{ success: boolean; failReason?: string; approvedAt?: Date }> {
+    try {
+      this.logger.log(
+        `Requesting billing key payment via Portone SDK: paymentId=${paymentId}, billingKey=${billingKey.substring(0, 15)}..., amount=${amount}`,
+      );
+
+      await this.paymentClient.payWithBillingKey({
+        paymentId,
+        billingKey,
+        orderName,
+        amount: {
+          total: amount,
+        },
+        currency: 'KRW',
+      });
+
+      return {
+        success: true,
+        approvedAt: new Date(),
+      };
+    } catch (error: any) {
+      this.logger.error(
+        'Portone SDK payWithBillingKey failed',
+        error.message || error,
+      );
+      return {
+        success: false,
+        failReason: error.message || 'Portone SDK billing key payment failed',
+      };
+    }
+  }
 }

@@ -1,9 +1,10 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, BadRequestException } from '@nestjs/common';
 import { IHonRepository, HON_REPOSITORY_TOKEN } from '../domain/ports/hon.port';
 import {
   IPaymentRepository,
   PAYMENT_REPOSITORY_TOKEN,
 } from '../domain/ports/payment.port';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class HonService {
@@ -91,6 +92,33 @@ export class HonService {
    */
   async getSubscription(visitorId: string) {
     return this.honRepository.getSubscription(visitorId);
+  }
+
+  /**
+   * 정기 구독 취소 (해지 예약)
+   */
+  async cancelSubscription(visitorId: string): Promise<void> {
+    const subscription = await this.honRepository.getSubscription(visitorId);
+    if (!subscription || subscription.status !== 'ACTIVE') {
+      throw new BadRequestException(
+        '해지 가능한 활성 구독이 존재하지 않습니다.',
+      );
+    }
+
+    // 상태를 CANCELLED로 변경 (만료일까지 권한은 유지되나 자동 결제는 정지됨)
+    await this.honRepository.saveSubscription({
+      ...subscription,
+      status: 'CANCELLED',
+      updatedAt: new Date(),
+    });
+
+    // 구독 해지 이벤트 발행
+    await this.paymentRepository.saveEvent({
+      paymentId: randomUUID(),
+      version: 1,
+      eventType: 'SubscriptionCancelled',
+      payload: { visitorId },
+    });
   }
 
   /**

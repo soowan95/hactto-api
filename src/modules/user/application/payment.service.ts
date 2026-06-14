@@ -68,12 +68,16 @@ export class PaymentService {
     const events = await this.paymentRepository.getEvents(projection.paymentId);
     const aggregate = PaymentAggregate.rebuild(events);
 
-    // 포트원 연동 API 호출
-    const portoneResult = await this.portoneClient.confirmPayment(
-      paymentKey,
-      orderId,
-      amount,
-    );
+    // 포트원 연동 API 호출 (정기 결제금액인 경우 빌링키 결제 승인 호출)
+    const isSubscription = amount === 12000 || amount === 100000;
+    const portoneResult = isSubscription
+      ? await this.portoneClient.payWithBillingKey(
+          projection.paymentId,
+          paymentKey, // 프론트엔드에서 전달된 빌링키
+          amount,
+          projection.orderName,
+        )
+      : await this.portoneClient.confirmPayment(paymentKey, orderId, amount);
 
     if (portoneResult.success) {
       aggregate.approve(paymentKey, portoneResult.approvedAt || new Date());
@@ -144,6 +148,31 @@ export class PaymentService {
     }
 
     aggregate.cancel(portoneResult.cancelledAt || new Date());
+
+    await this.save(aggregate);
+
+    return aggregate;
+  }
+
+  /**
+   * 결제 실패 처리 (Command: Fail Payment)
+   */
+  async failPayment(
+    orderId: string,
+    failReason: string,
+  ): Promise<PaymentAggregate> {
+    const projection =
+      await this.paymentRepository.getProjectionByOrderId(orderId);
+    if (!projection) {
+      throw new NotFoundException(
+        `Payment projection not found for orderId: ${orderId}`,
+      );
+    }
+
+    const events = await this.paymentRepository.getEvents(projection.paymentId);
+    const aggregate = PaymentAggregate.rebuild(events);
+
+    aggregate.fail(failReason);
 
     await this.save(aggregate);
 

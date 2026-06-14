@@ -20,4 +20,11 @@ export class InfraVisitorRepository implements IVisitorRepository {
     if (!visitor) return null;
     return InfraVisitorMapper.toEntity(visitor);
   }
+
+  async updateIp(id: string, ip: string): Promise<void> {
+    await prisma.visitor.update({
+      where: { id },
+      data: { ip },
+    });
+  }
 }
