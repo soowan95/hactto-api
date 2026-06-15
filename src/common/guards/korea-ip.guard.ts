@@ -29,7 +29,12 @@ export class KoreaIpGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    if (request && request.path && request.path.endsWith('/manager/inquiries') && (request.method === 'POST' || request.method === 'GET')) {
+    if (
+      request &&
+      request.path &&
+      request.path.endsWith('/manager/inquiries') &&
+      (request.method === 'POST' || request.method === 'GET')
+    ) {
       return true;
     }
 
@@ -83,14 +88,17 @@ export class KoreaIpGuard implements CanActivate {
       let savedIp = await this.redisService.get(redisKey);
       let visitorEntity: any = null;
 
-
       // redis cache 에 없으면 DB 조회.
       if (!savedIp || isBlockedCache === null) {
         visitorEntity = await this.repository.findById(visitorId);
         if (visitorEntity) {
           savedIp = visitorEntity.ip;
           isBlockedCache = visitorEntity.isBlocked ? 'true' : 'false';
-          await this.redisService.set(blockedRedisKey, isBlockedCache, 86400 * 7); // 7일 캐싱
+          await this.redisService.set(
+            blockedRedisKey,
+            isBlockedCache,
+            86400 * 7,
+          ); // 7일 캐싱
         }
       }
 
@@ -122,7 +130,6 @@ export class KoreaIpGuard implements CanActivate {
         );
       }
     }
-
 
     // 로컬 환경 및 개발 환경에서는 국가(KR) IP 검증을 제외합니다.
     if (process.env.NODE_ENV === 'localhost') return true;

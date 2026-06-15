@@ -29,7 +29,6 @@ class GrantSubscriptionDto {
   endsAt: string;
 }
 
-
 @ApiTags('- Admin Visitors')
 @Admin()
 @Controller('admin/visitors')
@@ -103,10 +102,7 @@ export class VisitorAdminController {
 
   @ApiOperation({ summary: 'Add or deduct Hon for visitor' })
   @Post(':id/hon')
-  async manageHon(
-    @Param('id') id: string,
-    @Body() body: ManageHonDto,
-  ) {
+  async manageHon(@Param('id') id: string, @Body() body: ManageHonDto) {
     const visitor = await prisma.visitor.findUnique({ where: { id } });
     if (!visitor) {
       throw new NotFoundException('방문자를 찾을 수 없습니다.');
@@ -127,7 +123,10 @@ export class VisitorAdminController {
       throw new NotFoundException('방문자를 찾을 수 없습니다.');
     }
 
-    await this.honService.provisionUnlimitedSubscriptionByAdmin(id, new Date(body.endsAt));
+    await this.honService.provisionUnlimitedSubscriptionByAdmin(
+      id,
+      new Date(body.endsAt),
+    );
     return { success: true };
   }
 }

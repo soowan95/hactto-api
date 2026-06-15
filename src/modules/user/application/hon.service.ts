@@ -147,10 +147,7 @@ export class HonService {
   /**
    * 6. 관리자 수동 혼(Hon) 지급/차감
    */
-  async provisionHonByAdmin(
-    visitorId: string,
-    amount: number,
-  ): Promise<void> {
+  async provisionHonByAdmin(visitorId: string, amount: number): Promise<void> {
     const paymentId = `admin-provision-${randomUUID()}`;
     await this.paymentRepository.saveEvent({
       paymentId,
@@ -194,4 +191,3 @@ export class HonService {
     });
   }
 }
-

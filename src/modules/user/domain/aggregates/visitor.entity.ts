@@ -15,4 +15,3 @@ export class DomainVisitor {
     return this._ip.value;
   }
 }
-

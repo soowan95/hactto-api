@@ -6,4 +6,3 @@ export class InfraVisitorMapper {
     return new DomainVisitor(raw.id, raw.ip, raw.isBlocked);
   }
 }
-

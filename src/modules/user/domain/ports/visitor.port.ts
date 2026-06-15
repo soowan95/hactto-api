@@ -8,4 +8,3 @@ export interface IVisitorRepository {
   updateIp(id: string, ip: string): Promise<void>;
   updateBlockStatus(id: string, isBlocked: boolean): Promise<void>;
 }
-

@@ -6,7 +6,6 @@ import { ForbiddenException } from '@nestjs/common';
 import { RequestParser } from '../../../common/utils/request-parser';
 import { HonService } from '../../../modules/user/application/hon.service';
 
-
 describe('RedisController', () => {
   let controller: RedisController;
   let redisService: jest.Mocked<RedisService>;
@@ -82,7 +81,6 @@ describe('RedisController', () => {
         },
       ],
     }).compile();
-
 
     controller = module.get<RedisController>(RedisController);
     redisService = module.get(

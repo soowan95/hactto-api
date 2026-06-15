@@ -51,7 +51,6 @@ class UpdateNoticeDto {
 @Admin()
 @Controller('manager/admin')
 export class ManagerAdminController {
-
   @ApiOperation({ summary: 'Get all inquiries for admin' })
   @Get('inquiries')
   async getAllInquiries(@Query('forBlock') forBlock?: string) {
@@ -72,12 +71,10 @@ export class ManagerAdminController {
 
   @ApiOperation({ summary: 'Answer an inquiry' })
   @Post('inquiries/:id/answer')
-  async answerInquiry(
-    @Param('id') id: string,
-    @Body() body: AnswerInquiryDto,
-  ) {
+  async answerInquiry(@Param('id') id: string, @Body() body: AnswerInquiryDto) {
     const numId = parseInt(id, 10);
-    if (isNaN(numId)) throw new BadRequestException('올바르지 않은 ID 형식입니다.');
+    if (isNaN(numId))
+      throw new BadRequestException('올바르지 않은 ID 형식입니다.');
 
     const inquiry = await prisma.inquiry.findUnique({ where: { id: numId } });
     if (!inquiry) {
@@ -121,12 +118,10 @@ export class ManagerAdminController {
 
   @ApiOperation({ summary: 'Update an existing notice' })
   @Put('notices/:id')
-  async updateNotice(
-    @Param('id') id: string,
-    @Body() body: UpdateNoticeDto,
-  ) {
+  async updateNotice(@Param('id') id: string, @Body() body: UpdateNoticeDto) {
     const numId = parseInt(id, 10);
-    if (isNaN(numId)) throw new BadRequestException('올바르지 않은 ID 형식입니다.');
+    if (isNaN(numId))
+      throw new BadRequestException('올바르지 않은 ID 형식입니다.');
 
     const notice = await prisma.notice.findUnique({ where: { id: numId } });
     if (!notice) {
@@ -149,7 +144,8 @@ export class ManagerAdminController {
   @Delete('notices/:id')
   async deleteNotice(@Param('id') id: string) {
     const numId = parseInt(id, 10);
-    if (isNaN(numId)) throw new BadRequestException('올바르지 않은 ID 형식입니다.');
+    if (isNaN(numId))
+      throw new BadRequestException('올바르지 않은 ID 형식입니다.');
 
     const notice = await prisma.notice.findUnique({ where: { id: numId } });
     if (!notice) {

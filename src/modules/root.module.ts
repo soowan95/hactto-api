@@ -5,8 +5,17 @@ import { UserModule } from './user/user.module';
 import { ManagerModule } from './manager/manager.module';
 
 @Module({
-  imports: [WinningNumberModule, LotteryAnalysisModule, UserModule, ManagerModule],
-  exports: [WinningNumberModule, LotteryAnalysisModule, UserModule, ManagerModule],
+  imports: [
+    WinningNumberModule,
+    LotteryAnalysisModule,
+    UserModule,
+    ManagerModule,
+  ],
+  exports: [
+    WinningNumberModule,
+    LotteryAnalysisModule,
+    UserModule,
+    ManagerModule,
+  ],
 })
 export class RootModule {}
-
