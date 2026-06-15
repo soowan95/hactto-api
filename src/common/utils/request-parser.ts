@@ -40,11 +40,27 @@ export class RequestParser {
   }
 
   getVisitorId() {
-    return (
+    const headerId =
       (this.request.headers['x-visitor-id'] as string) ||
       (this.request.query?.visitorId as string) ||
-      (this.request.body?.visitorId as string)
-    );
+      (this.request.body?.visitorId as string);
+
+    if (headerId) return headerId;
+
+    try {
+      const ip = this.getIpOrThrow();
+      if (ip) {
+        const crypto = require('crypto');
+        return crypto
+          .createHash('sha256')
+          .update(ip)
+          .digest('hex')
+          .substring(0, 16);
+      }
+    } catch {
+      // Ignore
+    }
+    return undefined;
   }
 
   getMasterKey() {

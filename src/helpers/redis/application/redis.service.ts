@@ -5,7 +5,7 @@ import * as crypto from 'crypto';
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   private redisClient: Redis;
 
-  onModuleInit() {
+  constructor() {
     const host = process.env.REDIS_HOST || 'localhost';
     const port = process.env.REDIS_PORT
       ? parseInt(process.env.REDIS_PORT, 10)
@@ -13,6 +13,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
     this.redisClient = new Redis({ host, port });
   }
+
+  onModuleInit() {}
+
 
   onModuleDestroy() {
     this.redisClient.disconnect();
