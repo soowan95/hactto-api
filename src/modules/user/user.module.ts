@@ -14,6 +14,7 @@ import { PersonalPredictionController } from './presentation/personal-prediction
 import { VISITOR_REPOSITORY_TOKEN } from './domain/ports/visitor.port';
 import { InfraVisitorRepository } from './infrastructure/adapters/infra-visitor.repository';
 import { VisitorController } from './presentation/visitor.controller';
+import { VisitorAdminController } from './presentation/visitor-admin.controller';
 import { HON_REPOSITORY_TOKEN } from './domain/ports/hon.port';
 import { InfraHonRepository } from './infrastructure/adapters/infra-hon.repository';
 import { HonService } from './application/hon.service';
@@ -30,7 +31,9 @@ import { PaymentController } from './presentation/payment.controller';
     PersonalPredictionController,
     VisitorController,
     PaymentController,
+    VisitorAdminController,
   ],
+
   providers: [
     {
       provide: PERSONAL_ANALYSIS_REPOSITORY_TOKEN,

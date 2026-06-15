@@ -143,4 +143,55 @@ export class HonService {
       balance: balance - amount,
     });
   }
+
+  /**
+   * 6. 관리자 수동 혼(Hon) 지급/차감
+   */
+  async provisionHonByAdmin(
+    visitorId: string,
+    amount: number,
+  ): Promise<void> {
+    const paymentId = `admin-provision-${randomUUID()}`;
+    await this.paymentRepository.saveEvent({
+      paymentId,
+      version: 1,
+      eventType: 'AdminHonProvisioned',
+      payload: { visitorId, amount },
+    });
+
+    const currentHon = await this.honRepository.getHon(visitorId);
+    const currentBalance = currentHon ? currentHon.balance : 0;
+    const newBalance = Math.max(0, currentBalance + amount);
+
+    await this.honRepository.saveHon({
+      visitorId,
+      balance: newBalance,
+    });
+  }
+
+  async provisionUnlimitedSubscriptionByAdmin(
+    visitorId: string,
+    endsAt: Date,
+  ): Promise<void> {
+    const paymentId = `admin-unlimited-${randomUUID()}`;
+    const now = new Date();
+
+    await this.paymentRepository.saveEvent({
+      paymentId,
+      version: 1,
+      eventType: 'AdminUnlimitedSubscriptionProvisioned',
+      payload: { visitorId, startsAt: now, endsAt },
+    });
+
+    await this.honRepository.saveSubscription({
+      visitorId,
+      plan: 'UNLIMITED',
+      status: 'ACTIVE',
+      billingKey: 'ADMIN_FREE_PASS',
+      nextPaymentAt: endsAt,
+      startsAt: now,
+      endsAt,
+    });
+  }
 }
+

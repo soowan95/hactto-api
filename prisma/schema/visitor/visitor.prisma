@@ -1,10 +1,12 @@
 model Visitor {
   id String @id
-
   ip String
+  isBlocked    Boolean @default(false) @map("is_blocked")
 
   hon          Hon?
   subscription Subscription?
+  inquiries    Inquiry[]
 
   @@map("visitor")
 }
+

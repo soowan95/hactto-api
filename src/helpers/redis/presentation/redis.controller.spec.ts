@@ -4,6 +4,8 @@ import { RedisService } from '../application/redis.service';
 import { Request, Response } from 'express';
 import { ForbiddenException } from '@nestjs/common';
 import { RequestParser } from '../../../common/utils/request-parser';
+import { HonService } from '../../../modules/user/application/hon.service';
+
 
 describe('RedisController', () => {
   let controller: RedisController;
@@ -58,6 +60,11 @@ describe('RedisController', () => {
       }),
     };
 
+    const mockHonService = {
+      getHon: jest.fn().mockResolvedValue({ balance: 0 }),
+      getSubscription: jest.fn().mockResolvedValue(null),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [RedisController],
       providers: [
@@ -69,8 +76,13 @@ describe('RedisController', () => {
           provide: RequestParser,
           useValue: mockRequestParser,
         },
+        {
+          provide: HonService,
+          useValue: mockHonService,
+        },
       ],
     }).compile();
+
 
     controller = module.get<RedisController>(RedisController);
     redisService = module.get(

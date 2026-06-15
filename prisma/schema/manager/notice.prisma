@@ -1,0 +1,11 @@
+model Notice {
+  id Int @id @default(autoincrement())
+
+  title     String
+  content   String   @db.Text
+  endsAt    DateTime @map("ends_at") // 공지 종료 시간
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("notice")
+}
