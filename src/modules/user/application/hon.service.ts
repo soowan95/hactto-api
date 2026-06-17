@@ -55,11 +55,22 @@ export class HonService {
     const nextVersion = currentEvents.length + 1;
 
     const now = new Date();
-    const endsAt = new Date();
+    let startsAt = now;
+    let endsAt = new Date();
     if (plan === 'MONTHLY') {
       endsAt.setMonth(now.getMonth() + 1);
     } else {
       endsAt.setFullYear(now.getFullYear() + 1);
+    }
+
+    // Check for existing active/cancelled subscription to extend the period if upgrading MONTHLY -> YEARLY
+    const existing = await this.honRepository.getSubscription(visitorId);
+    if (existing && existing.endsAt > now) {
+      if (existing.plan === 'MONTHLY' && plan === 'YEARLY') {
+        startsAt = existing.startsAt;
+        endsAt = new Date(existing.endsAt);
+        endsAt.setFullYear(endsAt.getFullYear() + 1);
+      }
     }
 
     await this.paymentRepository.saveEvent({
@@ -75,7 +86,7 @@ export class HonService {
       status: 'ACTIVE',
       billingKey,
       nextPaymentAt: endsAt,
-      startsAt: now,
+      startsAt,
       endsAt,
     });
   }
