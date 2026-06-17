@@ -133,7 +133,7 @@ export class HonService {
     const hon = await this.honRepository.getHon(visitorId);
     const balance = hon ? hon.balance : 0;
     if (balance < amount) {
-      throw new Error(
+      throw new BadRequestException(
         `HON이 부족합니다. 충전 후 이용해 주세요. (필요: ${amount} HON, 보유: ${balance} HON)`,
       );
     }
