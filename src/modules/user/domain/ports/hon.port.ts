@@ -18,6 +18,16 @@ export interface SubscriptionData {
   updatedAt?: Date;
 }
 
+export interface HonEventData {
+  id?: number;
+  visitorId: string;
+  type: string;
+  amount: number;
+  balance: number;
+  description?: string | null;
+  createdAt?: Date;
+}
+
 export interface IHonRepository {
   /**
    * 방문자의 혼(Hon) 정보를 조회합니다.
@@ -43,4 +53,14 @@ export interface IHonRepository {
    * 만료된(또는 만료 예정인) 활성 구독 목록을 조회합니다.
    */
   findExpiredSubscriptions(now: Date): Promise<SubscriptionData[]>;
+
+  /**
+   * 혼(Hon) 이벤트를 기록합니다.
+   */
+  saveHonEvent(event: HonEventData): Promise<void>;
+
+  /**
+   * 방문자의 혼(Hon) 이벤트 기록들을 가져옵니다.
+   */
+  getHonEvents(visitorId: string): Promise<HonEventData[]>;
 }

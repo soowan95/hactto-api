@@ -39,7 +39,7 @@ export class PersonalAnalysisController {
       throw new BadRequestException('Visitor ID가 필요합니다.');
     }
 
-    await this.honService.deductHon(visitorId, 5);
+    await this.honService.deductHon(visitorId, 5, '로또 번호 분석');
 
     const command = new AnalyzePersonalPredictionCommand(dto.prediction);
     const personalAnalysis = await this.commandBus.execute<

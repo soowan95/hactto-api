@@ -6,6 +6,7 @@ model Visitor {
   hon          Hon?
   subscription Subscription?
   inquiries    Inquiry[]
+  honEvents    HonEvent[]
 
   @@map("visitor")
 }
