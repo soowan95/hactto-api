@@ -3,6 +3,7 @@ import {
   IHonRepository,
   HonData,
   SubscriptionData,
+  HonEventData,
 } from '../../domain/ports/hon.port';
 import { prisma } from '../../../../libs/prisma';
 
@@ -91,6 +92,25 @@ export class InfraHonRepository implements IHonRepository {
           lte: now,
         },
       },
+    });
+  }
+
+  async saveHonEvent(event: HonEventData): Promise<void> {
+    await prisma.honEvent.create({
+      data: {
+        visitorId: event.visitorId,
+        type: event.type,
+        amount: event.amount,
+        balance: event.balance,
+        description: event.description,
+      },
+    });
+  }
+
+  async getHonEvents(visitorId: string): Promise<HonEventData[]> {
+    return prisma.honEvent.findMany({
+      where: { visitorId },
+      orderBy: { createdAt: 'desc' },
     });
   }
 }

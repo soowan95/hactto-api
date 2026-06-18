@@ -3,17 +3,35 @@ enum InquiryStatus {
   ANSWERED
 }
 
+enum InquiryType {
+  GENERAL
+  BLOCK
+  REFUND
+}
+
+enum RefundStatus {
+  NONE
+  PENDING
+  PROPOSED
+  CONFIRMED
+  REJECTED
+  CANCELLED
+}
+
 model Inquiry {
   id Int @id @default(autoincrement())
 
-  visitorId  String        @map("visitor_id")
-  title      String
-  content    String        @db.Text
-  answer     String?       @db.Text
-  status     InquiryStatus @default(PENDING)
-  createdAt  DateTime      @default(now()) @map("created_at")
-  answeredAt  DateTime?     @map("answered_at")
-  isForBlock  Boolean       @default(false) @map("is_for_block")
+  visitorId    String        @map("visitor_id")
+  title        String
+  content      String        @db.Text
+  answer       String?       @db.Text
+  status       InquiryStatus @default(PENDING)
+  type         InquiryType   @default(GENERAL)
+  refundStatus RefundStatus  @default(NONE) @map("refund_status")
+  paymentId    String?       @map("payment_id")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  answeredAt   DateTime?     @map("answered_at")
+  isForBlock   Boolean       @default(false) @map("is_for_block")
 
   visitor Visitor @relation(fields: [visitorId], references: [id], onDelete: Cascade)
 

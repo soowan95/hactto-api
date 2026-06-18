@@ -57,6 +57,7 @@ export class GeneratePredictionHandler implements ICommandHandler<GeneratePredic
     await this.honService.deductHon(
       command.visitorId,
       algorithmType.complexity,
+      `로또 예측 생성 (알고리즘: ${command.type})`,
     );
 
     const executed = await AlgorithmExecutor.execute(

@@ -22,6 +22,7 @@ export class HonService {
     paymentId: string,
     visitorId: string,
     honAmount: number,
+    description?: string,
   ): Promise<void> {
     const currentEvents = await this.paymentRepository.getEvents(paymentId);
     const nextVersion = currentEvents.length + 1;
@@ -35,10 +36,19 @@ export class HonService {
 
     const currentHon = await this.honRepository.getHon(visitorId);
     const currentBalance = currentHon ? currentHon.balance : 0;
+    const newBalance = currentBalance + honAmount;
 
     await this.honRepository.saveHon({
       visitorId,
-      balance: currentBalance + honAmount,
+      balance: newBalance,
+    });
+
+    await this.honRepository.saveHonEvent({
+      visitorId,
+      type: 'CHARGE',
+      amount: honAmount,
+      balance: newBalance,
+      description: description || '결제 충전',
     });
   }
 
@@ -135,7 +145,11 @@ export class HonService {
   /**
    * 5. 방문자 혼 차감 (구독자인 경우 면제)
    */
-  async deductHon(visitorId: string, amount: number): Promise<void> {
+  async deductHon(
+    visitorId: string,
+    amount: number,
+    description?: string,
+  ): Promise<void> {
     const subscription = await this.honRepository.getSubscription(visitorId);
     if (subscription && subscription.status === 'ACTIVE') {
       return; // ACTIVE 구독자는 무제한
@@ -149,9 +163,18 @@ export class HonService {
       );
     }
 
+    const newBalance = balance - amount;
     await this.honRepository.saveHon({
       visitorId,
-      balance: balance - amount,
+      balance: newBalance,
+    });
+
+    await this.honRepository.saveHonEvent({
+      visitorId,
+      type: 'DEDUCT',
+      amount: -amount,
+      balance: newBalance,
+      description: description || '혼 차감',
     });
   }
 
@@ -175,6 +198,18 @@ export class HonService {
       visitorId,
       balance: newBalance,
     });
+
+    await this.honRepository.saveHonEvent({
+      visitorId,
+      type: amount >= 0 ? 'ADMIN_PROVISION' : 'ADMIN_DEDUCT',
+      amount,
+      balance: newBalance,
+      description: amount >= 0 ? '관리자 지급' : '관리자 차감',
+    });
+  }
+
+  async getHonEvents(visitorId: string) {
+    return this.honRepository.getHonEvents(visitorId);
   }
 
   async provisionUnlimitedSubscriptionByAdmin(

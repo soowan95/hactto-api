@@ -1,6 +1,7 @@
 import { Request } from 'express';
 import { ForbiddenException, Inject, Injectable, Scope } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
+import * as crypto from 'node:crypto';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RequestParser {
@@ -50,7 +51,6 @@ export class RequestParser {
     try {
       const ip = this.getIpOrThrow();
       if (ip) {
-        const crypto = require('crypto');
         return crypto
           .createHash('sha256')
           .update(ip)
