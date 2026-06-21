@@ -13,6 +13,8 @@ import { PortoneClient } from '../infrastructure/clients/portone.client';
 import { HonService } from './hon.service';
 import { randomUUID } from 'crypto';
 
+import { prisma } from '../../../libs/prisma';
+
 @Injectable()
 export class PaymentService {
   constructor(
@@ -31,6 +33,45 @@ export class PaymentService {
     orderId: string,
     orderName: string,
   ): Promise<PaymentAggregate> {
+    // 진행 중인 환불 문의 또는 수락 대기 중인 환불 건이 있는지 확인
+    const activeRefundInquiry = await prisma.inquiry.findFirst({
+      where: {
+        visitorId,
+        type: 'REFUND',
+        OR: [{ status: 'PENDING' }, { refundStatus: 'PROPOSED' }],
+      },
+    });
+
+    if (activeRefundInquiry) {
+      throw new BadRequestException(
+        '진행 중인 환불 문의 또는 승인 대기 중인 환불 건이 있어 추가 결제가 불가능합니다.',
+      );
+    }
+
+    // 구독 정보 조회
+    const subscription = await prisma.subscription.findFirst({
+      where: {
+        visitorId,
+        status: 'ACTIVE',
+      },
+    });
+
+    if (subscription) {
+      const isHonPurchase =
+        amount === 1000 || amount === 3000 || amount === 5000;
+      if (isHonPurchase) {
+        throw new BadRequestException(
+          '구독 중에는 HON 추가 결제가 불가능합니다.',
+        );
+      }
+
+      if (subscription.plan === 'YEARLY' && amount === 12000) {
+        throw new BadRequestException(
+          '연간 구독 중에는 월간 구독 결제가 불가능합니다.',
+        );
+      }
+    }
+
     const paymentId = randomUUID();
 
     // Aggregate 생성 (내부적으로 version 1의 PaymentRequested 이벤트 발행)
@@ -125,6 +166,7 @@ export class PaymentService {
   async cancelPayment(
     paymentId: string,
     reason: string,
+    amount?: number,
   ): Promise<PaymentAggregate> {
     const events = await this.paymentRepository.getEvents(paymentId);
     if (events.length === 0) {
@@ -139,6 +181,7 @@ export class PaymentService {
     const portoneResult = await this.portoneClient.cancelPayment(
       paymentId,
       reason,
+      amount,
     );
 
     if (!portoneResult.success) {

@@ -84,16 +84,18 @@ export class PortoneClient {
   async cancelPayment(
     paymentId: string,
     reason: string,
+    amount?: number,
   ): Promise<{ success: boolean; cancelledAt?: Date; failReason?: string }> {
     try {
       this.logger.log(
-        `Cancelling payment via Portone SDK: paymentId=${paymentId}, reason=${reason}`,
+        `Cancelling payment via Portone SDK: paymentId=${paymentId}, reason=${reason}, amount=${amount}`,
       );
 
       // SDK를 사용하여 결제 취소 호출
       await this.paymentClient.cancelPayment({
         paymentId,
         reason,
+        amount,
       });
 
       return {

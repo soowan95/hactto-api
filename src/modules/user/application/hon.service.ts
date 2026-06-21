@@ -35,19 +35,22 @@ export class HonService {
     });
 
     const currentHon = await this.honRepository.getHon(visitorId);
-    const currentBalance = currentHon ? currentHon.balance : 0;
-    const newBalance = currentBalance + honAmount;
+    const currentFree = currentHon ? currentHon.freeBalance : 0;
+    const currentPaid = currentHon ? currentHon.paidBalance : 0;
+    const newPaid = currentPaid + honAmount;
+    const totalBalance = currentFree + newPaid;
 
     await this.honRepository.saveHon({
       visitorId,
-      balance: newBalance,
+      freeBalance: currentFree,
+      paidBalance: newPaid,
     });
 
     await this.honRepository.saveHonEvent({
       visitorId,
       type: 'CHARGE',
       amount: honAmount,
-      balance: newBalance,
+      balance: totalBalance,
       description: description || '결제 충전',
     });
   }
@@ -156,24 +159,47 @@ export class HonService {
     }
 
     const hon = await this.honRepository.getHon(visitorId);
-    const balance = hon ? hon.balance : 0;
-    if (balance < amount) {
+    const free = hon ? hon.freeBalance : 0;
+    const paid = hon ? hon.paidBalance : 0;
+    const totalBalance = free + paid;
+
+    if (totalBalance < amount) {
       throw new BadRequestException(
-        `HON이 부족합니다. 충전 후 이용해 주세요. (필요: ${amount} HON, 보유: ${balance} HON)`,
+        `HON이 부족합니다. 충전 후 이용해 주세요. (필요: ${amount} HON, 보유: ${totalBalance} HON)`,
       );
     }
 
-    const newBalance = balance - amount;
+    let remainingDeduct = amount;
+    let newFree = free;
+    let newPaid = paid;
+
+    // 무료(이벤트) HON 우선 차감
+    if (newFree >= remainingDeduct) {
+      newFree -= remainingDeduct;
+      remainingDeduct = 0;
+    } else {
+      remainingDeduct -= newFree;
+      newFree = 0;
+    }
+
+    // 부족분은 유료 HON에서 차감
+    if (remainingDeduct > 0) {
+      newPaid -= remainingDeduct;
+    }
+
+    const newTotalBalance = newFree + newPaid;
+
     await this.honRepository.saveHon({
       visitorId,
-      balance: newBalance,
+      freeBalance: newFree,
+      paidBalance: newPaid,
     });
 
     await this.honRepository.saveHonEvent({
       visitorId,
       type: 'DEDUCT',
       amount: -amount,
-      balance: newBalance,
+      balance: newTotalBalance,
       description: description || '혼 차감',
     });
   }
@@ -191,19 +217,24 @@ export class HonService {
     });
 
     const currentHon = await this.honRepository.getHon(visitorId);
-    const currentBalance = currentHon ? currentHon.balance : 0;
-    const newBalance = Math.max(0, currentBalance + amount);
+    const free = currentHon ? currentHon.freeBalance : 0;
+    const paid = currentHon ? currentHon.paidBalance : 0;
+
+    // 관리자 지급/차감은 우선 paidBalance에 반영하되 음수가 되지 않도록 설정
+    const newPaid = Math.max(0, paid + amount);
+    const newTotalBalance = free + newPaid;
 
     await this.honRepository.saveHon({
       visitorId,
-      balance: newBalance,
+      freeBalance: free,
+      paidBalance: newPaid,
     });
 
     await this.honRepository.saveHonEvent({
       visitorId,
       type: amount >= 0 ? 'ADMIN_PROVISION' : 'ADMIN_DEDUCT',
       amount,
-      balance: newBalance,
+      balance: newTotalBalance,
       description: amount >= 0 ? '관리자 지급' : '관리자 차감',
     });
   }

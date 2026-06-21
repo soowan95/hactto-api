@@ -94,7 +94,7 @@ export class VisitorController {
         data: { id: visitorId, ip },
       });
       await prisma.hon.create({
-        data: { visitorId, balance: 50 },
+        data: { visitorId, freeBalance: 50, paidBalance: 0 },
       });
     }
 
@@ -178,37 +178,64 @@ export class VisitorController {
       throw new BadRequestException('연동된 결제 내역이 없습니다.');
     }
 
-    // Fetch payment projection
-    const payment = await prisma.paymentProjection.findUnique({
-      where: { paymentId: inquiry.paymentId },
+    // Fetch all successful payments for this visitor
+    const payments = await prisma.paymentProjection.findMany({
+      where: { visitorId, status: 'PAID' },
+      orderBy: { createdAt: 'desc' },
     });
-    if (!payment || payment.status !== 'PAID') {
-      throw new BadRequestException('환불 가능한 상태의 결제 건이 아닙니다.');
-    }
 
-    // Recalculate amount
-    let chargedHon = 0;
-    if (payment.amount === 1000) chargedHon = 30;
-    else if (payment.amount === 3000) chargedHon = 100;
-    else if (payment.amount === 5000) chargedHon = 200;
-
-    const currentBalance = inquiry.visitor.hon?.balance ?? 0;
-    let refundAmount = 0;
-    let remainingHon = 0;
-
-    if (currentBalance > 50 && chargedHon > 0) {
-      const refundBalance = currentBalance - 50;
-      remainingHon = Math.min(chargedHon, refundBalance);
-      const usedHon = chargedHon - remainingHon;
-      refundAmount = Math.max(
-        0,
-        Math.floor(payment.amount * 0.9 - usedHon * 50),
+    if (payments.length === 0) {
+      throw new BadRequestException(
+        '환불 가능한 결제 내역이 존재하지 않습니다.',
       );
     }
 
-    // Execute actual PG cancel
-    const cancelReason = `사용자 환불 최종 수락 (환불 금액: ${refundAmount}원)`;
-    await this.paymentService.cancelPayment(payment.paymentId, cancelReason);
+    // Recalculate amount across all payments
+    let totalChargedHon = 0;
+    let totalPaymentAmount = 0;
+    const paymentRefundLimits = payments.map((p) => {
+      let ch = 0;
+      if (p.amount === 1000) ch = 30;
+      else if (p.amount === 3000) ch = 100;
+      else if (p.amount === 5000) ch = 200;
+      totalChargedHon += ch;
+      totalPaymentAmount += p.amount;
+      return { payment: p, chargedHon: ch, refundableLimit: p.amount };
+    });
+
+    const currentPaidBalance = inquiry.visitor.hon?.paidBalance ?? 0;
+    let totalRefundAmount = 0;
+    let remainingHon = 0;
+
+    if (currentPaidBalance > 0 && totalChargedHon > 0) {
+      remainingHon = Math.min(totalChargedHon, currentPaidBalance);
+      const usedHon = totalChargedHon - remainingHon;
+      totalRefundAmount = Math.max(
+        0,
+        Math.floor(totalPaymentAmount * 0.9 - usedHon * 50),
+      );
+    }
+
+    // Execute multi-payment LIFO cancels
+    let pendingRefundAmount = totalRefundAmount;
+    const cancelReason = `사용자 환불 최종 수락 (총 환불 금액: ${totalRefundAmount}원)`;
+
+    for (const limitInfo of paymentRefundLimits) {
+      if (pendingRefundAmount <= 0) break;
+
+      const cancelAmount = Math.min(
+        pendingRefundAmount,
+        limitInfo.refundableLimit,
+      );
+      if (cancelAmount > 0) {
+        await this.paymentService.cancelPayment(
+          limitInfo.payment.paymentId,
+          cancelReason,
+          cancelAmount,
+        );
+        pendingRefundAmount -= cancelAmount;
+      }
+    }
 
     // Deduct remaining charged HON
     if (remainingHon > 0) {
@@ -228,7 +255,7 @@ export class VisitorController {
         answeredAt: new Date(),
         answer:
           inquiry.answer +
-          `\n\n[환불 완료]\n${new Date().toLocaleString()}에 ${refundAmount.toLocaleString()}원 환불 처리가 성공적으로 완료되었습니다.`,
+          `\n\n[환불 완료]\n${new Date().toLocaleString()}에 ${totalRefundAmount.toLocaleString()}원 환불 처리가 성공적으로 완료되었습니다.`,
       },
     });
 
@@ -255,8 +282,8 @@ export class VisitorController {
     if (inquiry.type !== InquiryType.REFUND) {
       throw new BadRequestException('환불 문의가 아닙니다.');
     }
-    if (inquiry.refundStatus !== 'PROPOSED') {
-      throw new BadRequestException('승인 제안 상태가 아닙니다.');
+    if (inquiry.status !== 'PENDING' && inquiry.refundStatus !== 'PROPOSED') {
+      throw new BadRequestException('취소 가능한 상태가 아닙니다.');
     }
 
     const updatedInquiry = await prisma.inquiry.update({
@@ -266,8 +293,8 @@ export class VisitorController {
         status: 'ANSWERED',
         answeredAt: new Date(),
         answer:
-          inquiry.answer +
-          `\n\n[문의 취소]\n사용자가 환불 요청을 취소하였습니다.`,
+          (inquiry.answer ? inquiry.answer + '\n\n' : '') +
+          `[문의 취소]\n사용자가 환불 요청을 취소하였습니다.`,
       },
     });
 
