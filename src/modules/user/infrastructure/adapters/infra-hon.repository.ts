@@ -16,7 +16,8 @@ export class InfraHonRepository implements IHonRepository {
     if (!record) return null;
     return {
       visitorId: record.visitorId,
-      balance: record.balance,
+      freeBalance: record.freeBalance,
+      paidBalance: record.paidBalance,
       updatedAt: record.updatedAt,
     };
   }
@@ -36,10 +37,14 @@ export class InfraHonRepository implements IHonRepository {
 
     await prisma.hon.upsert({
       where: { visitorId: data.visitorId },
-      update: { balance: data.balance },
+      update: {
+        freeBalance: data.freeBalance,
+        paidBalance: data.paidBalance,
+      },
       create: {
         visitorId: data.visitorId,
-        balance: data.balance,
+        freeBalance: data.freeBalance,
+        paidBalance: data.paidBalance,
       },
     });
   }

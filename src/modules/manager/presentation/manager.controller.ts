@@ -69,40 +69,47 @@ export class ManagerController {
     const enrichedInquiries = await Promise.all(
       inquiries.map(async (inq) => {
         if (inq.type === 'REFUND') {
-          // Find most recent successful payment
-          const payment = await prisma.paymentProjection.findFirst({
+          // Find all successful payments
+          const payments = await prisma.paymentProjection.findMany({
             where: { visitorId: inq.visitorId, status: 'PAID' },
             orderBy: { createdAt: 'desc' },
           });
 
-          if (payment) {
-            let chargedHon = 0;
-            if (payment.amount === 1000) chargedHon = 30;
-            else if (payment.amount === 3000) chargedHon = 100;
-            else if (payment.amount === 5000) chargedHon = 200;
+          if (payments.length > 0) {
+            let totalChargedHon = 0;
+            let totalPaymentAmount = 0;
+            for (const p of payments) {
+              let ch = 0;
+              if (p.amount === 1000) ch = 30;
+              else if (p.amount === 3000) ch = 100;
+              else if (p.amount === 5000) ch = 200;
+              totalChargedHon += ch;
+              totalPaymentAmount += p.amount;
+            }
 
-            const currentBalance = inq.visitor.hon?.balance ?? 0;
+            const currentFree = inq.visitor.hon?.freeBalance ?? 0;
+            const currentPaid = inq.visitor.hon?.paidBalance ?? 0;
+            const totalBalance = currentFree + currentPaid;
             let refundAmount = 0;
 
-            if (currentBalance > 50 && chargedHon > 0) {
-              const refundBalance = currentBalance - 50;
-              const remainingHon = Math.min(chargedHon, refundBalance);
-              const usedHon = chargedHon - remainingHon;
+            if (currentPaid > 0 && totalChargedHon > 0) {
+              const remainingHon = Math.min(totalChargedHon, currentPaid);
+              const usedHon = totalChargedHon - remainingHon;
               refundAmount = Math.max(
                 0,
-                Math.floor(payment.amount * 0.9 - usedHon * 50),
+                Math.floor(totalPaymentAmount * 0.9 - usedHon * 50),
               );
             }
 
             return {
               ...inq,
               paymentInfo: {
-                paymentId: payment.paymentId,
-                amount: payment.amount,
-                chargedHon,
-                currentBalance,
+                paymentId: payments[0].paymentId, // for backward compatibility/reference
+                amount: totalPaymentAmount,
+                chargedHon: totalChargedHon,
+                currentBalance: totalBalance,
                 calculatedRefundAmount: refundAmount,
-                createdAt: payment.createdAt,
+                createdAt: payments[0].createdAt,
               },
             };
           }
@@ -156,32 +163,37 @@ export class ManagerController {
       throw new BadRequestException('환불 문의가 아닙니다.');
     }
 
-    const payment = await prisma.paymentProjection.findFirst({
+    const payments = await prisma.paymentProjection.findMany({
       where: { visitorId: inquiry.visitorId, status: 'PAID' },
       orderBy: { createdAt: 'desc' },
     });
 
-    if (!payment) {
+    if (payments.length === 0) {
       throw new BadRequestException(
         '환불 가능한 결제 내역이 존재하지 않습니다.',
       );
     }
 
-    let chargedHon = 0;
-    if (payment.amount === 1000) chargedHon = 30;
-    else if (payment.amount === 3000) chargedHon = 100;
-    else if (payment.amount === 5000) chargedHon = 200;
+    let totalChargedHon = 0;
+    let totalPaymentAmount = 0;
+    for (const p of payments) {
+      let ch = 0;
+      if (p.amount === 1000) ch = 30;
+      else if (p.amount === 3000) ch = 100;
+      else if (p.amount === 5000) ch = 200;
+      totalChargedHon += ch;
+      totalPaymentAmount += p.amount;
+    }
 
-    const currentBalance = inquiry.visitor.hon?.balance ?? 0;
+    const currentPaid = inquiry.visitor.hon?.paidBalance ?? 0;
     let refundAmount = 0;
 
-    if (currentBalance > 50 && chargedHon > 0) {
-      const refundBalance = currentBalance - 50;
-      const remainingHon = Math.min(chargedHon, refundBalance);
-      const usedHon = chargedHon - remainingHon;
+    if (currentPaid > 0 && totalChargedHon > 0) {
+      const remainingHon = Math.min(totalChargedHon, currentPaid);
+      const usedHon = totalChargedHon - remainingHon;
       refundAmount = Math.max(
         0,
-        Math.floor(payment.amount * 0.9 - usedHon * 50),
+        Math.floor(totalPaymentAmount * 0.9 - usedHon * 50),
       );
     }
 
@@ -192,7 +204,7 @@ export class ManagerController {
       data: {
         answer,
         refundStatus: 'PROPOSED',
-        paymentId: payment.paymentId,
+        paymentId: payments[0].paymentId, // Keep one paymentId references for schema compatibility
       },
     });
 
@@ -310,7 +322,13 @@ export class ManagerController {
       id: visitor.id,
       ip: visitor.ip,
       isBlocked: visitor.isBlocked,
-      hon: visitor.hon ? { balance: visitor.hon.balance } : { balance: 0 },
+      hon: visitor.hon
+        ? {
+            freeBalance: visitor.hon.freeBalance,
+            paidBalance: visitor.hon.paidBalance,
+            balance: visitor.hon.freeBalance + visitor.hon.paidBalance,
+          }
+        : { freeBalance: 0, paidBalance: 0, balance: 0 },
       subscription: visitor.subscription
         ? {
             plan: visitor.subscription.plan,

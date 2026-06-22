@@ -2,9 +2,10 @@
  * 방문자의 혼(Hon) 잔액 모델
  */
 model Hon {
-  visitorId String   @id @map("visitor_id")
-  balance   Int      @default(0) @map("balance") // 보유 혼(Hon) 개수
-  updatedAt DateTime @updatedAt @map("updated_at")
+  visitorId   String   @id @map("visitor_id")
+  freeBalance Int      @default(0) @map("free_balance") // 이벤트/무료 혼(Hon) 개수
+  paidBalance Int      @default(0) @map("paid_balance") // 결제/유료 혼(Hon) 개수
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   visitor   Visitor  @relation(fields: [visitorId], references: [id], onDelete: Cascade)
 

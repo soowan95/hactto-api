@@ -2,7 +2,8 @@ export const HON_REPOSITORY_TOKEN = Symbol('HON_REPOSITORY_TOKEN');
 
 export interface HonData {
   visitorId: string;
-  balance: number;
+  freeBalance: number;
+  paidBalance: number;
   updatedAt?: Date;
 }
 
