@@ -177,9 +177,18 @@ export class PaymentService {
 
     const aggregate = PaymentAggregate.rebuild(events);
 
-    // 외부 포트원 취소 API 호출
+    // 외부 포트원 취소 API 호출 (구독 결제인 경우 DB paymentId(UUID)를, 일반 결제인 경우 orderId를 사용)
+    const projection = aggregate.toProjection();
+    const isSubscription =
+      projection.amount === 12000 ||
+      projection.amount === 100000 ||
+      projection.orderId.startsWith('renew-');
+    const portonePaymentId = isSubscription
+      ? projection.paymentId
+      : projection.orderId;
+
     const portoneResult = await this.portoneClient.cancelPayment(
-      paymentId,
+      portonePaymentId,
       reason,
       amount,
     );

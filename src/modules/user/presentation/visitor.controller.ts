@@ -53,6 +53,7 @@ export class VisitorController {
       `${visitorId}-register`,
       visitorId,
       50,
+      true,
       '첫 방문',
     );
   }
@@ -243,6 +244,7 @@ export class VisitorController {
         visitorId,
         remainingHon,
         '환불 처리로 인한 회수',
+        true,
       );
     }
 

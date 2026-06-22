@@ -22,6 +22,7 @@ export class HonService {
     paymentId: string,
     visitorId: string,
     honAmount: number,
+    isFree: boolean = false,
     description?: string,
   ): Promise<void> {
     const currentEvents = await this.paymentRepository.getEvents(paymentId);
@@ -37,12 +38,13 @@ export class HonService {
     const currentHon = await this.honRepository.getHon(visitorId);
     const currentFree = currentHon ? currentHon.freeBalance : 0;
     const currentPaid = currentHon ? currentHon.paidBalance : 0;
-    const newPaid = currentPaid + honAmount;
+    const newPaid = currentPaid + (isFree ? 0 : honAmount);
+    const newFree = currentFree + (isFree ? honAmount : 0);
     const totalBalance = currentFree + newPaid;
 
     await this.honRepository.saveHon({
       visitorId,
-      freeBalance: currentFree,
+      freeBalance: newFree,
       paidBalance: newPaid,
     });
 
@@ -152,6 +154,7 @@ export class HonService {
     visitorId: string,
     amount: number,
     description?: string,
+    deductPaidFirst: boolean = false,
   ): Promise<void> {
     const subscription = await this.honRepository.getSubscription(visitorId);
     if (subscription && subscription.status === 'ACTIVE') {
@@ -173,18 +176,34 @@ export class HonService {
     let newFree = free;
     let newPaid = paid;
 
-    // 무료(이벤트) HON 우선 차감
-    if (newFree >= remainingDeduct) {
-      newFree -= remainingDeduct;
-      remainingDeduct = 0;
-    } else {
-      remainingDeduct -= newFree;
-      newFree = 0;
-    }
+    if (deductPaidFirst) {
+      // 유료(충전) HON 우선 차감
+      if (newPaid >= remainingDeduct) {
+        newPaid -= remainingDeduct;
+        remainingDeduct = 0;
+      } else {
+        remainingDeduct -= newPaid;
+        newPaid = 0;
+      }
 
-    // 부족분은 유료 HON에서 차감
-    if (remainingDeduct > 0) {
-      newPaid -= remainingDeduct;
+      // 부족분은 무료(이벤트) HON에서 차감
+      if (remainingDeduct > 0) {
+        newFree -= remainingDeduct;
+      }
+    } else {
+      // 무료(이벤트) HON 우선 차감
+      if (newFree >= remainingDeduct) {
+        newFree -= remainingDeduct;
+        remainingDeduct = 0;
+      } else {
+        remainingDeduct -= newFree;
+        newFree = 0;
+      }
+
+      // 부족분은 유료 HON에서 차감
+      if (remainingDeduct > 0) {
+        newPaid -= remainingDeduct;
+      }
     }
 
     const newTotalBalance = newFree + newPaid;
@@ -220,13 +239,15 @@ export class HonService {
     const free = currentHon ? currentHon.freeBalance : 0;
     const paid = currentHon ? currentHon.paidBalance : 0;
 
-    // 관리자 지급/차감은 우선 paidBalance에 반영하되 음수가 되지 않도록 설정
-    const newPaid = Math.max(0, paid + amount);
+    // 관리자 지급은 freeBalance에 반영
+    const newFree = free + (amount >= 0 ? amount : 0);
+    // 관리자 차감은 우선 paidBalance에 반영하되 음수가 되지 않도록 설정
+    const newPaid = Math.max(0, paid + (amount < 0 ? amount : 0));
     const newTotalBalance = free + newPaid;
 
     await this.honRepository.saveHon({
       visitorId,
-      freeBalance: free,
+      freeBalance: newFree,
       paidBalance: newPaid,
     });
 
