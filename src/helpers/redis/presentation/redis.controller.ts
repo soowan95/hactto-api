@@ -60,12 +60,9 @@ export class RedisController {
     const hon = await this.honService.getHon(visitorId);
     const subscription = await this.honService.getSubscription(visitorId);
 
-    // 마스터 키(?mk=키) 유효성 검증 우선 처리
     if (queryMk) {
-      const isValidMasterKey = await this.redisService.isMemberOfSet(
-        'manager:k',
-        queryMk,
-      );
+      const isValidMasterKey =
+        await this.redisService.validateMasterKey(queryMk);
       return {
         allowed: isValidMasterKey,
         pending: false,

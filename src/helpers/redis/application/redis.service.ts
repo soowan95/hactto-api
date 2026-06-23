@@ -2,6 +2,45 @@ import { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import * as crypto from 'crypto';
 
+// Base32 Decoder for TOTP Secret Key
+function decodeBase32(base32: string): Buffer {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  const cleanBase32 = base32.toUpperCase().replace(/=+$/, '');
+  let bits = 0;
+  let value = 0;
+  const buffer: number[] = [];
+
+  for (let i = 0; i < cleanBase32.length; i++) {
+    const idx = alphabet.indexOf(cleanBase32[i]);
+    if (idx === -1) throw new Error('Invalid Base32 character');
+    value = (value << 5) | idx;
+    bits += 5;
+    if (bits >= 8) {
+      buffer.push((value >> (bits - 8)) & 255);
+      bits -= 8;
+    }
+  }
+  return Buffer.from(buffer);
+}
+
+// Generate Standard TOTP (SHA1, 6 digits)
+function generateTOTP(secret: string, counter: number): string {
+  const key = decodeBase32(secret);
+  const buffer = Buffer.alloc(8);
+  buffer.writeBigInt64BE(BigInt(counter), 0);
+
+  const hmac = crypto.createHmac('sha1', key).update(buffer).digest();
+  const offset = hmac[hmac.length - 1] & 0xf;
+  const code =
+    ((hmac[offset] & 0x7f) << 24) |
+    ((hmac[offset + 1] & 0xff) << 16) |
+    ((hmac[offset + 2] & 0xff) << 8) |
+    (hmac[offset + 3] & 0xff);
+
+  const otp = code % 1000000;
+  return otp.toString().padStart(6, '0');
+}
+
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   private redisClient: Redis;
 
@@ -20,9 +59,37 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.redisClient.disconnect();
   }
 
-  async isJustCreated(): Promise<boolean> {
-    const count: number = await this.redisClient.scard('manager:k');
-    return count === 0;
+  async validateMasterKey(masterKey: string): Promise<boolean> {
+    if (!masterKey) return false;
+
+    // 1. Check Redis session cache
+    const sessionKey = `manager:session:${masterKey}`;
+    const isSessionValid = await this.redisClient.get(sessionKey);
+    if (isSessionValid === 'true') return true;
+
+    // 2. Verify as 6-digit OTP code format
+    if (!/^\d{6}$/.test(masterKey)) return false;
+
+    const secret = process.env.ADMIN_OTP_SECRET || 'JBSWY3DPEHPK3PXP';
+
+    // 3. Verify TOTP with ±1 step window to allow time sync issues
+    const epoch = Math.floor(Date.now() / 1000);
+    const currentCounter = Math.floor(epoch / 30);
+
+    for (let i = -1; i <= 1; i++) {
+      try {
+        const expectedOtp = generateTOTP(secret, currentCounter + i);
+        if (expectedOtp === masterKey) {
+          // 4. Save session in Redis for 1 hour (3600s)
+          await this.redisClient.set(sessionKey, 'true', 'EX', 3600);
+          return true;
+        }
+      } catch {
+        // Ignore base32 decode errors or other failures
+      }
+    }
+
+    return false;
   }
 
   async reset(): Promise<void> {
@@ -34,8 +101,6 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async addToSet(key: string, value: string): Promise<number> {
-    const redisManagerKey: string = await this.getManagerKey();
-    if (redisManagerKey === value) return 0;
     return this.redisClient.sadd(key, value);
   }
 
@@ -122,10 +187,5 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   async del(key: string): Promise<void> {
     await this.redisClient.del(key);
-  }
-
-  private async getManagerKey(): Promise<string> {
-    const keys: string[] = await this.redisClient.smembers('manager:k');
-    return keys[0];
   }
 }

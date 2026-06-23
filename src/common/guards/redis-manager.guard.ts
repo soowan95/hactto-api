@@ -19,10 +19,8 @@ export class RedisManagerGuard implements CanActivate {
 
     if (!masterKey) throw new BadRequestException('Master key is required');
 
-    const isManagerOfRedis: boolean = await this.redisService.isMemberOfSet(
-      'manager:k',
-      masterKey,
-    );
+    const isManagerOfRedis: boolean =
+      await this.redisService.validateMasterKey(masterKey);
 
     if (!isManagerOfRedis)
       throw new ForbiddenException('Access denied to managing redis.');

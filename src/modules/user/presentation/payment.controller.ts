@@ -77,6 +77,14 @@ export class PaymentController {
     });
   }
 
+  @Post('subscription/cancel')
+  async cancelSubscription(
+    @Body('visitorId') visitorId: string,
+  ): Promise<{ success: boolean }> {
+    await this.honService.cancelSubscription(visitorId);
+    return { success: true };
+  }
+
   @Post(':id/cancel')
   async cancel(
     @Param('id') id: string,
@@ -86,13 +94,5 @@ export class PaymentController {
     return plainToInstance(CancelPaymentResponseDto, aggregate.toProjection(), {
       excludeExtraneousValues: true,
     });
-  }
-
-  @Post('subscription/cancel')
-  async cancelSubscription(
-    @Body('visitorId') visitorId: string,
-  ): Promise<{ success: boolean }> {
-    await this.honService.cancelSubscription(visitorId);
-    return { success: true };
   }
 }

@@ -15,16 +15,8 @@ export class StatusMonitorMiddleware implements NestMiddleware {
       );
     }
 
-    const justCreated: boolean = await this.redisService.isJustCreated();
-    if (justCreated) {
-      await this.redisService.addToSet('manager:k', masterKey);
-      return next();
-    }
-
-    const isManagerOfRedis: boolean = await this.redisService.isMemberOfSet(
-      'manager:k',
-      masterKey,
-    );
+    const isManagerOfRedis: boolean =
+      await this.redisService.validateMasterKey(masterKey);
 
     if (!isManagerOfRedis) {
       throw new ForbiddenException('Access denied to managing redis.');
