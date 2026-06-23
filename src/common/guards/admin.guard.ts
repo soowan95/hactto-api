@@ -20,10 +20,8 @@ export class AdminGuard implements CanActivate {
 
     if (masterKey) {
       // Check master key
-      const isValidMasterKey: boolean = await this.redisService.isMemberOfSet(
-        'manager:k',
-        masterKey,
-      );
+      const isValidMasterKey: boolean =
+        await this.redisService.validateMasterKey(masterKey);
       if (!isValidMasterKey) throw new ForbiddenException('Invalid Master Key');
       return true;
     }

@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { RedisService } from './redis.service';
+import * as crypto from 'crypto';
 
 jest.mock('ioredis', () => {
   const store = new Map<string, string>();
@@ -70,5 +71,70 @@ describe('RedisService', () => {
   it('형식이 올바르지 않은 토큰은 유효하지 않아야 한다', async () => {
     const isValid = await service.verifyAccessPayload('invalidtokenstring');
     expect(isValid).toBe(false);
+  });
+
+  describe('validateMasterKey', () => {
+    const secret = 'JBSWY3DPEHPK3PXP';
+
+    beforeEach(() => {
+      process.env.ADMIN_OTP_SECRET = secret;
+    });
+
+    function testDecodeBase32(base32: string): Buffer {
+      const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+      const cleanBase32 = base32.toUpperCase().replace(/=+$/, '');
+      let bits = 0;
+      let value = 0;
+      const buffer: number[] = [];
+      for (let i = 0; i < cleanBase32.length; i++) {
+        const idx = alphabet.indexOf(cleanBase32[i]);
+        if (idx === -1) throw new Error('Invalid Base32 character');
+        value = (value << 5) | idx;
+        bits += 5;
+        if (bits >= 8) {
+          buffer.push((value >> (bits - 8)) & 255);
+          bits -= 8;
+        }
+      }
+      return Buffer.from(buffer);
+    }
+
+    function testGenerateTOTP(secretKey: string, counter: number): string {
+      const key = testDecodeBase32(secretKey);
+      const buffer = Buffer.alloc(8);
+      buffer.writeBigInt64BE(BigInt(counter), 0);
+      const hmac = crypto.createHmac('sha1', key).update(buffer).digest();
+      const offset = hmac[hmac.length - 1] & 0xf;
+      const code =
+        ((hmac[offset] & 0x7f) << 24) |
+        ((hmac[offset + 1] & 0xff) << 16) |
+        ((hmac[offset + 2] & 0xff) << 8) |
+        (hmac[offset + 3] & 0xff);
+      const otp = code % 1000000;
+      return otp.toString().padStart(6, '0');
+    }
+
+    it('올바른 구글 OTP 번호인 경우 검증에 성공해야 한다', async () => {
+      const epoch = Math.floor(Date.now() / 1000);
+      const counter = Math.floor(epoch / 30);
+      const validOtp = testGenerateTOTP(secret, counter);
+
+      const isValid = await service.validateMasterKey(validOtp);
+      expect(isValid).toBe(true);
+    });
+
+    it('시간이 만료된 OTP 번호인 경우 검증에 실패해야 한다', async () => {
+      const epoch = Math.floor(Date.now() / 1000) - 90;
+      const counter = Math.floor(epoch / 30);
+      const expiredOtp = testGenerateTOTP(secret, counter);
+
+      const isValid = await service.validateMasterKey(expiredOtp);
+      expect(isValid).toBe(false);
+    });
+
+    it('형식이 올바르지 않거나 잘못된 OTP 번호인 경우 검증에 실패해야 한다', async () => {
+      const isValid = await service.validateMasterKey('999999');
+      expect(isValid).toBe(false);
+    });
   });
 });

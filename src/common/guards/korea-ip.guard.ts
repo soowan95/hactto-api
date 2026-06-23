@@ -40,10 +40,8 @@ export class KoreaIpGuard implements CanActivate {
 
     const masterKey = this.requestParser.getMasterKey();
     if (masterKey) {
-      const isValidMasterKey = await this.redisService.isMemberOfSet(
-        'manager:k',
-        masterKey,
-      );
+      const isValidMasterKey =
+        await this.redisService.validateMasterKey(masterKey);
       if (isValidMasterKey) {
         return true;
       }

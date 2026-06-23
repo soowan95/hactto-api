@@ -24,6 +24,7 @@ describe('RedisController', () => {
       resetAll: jest.fn(),
       isMemberOfSet: jest.fn(),
       verifyAccessPayload: jest.fn(),
+      validateMasterKey: jest.fn(),
     };
 
     const mockRequestParser = {
@@ -131,28 +132,22 @@ describe('RedisController', () => {
   });
 
   describe('checkIp', () => {
-    it('should return allowed true for queryMk when it is in manager:k set', async () => {
+    it('should return allowed true for queryMk when it is valid', async () => {
       const { req } = createMockReqRes('127.0.0.1');
       currentRequest = req;
-      redisService.isMemberOfSet.mockResolvedValue(true);
+      redisService.validateMasterKey.mockResolvedValue(true);
       const result = await controller.checkIp('test-key');
       expect(result.allowed).toBe(true);
-      expect(redisService.isMemberOfSet).toHaveBeenCalledWith(
-        'manager:k',
-        'test-key',
-      );
+      expect(redisService.validateMasterKey).toHaveBeenCalledWith('test-key');
     });
 
-    it('should return allowed false for queryMk when it is not in manager:k set', async () => {
+    it('should return allowed false for queryMk when it is invalid', async () => {
       const { req } = createMockReqRes('127.0.0.1');
       currentRequest = req;
-      redisService.isMemberOfSet.mockResolvedValue(false);
+      redisService.validateMasterKey.mockResolvedValue(false);
       const result = await controller.checkIp('test-key');
       expect(result.allowed).toBe(false);
-      expect(redisService.isMemberOfSet).toHaveBeenCalledWith(
-        'manager:k',
-        'test-key',
-      );
+      expect(redisService.validateMasterKey).toHaveBeenCalledWith('test-key');
     });
 
     it('should return allowed true if queryMk is not provided', async () => {
