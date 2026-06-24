@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { RedisController } from './redis.controller';
-import { RedisService } from '../application/redis.service';
+import { RedisController } from '../../src/helpers/redis/presentation/redis.controller';
+import { RedisService } from '../../src/helpers/redis/application/redis.service';
 import { Request, Response } from 'express';
 import { ForbiddenException } from '@nestjs/common';
-import { RequestParser } from '../../../common/utils/request-parser';
-import { HonService } from '../../../modules/user/application/hon.service';
+import { RequestParser } from '../../src/common/utils/request-parser';
+import { HonService } from '../../src/modules/user/application/hon.service';
 
 describe('RedisController', () => {
   let controller: RedisController;

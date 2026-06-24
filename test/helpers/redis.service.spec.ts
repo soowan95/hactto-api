@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { RedisService } from './redis.service';
+import { RedisService } from '../../src/helpers/redis/application/redis.service';
 import * as crypto from 'crypto';
 
 jest.mock('ioredis', () => {

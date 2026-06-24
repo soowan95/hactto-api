@@ -1,19 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { FetchWinningNumbersHandler } from './command-handlers/fetch-winning-numbers.handler';
-import { FetchRecentWinningNumberHandler } from './command-handlers/fetch-recent-winning-number.handler';
-import { GetAllWinningNumbersHandler } from './query-handlers/get-all-winning-numbers.handler';
-import { GetLatestWinningNumberHandler } from './query-handlers/get-latest-winning-number.handler';
-import { WINNING_NUMBER_REPOSITORY_TOKEN } from '../domain/ports/winning-number.port';
-import { WINNING_NUMBER_FETCHER_TOKEN } from '../domain/ports/winning-number-fetcher.port';
-import { FetchWinningNumbersCommand } from './commands/fetch-winning-numbers.command';
-import { FetchRecentWinningNumberCommand } from './commands/fetch-recent-winning-number.command';
-import { GetAllWinningNumbersQuery } from './queries/get-all-winning-numbers.query';
-import { GetLatestWinningNumberQuery } from './queries/get-latest-winning-number.query';
-import { GetWinningNumberByEpisodeQuery } from './queries/get-winning-number-by-episode.query';
-import { GetWinningNumberByEpisodeHandler } from './query-handlers/get-winning-number-by-episode.handler';
-import { DomainWinningNumber } from '../domain/aggregates/winning-number.entity';
-import { WinningNumberDrawer } from '../domain/services/winning-number-drawer';
-import { RedisService } from '../../../helpers/redis/application/redis.service';
+import { FetchWinningNumbersHandler } from '../../src/modules/number/application/command-handlers/fetch-winning-numbers.handler';
+import { FetchRecentWinningNumberHandler } from '../../src/modules/number/application/command-handlers/fetch-recent-winning-number.handler';
+import { GetAllWinningNumbersHandler } from '../../src/modules/number/application/query-handlers/get-all-winning-numbers.handler';
+import { GetLatestWinningNumberHandler } from '../../src/modules/number/application/query-handlers/get-latest-winning-number.handler';
+import { WINNING_NUMBER_REPOSITORY_TOKEN } from '../../src/modules/number/domain/ports/winning-number.port';
+import { WINNING_NUMBER_FETCHER_TOKEN } from '../../src/modules/number/domain/ports/winning-number-fetcher.port';
+import { FetchWinningNumbersCommand } from '../../src/modules/number/application/commands/fetch-winning-numbers.command';
+import { FetchRecentWinningNumberCommand } from '../../src/modules/number/application/commands/fetch-recent-winning-number.command';
+import { GetAllWinningNumbersQuery } from '../../src/modules/number/application/queries/get-all-winning-numbers.query';
+import { GetLatestWinningNumberQuery } from '../../src/modules/number/application/queries/get-latest-winning-number.query';
+import { GetWinningNumberByEpisodeQuery } from '../../src/modules/number/application/queries/get-winning-number-by-episode.query';
+import { GetWinningNumberByEpisodeHandler } from '../../src/modules/number/application/query-handlers/get-winning-number-by-episode.handler';
+import { DomainWinningNumber } from '../../src/modules/number/domain/aggregates/winning-number.entity';
+import { WinningNumberDrawer } from '../../src/modules/number/domain/services/winning-number-drawer';
+import { RedisService } from '../../src/helpers/redis/application/redis.service';
 import { EventPublisher, QueryBus } from '@nestjs/cqrs';
 
 describe('WinningNumber CQRS Handlers', () => {
