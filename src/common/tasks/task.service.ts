@@ -15,6 +15,7 @@ import {
 } from '../../modules/user/domain/ports/payment.port';
 import { PortoneClient } from '../../modules/user/infrastructure/clients/portone.client';
 import { randomUUID } from 'crypto';
+import { prisma } from '../../libs/prisma';
 
 @Injectable()
 export class TaskService {
@@ -242,6 +243,29 @@ export class TaskService {
         'Error occurred during subscription renewal job:',
         error,
       );
+    }
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, {
+    timeZone: 'Asia/Seoul',
+  })
+  async resetDailyFreeHon() {
+    if (!process.env.PORTONE_API_SECRET) {
+      this.logger.log(
+        'PORTONE_API_SECRET가 설정되어 있지 않아, 매일 자정 무료 HON을 50개로 초기화합니다.',
+      );
+      try {
+        await prisma.hon.updateMany({
+          data: {
+            freeBalance: 50,
+          },
+        });
+        this.logger.log(
+          '성공적으로 모든 사용자의 무료 HON을 50개로 초기화했습니다.',
+        );
+      } catch (error) {
+        this.logger.error('무료 HON 일괄 초기화 중 오류 발생:', error);
+      }
     }
   }
 }
