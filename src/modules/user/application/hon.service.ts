@@ -5,6 +5,7 @@ import {
   PAYMENT_REPOSITORY_TOKEN,
 } from '../domain/ports/payment.port';
 import { randomUUID } from 'crypto';
+import { prisma } from '../../../libs/prisma';
 
 @Injectable()
 export class HonService {
@@ -287,5 +288,21 @@ export class HonService {
       startsAt: now,
       endsAt,
     });
+  }
+
+  async bulkProvisionHonByAdmin(amount: number): Promise<void> {
+    const visitors = await prisma.visitor.findMany({
+      select: { id: true },
+    });
+
+    // Process sequentially to avoid database lock and guarantee correct event ordering
+    for (const v of visitors) {
+      try {
+        await this.provisionHonByAdmin(v.id, amount);
+      } catch (error) {
+        // Log individual error but continue processing other users
+        console.error(`Failed to provision Hon for user ${v.id}:`, error);
+      }
+    }
   }
 }

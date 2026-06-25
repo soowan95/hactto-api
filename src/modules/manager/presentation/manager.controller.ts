@@ -306,13 +306,23 @@ export class ManagerController {
   @ApiOperation({ summary: 'Get visitor details for admin' })
   @Get('visitors/:id')
   async getVisitorDetails(@Param('id') id: string) {
-    const visitor = await prisma.visitor.findUnique({
+    let visitor = await prisma.visitor.findUnique({
       where: { id },
       include: {
         hon: true,
         subscription: true,
       },
     });
+
+    if (!visitor) {
+      visitor = await prisma.visitor.findFirst({
+        where: { ip: id },
+        include: {
+          hon: true,
+          subscription: true,
+        },
+      });
+    }
 
     if (!visitor) {
       throw new NotFoundException('방문자를 찾을 수 없습니다.');
@@ -396,6 +406,20 @@ export class ManagerController {
       id,
       new Date(body.endsAt),
     );
+    return { success: true };
+  }
+
+  @ApiOperation({ summary: 'Get manager dashboard stats' })
+  @Get('stats')
+  async getDashboardStats() {
+    const totalUsers = await prisma.visitor.count();
+    return { totalUsers };
+  }
+
+  @ApiOperation({ summary: 'Bulk add or deduct Hon for all visitors' })
+  @Post('visitors/bulk-hon')
+  async manageBulkHon(@Body() body: ManageHonDto) {
+    await this.honService.bulkProvisionHonByAdmin(body.amount);
     return { success: true };
   }
 }
