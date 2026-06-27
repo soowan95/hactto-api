@@ -178,7 +178,7 @@ export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
       existingSet.add(`${p.episode}:${p.algorithm.type}`);
     }
 
-    const CONCURRENCY = 100;
+    const CONCURRENCY = 5;
 
     for (const algorithm of algorithms) {
       const episodes: { episode: number; i: number }[] = [];

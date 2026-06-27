@@ -17,6 +17,8 @@ services:
     ports:
       - "8080:3000"
     restart: always
+    environment:
+      - TZ=Asia/Seoul
     env_file:
       - .env
     depends_on:
@@ -28,6 +30,8 @@ services:
     ports:
       - "8081:3000"
     restart: always
+    environment:
+      - TZ=Asia/Seoul
     env_file:
       - .env
     depends_on:

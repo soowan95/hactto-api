@@ -26,11 +26,9 @@ export class BallStatusAdapter implements BallStatusReader {
     beforeEpisode?: number,
   ): Promise<Record<number, AnalysisBallTemperature>> {
     const temperatures: Record<number, AnalysisBallTemperature> = {};
-    await Promise.all(
-      balls.map(async (ball) => {
-        temperatures[ball] = await this.getBallTemperature(ball, beforeEpisode);
-      }),
-    );
+    for (const ball of balls) {
+      temperatures[ball] = await this.getBallTemperature(ball, beforeEpisode);
+    }
     return temperatures;
   }
 
