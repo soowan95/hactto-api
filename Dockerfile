@@ -5,6 +5,8 @@ WORKDIR /app
 
 # Copy dependency files
 COPY package.json package-lock.json ./
+COPY yalc.lock ./
+COPY .yalc ./.yalc
 
 # Install dependencies (npm ci 대신 npm install 사용 - yalc 로컬 참조 때문)
 RUN npm install

@@ -7,7 +7,7 @@ import {
   hacttoExecute,
   WeightsCommand,
   WeightsType,
-} from '@hactto/algorithm';
+} from '@hactto95/algorithm';
 import { DomainPrediction } from '../aggregates/prediction.entity';
 import { DomainAlgorithm } from '../aggregates/algorithm.entity';
 import { DomainAnalysis } from '../aggregates/analysis.entity';
