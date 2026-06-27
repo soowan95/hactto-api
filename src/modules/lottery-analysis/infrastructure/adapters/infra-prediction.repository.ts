@@ -403,4 +403,18 @@ export class InfraPredictionRepository implements IPredictionRepository {
       });
     });
   }
+
+  async findSystemPredictionKeys(): Promise<
+    { episode: number; algorithmType: string }[]
+  > {
+    return prisma.prediction.findMany({
+      where: {
+        visitorId: null,
+      },
+      select: {
+        episode: true,
+        algorithmType: true,
+      },
+    });
+  }
 }
