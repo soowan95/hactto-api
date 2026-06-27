@@ -27,6 +27,8 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/hactto-api:latest
+          build-args: |
+            NPM_TOKEN=${{ secrets.NPM_TOKEN }}
 
       - name: Create .env file from GitHub Secrets
         run: |
