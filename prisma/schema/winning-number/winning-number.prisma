@@ -1,13 +1,22 @@
+/**
+ * 당첨번호
+ */
 model WinningNumber {
-  id Int @id @default(autoincrement())
+  episode Int @id // 로또 회차
 
-  round Int // 로또 회차
+  lt1WnNo   Int     @default(0) @map("lt1_wn_no")
+  lt2WnNo   Int     @default(0) @map("lt2_wn_no")
+  lt3WnNo   Int     @default(0) @map("lt3_wn_no")
+  lt4WnNo   Int     @default(0) @map("lt4_wn_no")
+  lt5WnNo   Int     @default(0) @map("lt5_wn_no")
+  lt6WnNo   Int     @default(0) @map("lt6_wn_no")
+  ltBnsWnNo Int     @default(0) @map("lt_bns_wn_no")
+  isDrawn   Boolean @default(true) @map("is_drawn")
 
-  first  Int // 첫번째 당첨번호
-  second Int // 두번째 당첨번호
-  third  Int // 세번째 당첨번호
-  fourth Int // 네번째 당첨번호
-  fifth  Int // 다섯번째 당첨번호
+  predictions         Prediction[] // 회차 별 각 알고리즘에 대한 결과
+  personalPredictions PersonalPrediction[] // 개인 예측번호 결과
+
+  winningNumberAnalysis WinningNumberAnalysis?
 
   @@map("winning_number")
 }

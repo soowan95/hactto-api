@@ -1,0 +1,19 @@
+/**
+ * 알고리즘으로 생성된 예측 당첨 번호
+ */
+model Prediction {
+  id Int @id @default(autoincrement())
+
+  algorithmType String  @map("algorithm_type")
+  episode       Int // 로또 회차
+  weights       String // 가중치 SET
+  numbers       String // 당첨번호 SET
+  visitorId     String? @map("visitor_id")
+
+  winningNumber WinningNumber @relation(fields: [episode], references: [episode])
+  algorithm     Algorithm     @relation(fields: [algorithmType], references: [type])
+
+  predictionAnalysis PredictionAnalysis?
+
+  @@map("prediction")
+}

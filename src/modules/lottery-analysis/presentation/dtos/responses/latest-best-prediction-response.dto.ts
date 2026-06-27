@@ -1,0 +1,43 @@
+import { ApiProperty } from '@nestjs/swagger';
+
+export class PredictionDetailDto {
+  @ApiProperty({ example: 1 })
+  id: number;
+
+  @ApiProperty()
+  algorithm: string;
+
+  @ApiProperty({ example: 1120 })
+  episode: number;
+
+  @ApiProperty({ example: [25, 20, 18, 15, 12, 10] })
+  weights: number[];
+
+  @ApiProperty({ example: [4, 12, 18, 29, 32, 45] })
+  numbers: number[];
+
+  @ApiProperty({ example: 88.5 })
+  reliabilityScore: number;
+
+  @ApiProperty({ required: false })
+  analysis?: any;
+}
+
+export class WinningNumberDetailDto {
+  @ApiProperty({ example: 1120 })
+  episode: number;
+
+  @ApiProperty({ example: [4, 11, 18, 28, 32, 44, 8] })
+  numbers: number[];
+
+  @ApiProperty({ required: false })
+  analysis?: any;
+}
+
+export class LatestBestPredictionResponseDto {
+  @ApiProperty({ type: PredictionDetailDto })
+  prediction: PredictionDetailDto;
+
+  @ApiProperty({ type: WinningNumberDetailDto })
+  winningNumber: WinningNumberDetailDto;
+}

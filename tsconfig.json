@@ -2,7 +2,6 @@
   "compilerOptions": {
     "module": "commonjs",
     "moduleResolution": "node",
-    "strict": true,
     "esModuleInterop": true,
     "isolatedModules": true,
     "declaration": true,
@@ -14,10 +13,6 @@
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
-    "rootDirs": [
-      "./src",
-      "./prisma/generated"
-    ],
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,
@@ -25,7 +20,5 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false
-  },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "prisma.config.ts", "prisma/generated/**/*"]
+  }
 }

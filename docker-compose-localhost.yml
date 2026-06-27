@@ -12,6 +12,15 @@ services:
     volumes:
       - mariadb_data:/var/lib/mysql
 
+  redis:
+    image: redis:alpine
+    restart: always
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
   nestjs:
     build:
       context: .
@@ -20,11 +29,13 @@ services:
     image: nestjs:local
     container_name: nestjs
     ports:
-      - "1324:1324"
+      - "3000:3000"
     env_file:
       - .env.localhost
     depends_on:
       - mysql
+      - redis
 
 volumes:
   mariadb_data:
+  redis_data:

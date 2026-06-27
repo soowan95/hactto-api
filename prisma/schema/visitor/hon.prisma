@@ -1,0 +1,47 @@
+/**
+ * 방문자의 혼(Hon) 잔액 모델
+ */
+model Hon {
+  visitorId   String   @id @map("visitor_id")
+  freeBalance Int      @default(0) @map("free_balance") // 이벤트/무료 혼(Hon) 개수
+  paidBalance Int      @default(0) @map("paid_balance") // 결제/유료 혼(Hon) 개수
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  visitor   Visitor  @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+
+  @@map("hon")
+}
+
+/**
+ * 방문자의 정기 구독 상태 모델
+ */
+model Subscription {
+  visitorId     String    @id @map("visitor_id")
+  plan          String    @map("plan")           // MONTHLY, YEARLY
+  status        String    @map("status")         // ACTIVE, CANCELLED, EXPIRED
+  billingKey    String    @map("billing_key")    // 포트원 빌링키
+  nextPaymentAt DateTime  @map("next_payment_at")// 다음 결제 예정일
+  startsAt      DateTime  @map("starts_at")
+  endsAt        DateTime  @map("ends_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  visitor       Visitor   @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+
+  @@map("subscription")
+}
+
+model HonEvent {
+  id          Int      @id @default(autoincrement())
+  visitorId   String   @map("visitor_id")
+  type        String   @map("type")        // CHARGE, DEDUCT, ADMIN_PROVISION, REFUND_RECOVERY 등
+  amount      Int      @map("amount")      // 변동량 (양수/음수)
+  balance     Int      @map("balance")     // 변동 후 잔액
+  description String?  @map("description") // "결제 충전", "로또 예측 분석 이용", "환불 회수" 등
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  visitor     Visitor  @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+
+  @@index([visitorId])
+  @@map("hon_event")
+}
