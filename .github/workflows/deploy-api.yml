@@ -44,7 +44,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "docker-compose.yml,.env"
+          source: "docker-compose.yml,.env,deploy.sh"
           target: "/home/ubuntu/hactto-api"
 
       - name: Deploy to EC2
@@ -55,5 +55,5 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ~/hactto-api
-            docker compose pull
-            docker compose up -d
+            chmod +x deploy.sh
+            ./deploy.sh
