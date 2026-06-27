@@ -34,6 +34,10 @@ jobs:
         run: |
           echo "${{ secrets.PROD_ENV_FILE }}" > .env
 
+      - name: Replace DockerHub Username in docker-compose.yml
+        run: |
+          sed -i 's/your-dockerhub-id/${{ secrets.DOCKERHUB_USERNAME }}/g' docker-compose.yml
+
       - name: Copy deployment files to EC2
         uses: appleboy/scp-action@master
         with:
@@ -50,10 +54,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # 앱 디렉토리로 이동 (예: ~/hactto-api)
             cd ~/hactto-api
-            # 최신 이미지 pull
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/hactto-api:latest
             # 배포 스크립트 실행
             chmod +x deploy.sh
             ./deploy.sh
