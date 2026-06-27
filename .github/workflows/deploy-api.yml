@@ -55,6 +55,5 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ~/hactto-api
-            # 배포 스크립트 실행
-            chmod +x deploy.sh
-            ./deploy.sh
+            docker compose pull
+            docker compose up -d
