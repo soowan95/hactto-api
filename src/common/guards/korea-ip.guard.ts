@@ -137,15 +137,8 @@ export class KoreaIpGuard implements CanActivate {
       return true;
     }
 
-    const country = this.requestParser.getHeaders('cf-ipcountry') as string;
-    if (!country || country.toUpperCase() !== 'KR') {
-      this.logger.warn(
-        `Access request blocked: IP ${ip} is from country ${
-          country || 'unknown'
-        }`,
-      );
-      throw new ForbiddenException('대한민국 IP에서만 접근이 가능합니다.');
-    }
+    // AWS WAF가 로드밸런서(ALB) 앞단에서 한국 IP 검증 및 차단을 수행하므로
+    // 애플리케이션 레벨의 국가 코드 검사는 제거합니다. (cf-ipcountry는 Cloudflare 전용)
 
     return true;
   }
