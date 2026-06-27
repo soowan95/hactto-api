@@ -24,5 +24,8 @@ export interface IPredictionRepository {
   ): Promise<DomainPrediction | null>;
   count(): Promise<number>;
   findAllSystemPredictions(): Promise<DomainPrediction[]>;
+  findSystemPredictionKeys(): Promise<
+    { episode: number; algorithmType: string }[]
+  >;
   groupByAlgorithmTypeHavingEpisode(episode: number): Promise<any>;
 }

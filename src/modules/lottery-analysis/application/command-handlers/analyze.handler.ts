@@ -72,13 +72,32 @@ export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
       await this.redisService.set(runningLockKey, 'true', 1800); // 30-minute safety TTL
       // Lock system status so users see the maintenance/analyzing page
       await this.systemStatusService.setAnalysisStatus(true);
+      const today = new Date();
+      const estTime = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate(),
+        21,
+        12,
+        0,
+      );
 
       // 1. Initialize winning number analyses first
+      await this.systemStatusService.updateProgress(
+        10,
+        '분석 데이터 환경 초기화 중',
+        estTime.toISOString(),
+      );
       await this.initializeWinningNumberAnalyses();
 
       // 2. Always initialize algorithms (new episodes will be processed dynamically)
       await this.initializeAlgorithms();
 
+      await this.systemStatusService.updateProgress(
+        95,
+        '예측 신뢰도 평가 진행 중',
+        estTime.toISOString(),
+      );
       const targetPredictions: DomainPrediction[] =
         await this.predictionRepository.findWithoutAnalysisReliability();
 
@@ -172,15 +191,33 @@ export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
     );
 
     const existingPredictions =
-      await this.predictionRepository.findAllSystemPredictions();
+      await this.predictionRepository.findSystemPredictionKeys();
     const existingSet = new Set<string>();
     for (const p of existingPredictions) {
-      existingSet.add(`${p.episode}:${p.algorithm.type}`);
+      existingSet.add(`${p.episode}:${p.algorithmType}`);
     }
 
     const CONCURRENCY = 5;
+    const today = new Date();
+    const estTime = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+      21,
+      12,
+      0,
+    );
 
+    let algoIndex = 0;
     for (const algorithm of algorithms) {
+      const progressPercent =
+        15 + Math.round((algoIndex / algorithms.length) * 75);
+      await this.systemStatusService.updateProgress(
+        progressPercent,
+        `알고리즘 분석 진행 중 (${algoIndex + 1}/${algorithms.length})`,
+        estTime.toISOString(),
+      );
+
       const episodes: { episode: number; i: number }[] = [];
       for (let i = 1; i < data.length; i++) {
         const episode = i + 1;
@@ -216,6 +253,7 @@ export class AnalyzeHandler implements ICommandHandler<AnalyzeCommand> {
         );
         await this.predictionRepository.saveMany(results);
       }
+      algoIndex++;
     }
   }
 }

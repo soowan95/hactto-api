@@ -33,8 +33,12 @@ export class SystemStatusController {
   async getStatus() {
     // Sync with Redis to ensure we have the latest status
     await this.systemStatusService.syncFromRedis();
+    const detailed = this.systemStatusService.getDetailedStatus();
     return {
-      inProgress: this.systemStatusService.getAnalysisStatus(),
+      inProgress: detailed.inProgress,
+      progress: detailed.progress,
+      message: detailed.message,
+      estimatedCompletionTime: detailed.estimatedCompletionTime,
     };
   }
 
@@ -45,9 +49,14 @@ export class SystemStatusController {
   sse(): Observable<MessageEvent> {
     return this.systemStatusService.statusStream$.pipe(
       map(
-        (inProgress) =>
+        (status) =>
           ({
-            data: { inProgress },
+            data: {
+              inProgress: status.inProgress,
+              progress: status.progress,
+              message: status.message,
+              estimatedCompletionTime: status.estimatedCompletionTime,
+            },
           }) as MessageEvent,
       ),
     );

@@ -31,7 +31,7 @@ export class TaskService {
     private readonly portoneClient: PortoneClient,
   ) {}
 
-  @Cron(HacttoCronExpression.SATURDAY_AT_8PM_30M, {
+  @Cron(HacttoCronExpression.SATURDAY_AT_9PM, {
     timeZone: 'Asia/Seoul',
   })
   async lockSiteForAnalysis() {
@@ -39,9 +39,23 @@ export class TaskService {
       '🔒 Locking site for winning number drawing and analysis...',
     );
     await this.systemStatusService.setAnalysisStatus(true);
+    const today = new Date();
+    const estTime = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+      21,
+      12,
+      0,
+    );
+    await this.systemStatusService.updateProgress(
+      0,
+      '당첨번호 추첨 대기 중',
+      estTime.toISOString(),
+    );
   }
 
-  @Cron(HacttoCronExpression.SATURDAY_AT_8PM_40M, {
+  @Cron(HacttoCronExpression.SATURDAY_AT_9PM, {
     timeZone: 'Asia/Seoul',
   })
   async fetchRecentWinningNumbers() {
@@ -51,6 +65,21 @@ export class TaskService {
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
+        const today = new Date();
+        const estTime = new Date(
+          today.getFullYear(),
+          today.getMonth(),
+          today.getDate(),
+          21,
+          12,
+          0,
+        );
+        await this.systemStatusService.updateProgress(
+          5,
+          `신규 당첨번호 확인 중 (시도 ${attempt}/${maxRetries})`,
+          estTime.toISOString(),
+        );
+
         this.logger.debug(
           `Executing FetchRecentWinningNumberCommand (Attempt ${attempt}/${maxRetries})...`,
         );
