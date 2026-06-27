@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:alpine
+    container_name: hactto-redis
+    ports:
+      - "6379:6379"
+    restart: always
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  api-blue:
+    image: your-dockerhub-id/hactto-api:latest
+    container_name: hactto-api-blue
+    ports:
+      - "8080:3000"
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - redis
+
+  api-green:
+    image: your-dockerhub-id/hactto-api:latest
+    container_name: hactto-api-green
+    ports:
+      - "8081:3000"
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - redis
+
+volumes:
+  redis_data:
