@@ -14,8 +14,8 @@ COPY . .
 
 ENV NODE_ENV=production
 
-# Generate Prisma Client
-RUN npx prisma generate --schema=./prisma/schema/
+# Generate Prisma Client (Provide dummy DATABASE_URL to avoid PrismaConfigEnvError)
+RUN DATABASE_URL="mysql://dummy:dummy@dummy:3306/dummy" npx prisma generate --schema=./prisma/schema/
 
 # Build NestJS application
 RUN npm run build
