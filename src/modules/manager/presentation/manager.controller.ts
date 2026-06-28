@@ -303,6 +303,37 @@ export class ManagerController {
   }
 
   // Merged Visitor Admin endpoints
+  @ApiOperation({ summary: 'Get all visitors with pagination' })
+  @Get('visitors')
+  async getAllVisitors(
+    @Query('page') pageStr: string = '1',
+    @Query('limit') limitStr: string = '100'
+  ) {
+    const page = parseInt(pageStr, 10) || 1;
+    const limit = parseInt(limitStr, 10) || 100;
+    const skip = (page - 1) * limit;
+
+    const [visitors, total] = await Promise.all([
+      prisma.visitor.findMany({
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          hon: true,
+          subscription: true,
+        },
+      }),
+      prisma.visitor.count(),
+    ]);
+
+    const enrichedVisitors = visitors.map((v) => ({
+      ...v,
+      honCount: (v.hon?.freeBalance ?? 0) + (v.hon?.paidBalance ?? 0),
+      subscriptionEndsAt: v.subscription?.endsAt ?? null,
+    }));
+
+    return { success: true, data: enrichedVisitors, meta: { total, page, limit } };
+  }
   @ApiOperation({ summary: 'Get visitor details for admin' })
   @Get('visitors/:id')
   async getVisitorDetails(@Param('id') id: string) {
