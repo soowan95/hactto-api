@@ -362,6 +362,8 @@ export class ManagerController {
       id: visitor.id,
       ip: visitor.ip,
       isBlocked: visitor.isBlocked,
+      honCount: (visitor.hon?.freeBalance ?? 0) + (visitor.hon?.paidBalance ?? 0),
+      subscriptionEndsAt: visitor.subscription?.endsAt ?? null,
       hon: visitor.hon
         ? {
             freeBalance: visitor.hon.freeBalance,
