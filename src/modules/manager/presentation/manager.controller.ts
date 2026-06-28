@@ -317,7 +317,6 @@ export class ManagerController {
       prisma.visitor.findMany({
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
         include: {
           hon: true,
           subscription: true,
