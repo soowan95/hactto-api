@@ -7,7 +7,10 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  let corsOrigin: (string | RegExp)[] = ['https://hactto.com', 'https://www.hactto.com'],
+  let corsOrigin: (string | RegExp)[] = [
+      'https://hactto.com',
+      'https://www.hactto.com',
+    ],
     loggerLevel: LogLevel[] = ['error', 'warn'];
   if (
     process.env.NODE_ENV === 'localhost' ||

@@ -1,13 +1,19 @@
 model Visitor {
   id String @id
   ip String
-  isBlocked    Boolean @default(false) @map("is_blocked")
-
+  nickname     String?      @unique @db.VarChar(30)
+  
   hon          Hon?
   subscription Subscription?
   inquiries    Inquiry[]
   honEvents    HonEvent[]
+  block        Block?
+  posts        Post[]
+  reports      PostReport[]
+  postComments PostComment[]
+  postLikes    PostLike[]
+  commentLikes CommentLike[]
+  commentReports CommentReport[]
 
   @@map("visitor")
 }
-

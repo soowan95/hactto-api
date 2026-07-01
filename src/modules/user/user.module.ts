@@ -10,6 +10,7 @@ import { UserBallStatusAdapter } from './infrastructure/adapters/user-ball-statu
 import { WinningNumberModule } from '../number/winning-number.module';
 import { CommandHandlers, QueryHandlers } from './application';
 import { PersonalAnalysisController } from './presentation/personal-analysis.controller';
+import { BadWordsService } from './application/bad-words.service';
 import { PersonalPredictionController } from './presentation/personal-prediction.controller';
 import { VISITOR_REPOSITORY_TOKEN } from './domain/ports/visitor.port';
 import { InfraVisitorRepository } from './infrastructure/adapters/infra-visitor.repository';
@@ -22,6 +23,8 @@ import { InfraPaymentRepository } from './infrastructure/adapters/infra-payment.
 import { PaymentService } from './application/payment.service';
 import { PortoneClient } from './infrastructure/clients/portone.client';
 import { PaymentController } from './presentation/payment.controller';
+import { BoardController } from './presentation/board.controller';
+import { LottoOcrService } from './application/lotto-ocr.service';
 
 @Module({
   imports: [CqrsModule, WinningNumberModule, HttpModule],
@@ -30,6 +33,7 @@ import { PaymentController } from './presentation/payment.controller';
     PersonalPredictionController,
     VisitorController,
     PaymentController,
+    BoardController,
   ],
 
   providers: [
@@ -60,6 +64,8 @@ import { PaymentController } from './presentation/payment.controller';
     HonService,
     PaymentService,
     PortoneClient,
+    LottoOcrService,
+    BadWordsService,
     ...CommandHandlers,
     ...QueryHandlers,
   ],
@@ -71,6 +77,7 @@ import { PaymentController } from './presentation/payment.controller';
     HON_REPOSITORY_TOKEN,
     PAYMENT_REPOSITORY_TOKEN,
     PortoneClient,
+    BadWordsService,
   ],
 })
 export class UserModule {}

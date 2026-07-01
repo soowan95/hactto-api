@@ -6,7 +6,6 @@ export class DomainVisitor {
   constructor(
     public readonly id: string,
     ip: string,
-    public readonly isBlocked: boolean = false,
   ) {
     this._ip = IpAddress.from(ip);
   }

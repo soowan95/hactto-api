@@ -1,4 +1,4 @@
-import { IsDateString, IsNumber } from 'class-validator';
+import { IsDateString, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class ManageHonDto {
   @IsNumber()
@@ -8,4 +8,14 @@ export class ManageHonDto {
 export class GrantSubscriptionDto {
   @IsDateString()
   endsAt: string;
+}
+
+export class BlockVisitorDto {
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsNumber()
+  @IsOptional()
+  period?: number; // hours
 }

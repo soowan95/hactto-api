@@ -27,11 +27,4 @@ export class InfraVisitorRepository implements IVisitorRepository {
       data: { ip },
     });
   }
-
-  async updateBlockStatus(id: string, isBlocked: boolean): Promise<void> {
-    await prisma.visitor.update({
-      where: { id },
-      data: { isBlocked },
-    });
-  }
 }

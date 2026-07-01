@@ -17,6 +17,7 @@ import { prisma } from '../../../libs/prisma';
 import {
   AnswerInquiryDto,
   RejectRefundDto,
+  AnswerReportDto,
 } from './dtos/requests/inquiry-requests.dto';
 import {
   CreateNoticeDto,
@@ -25,6 +26,7 @@ import {
 import {
   ManageHonDto,
   GrantSubscriptionDto,
+  BlockVisitorDto,
 } from './dtos/requests/visitor-requests.dto';
 import {
   IVisitorRepository,
@@ -32,6 +34,7 @@ import {
 } from '../../user/domain/ports/visitor.port';
 import { HonService } from '../../user/application/hon.service';
 import { RedisService } from '../../../helpers/redis/application/redis.service';
+import { BadWordsService } from '../../user/application/bad-words.service';
 
 @ApiTags('- Admin Manager')
 @Admin()
@@ -42,6 +45,7 @@ export class ManagerController {
     private readonly visitorRepository: IVisitorRepository,
     private readonly honService: HonService,
     private readonly redisService: RedisService,
+    private readonly badWordsService: BadWordsService,
   ) {}
 
   @ApiOperation({ summary: 'Get all inquiries for admin' })
@@ -307,7 +311,7 @@ export class ManagerController {
   @Get('visitors')
   async getAllVisitors(
     @Query('page') pageStr: string = '1',
-    @Query('limit') limitStr: string = '100'
+    @Query('limit') limitStr: string = '100',
   ) {
     const page = parseInt(pageStr, 10) || 1;
     const limit = parseInt(limitStr, 10) || 100;
@@ -325,13 +329,28 @@ export class ManagerController {
       prisma.visitor.count(),
     ]);
 
-    const enrichedVisitors = visitors.map((v) => ({
-      ...v,
-      honCount: (v.hon?.freeBalance ?? 0) + (v.hon?.paidBalance ?? 0),
-      subscriptionEndsAt: v.subscription?.endsAt ?? null,
-    }));
+    const enrichedVisitors = await Promise.all(
+      visitors.map(async (v) => {
+        const activeBlock = await prisma.block.findFirst({
+          where: {
+            visitorId: v.id,
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+          },
+        });
+        return {
+          ...v,
+          isBlocked: !!activeBlock,
+          honCount: (v.hon?.freeBalance ?? 0) + (v.hon?.paidBalance ?? 0),
+          subscriptionEndsAt: v.subscription?.endsAt ?? null,
+        };
+      }),
+    );
 
-    return { success: true, data: enrichedVisitors, meta: { total, page, limit } };
+    return {
+      success: true,
+      data: enrichedVisitors,
+      meta: { total, page, limit },
+    };
   }
   @ApiOperation({ summary: 'Get visitor details for admin' })
   @Get('visitors/:id')
@@ -341,6 +360,7 @@ export class ManagerController {
       include: {
         hon: true,
         subscription: true,
+        block: true,
       },
     });
 
@@ -350,6 +370,7 @@ export class ManagerController {
         include: {
           hon: true,
           subscription: true,
+          block: true,
         },
       });
     }
@@ -358,11 +379,26 @@ export class ManagerController {
       throw new NotFoundException('방문자를 찾을 수 없습니다.');
     }
 
+    const activeBlock =
+      visitor.block &&
+      (!visitor.block.expiresAt ||
+        new Date(visitor.block.expiresAt) > new Date())
+        ? visitor.block
+        : null;
+
     return {
       id: visitor.id,
       ip: visitor.ip,
-      isBlocked: visitor.isBlocked,
-      honCount: (visitor.hon?.freeBalance ?? 0) + (visitor.hon?.paidBalance ?? 0),
+      isBlocked: !!activeBlock,
+      blockDetail: activeBlock
+        ? {
+            description: activeBlock.description,
+            expiresAt: activeBlock.expiresAt,
+            createdAt: activeBlock.createdAt,
+          }
+        : null,
+      honCount:
+        (visitor.hon?.freeBalance ?? 0) + (visitor.hon?.paidBalance ?? 0),
       subscriptionEndsAt: visitor.subscription?.endsAt ?? null,
       hon: visitor.hon
         ? {
@@ -385,13 +421,33 @@ export class ManagerController {
 
   @ApiOperation({ summary: 'Block visitor' })
   @Post('visitors/:id/block')
-  async blockVisitor(@Param('id') id: string) {
+  async blockVisitor(@Param('id') id: string, @Body() body: BlockVisitorDto) {
     const visitor = await prisma.visitor.findUnique({ where: { id } });
     if (!visitor) {
       throw new NotFoundException('방문자를 찾을 수 없습니다.');
     }
 
-    await this.visitorRepository.updateBlockStatus(id, true);
+    const expiresAt =
+      body.period && body.period > 0
+        ? new Date(Date.now() + body.period * 60 * 60 * 1000)
+        : null;
+
+    await prisma.block.upsert({
+      where: { visitorId: id },
+      create: {
+        visitorId: id,
+        description: body.description,
+        period: body.period,
+        expiresAt,
+      },
+      update: {
+        description: body.description,
+        period: body.period,
+        expiresAt,
+        createdAt: new Date(),
+      },
+    });
+
     await this.redisService.set(`visitor-blocked:${id}`, 'true', 86400 * 7);
 
     return { success: true };
@@ -405,7 +461,10 @@ export class ManagerController {
       throw new NotFoundException('방문자를 찾을 수 없습니다.');
     }
 
-    await this.visitorRepository.updateBlockStatus(id, false);
+    await prisma.block.deleteMany({
+      where: { visitorId: id },
+    });
+
     await this.redisService.set(`visitor-blocked:${id}`, 'false', 86400 * 7);
 
     return { success: true };
@@ -452,6 +511,159 @@ export class ManagerController {
   @Post('visitors/bulk-hon')
   async manageBulkHon(@Body() body: ManageHonDto) {
     await this.honService.bulkProvisionHonByAdmin(body.amount);
+    return { success: true };
+  }
+
+  @ApiOperation({ summary: 'Get visitor predictions for admin' })
+  @Get('visitors/:id/predictions')
+  async getVisitorPredictions(@Param('id') id: string) {
+    const visitor = await prisma.visitor.findUnique({ where: { id } });
+    if (!visitor) {
+      throw new NotFoundException('방문자를 찾을 수 없습니다.');
+    }
+
+    const predictions = await prisma.personalPrediction.findMany({
+      where: { visitorId: id },
+      orderBy: { id: 'desc' },
+      include: {
+        winningNumber: true,
+      },
+    });
+
+    return { success: true, data: predictions };
+  }
+
+  @ApiOperation({ summary: 'Get all reported posts for admin' })
+  @Get('reports')
+  async getReports() {
+    const reports = await prisma.postReport.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        post: true,
+      },
+    });
+    return { success: true, data: reports };
+  }
+
+  @ApiOperation({ summary: 'Answer/Resolve a post report' })
+  @Post('reports/:id/answer')
+  async resolveReport(@Param('id') id: string, @Body() body: AnswerReportDto) {
+    const numId = parseInt(id, 10);
+    if (isNaN(numId)) {
+      throw new BadRequestException('올바르지 않은 ID 형식입니다.');
+    }
+
+    const report = await prisma.postReport.findUnique({ where: { id: numId } });
+    if (!report) {
+      throw new NotFoundException('신고 내역을 찾을 수 없습니다.');
+    }
+
+    const updated = await prisma.postReport.update({
+      where: { id: numId },
+      data: {
+        answer: body.answer,
+        status: 'RESOLVED',
+        answeredAt: new Date(),
+      },
+    });
+
+    return { success: true, data: updated };
+  }
+
+  @ApiOperation({ summary: 'Delete a reported post by admin' })
+  @Delete('posts/:id')
+  async deleteReportedPost(@Param('id') id: string) {
+    const numId = parseInt(id, 10);
+    if (isNaN(numId)) {
+      throw new BadRequestException('올바르지 않은 ID 형식입니다.');
+    }
+
+    const post = await prisma.post.findUnique({ where: { id: numId } });
+    if (!post) {
+      throw new NotFoundException('게시글을 찾을 수 없습니다.');
+    }
+
+    await prisma.post.delete({ where: { id: numId } });
+    return { success: true };
+  }
+
+  @ApiOperation({ summary: 'Get all nickname reports' })
+  @Get('nickname-reports')
+  async getNicknameReports() {
+    const reports = await prisma.nicknameReport.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+    return { success: true, data: reports };
+  }
+
+  @ApiOperation({ summary: 'Block a reported nickname' })
+  @Post('nickname-reports/:id/block')
+  async blockNicknameReport(@Param('id') id: string) {
+    const report = await prisma.nicknameReport.findUnique({ where: { id } });
+    if (!report) throw new NotFoundException('Report not found');
+    if (report.status !== 'PENDING')
+      throw new BadRequestException('Report already processed');
+
+    // Add to banned words
+    await this.badWordsService.addBannedWord(report.targetNickname);
+
+    // Update report status
+    await prisma.nicknameReport.update({
+      where: { id },
+      data: { status: 'BLOCKED' },
+    });
+
+    // Reset nickname of the offender
+    await prisma.visitor.updateMany({
+      where: { nickname: report.targetNickname },
+      data: { nickname: null },
+    });
+
+    // Automatically block all pending reports for this nickname
+    await prisma.nicknameReport.updateMany({
+      where: { targetNickname: report.targetNickname, status: 'PENDING' },
+      data: { status: 'BLOCKED' },
+    });
+
+    return { success: true };
+  }
+
+  @ApiOperation({ summary: 'Reject a nickname report' })
+  @Post('nickname-reports/:id/reject')
+  async rejectNicknameReport(@Param('id') id: string) {
+    const report = await prisma.nicknameReport.findUnique({ where: { id } });
+    if (!report) throw new NotFoundException('Report not found');
+    if (report.status !== 'PENDING')
+      throw new BadRequestException('Report already processed');
+
+    await prisma.nicknameReport.update({
+      where: { id },
+      data: { status: 'REJECTED' },
+    });
+
+    return { success: true };
+  }
+
+  @ApiOperation({ summary: 'Get all banned words' })
+  @Get('banned-words')
+  async getBannedWords() {
+    const words = this.badWordsService.getAllBannedWords();
+    return { success: true, data: words };
+  }
+
+  @ApiOperation({ summary: 'Add a banned word manually' })
+  @Post('banned-words')
+  async addBannedWord(@Body('word') word: string) {
+    if (!word) throw new BadRequestException('Word is required');
+    await this.badWordsService.addBannedWord(word);
+    return { success: true };
+  }
+
+  @ApiOperation({ summary: 'Remove a banned word manually' })
+  @Delete('banned-words/:word')
+  async removeBannedWord(@Param('word') word: string) {
+    if (!word) throw new BadRequestException('Word is required');
+    await this.badWordsService.removeBannedWord(word);
     return { success: true };
   }
 }

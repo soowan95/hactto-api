@@ -15,6 +15,7 @@ import {
 } from '../../modules/user/domain/ports/visitor.port';
 import { Response } from 'express';
 import * as crypto from 'crypto';
+import { prisma } from '../../libs/prisma';
 
 @Injectable({ scope: Scope.REQUEST })
 export class KoreaIpGuard implements CanActivate {
@@ -91,7 +92,13 @@ export class KoreaIpGuard implements CanActivate {
         visitorEntity = await this.repository.findById(visitorId);
         if (visitorEntity) {
           savedIp = visitorEntity.ip;
-          isBlockedCache = visitorEntity.isBlocked ? 'true' : 'false';
+          const activeBlock = await prisma.block.findFirst({
+            where: {
+              visitorId,
+              OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+            },
+          });
+          isBlockedCache = activeBlock ? 'true' : 'false';
           await this.redisService.set(
             blockedRedisKey,
             isBlockedCache,
