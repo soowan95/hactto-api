@@ -1,0 +1,6 @@
+model BannedWord {
+  word      String   @id @db.VarChar(50)
+  createdAt DateTime @default(now())
+
+  @@map("banned_word")
+}

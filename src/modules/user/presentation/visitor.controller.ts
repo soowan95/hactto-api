@@ -19,6 +19,7 @@ import { RequestParser } from '../../../common/utils/request-parser';
 import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
 import { HonService } from '../application/hon.service';
 import { PaymentService } from '../application/payment.service';
+import { BadWordsService } from '../application/bad-words.service';
 import { prisma } from '../../../libs/prisma';
 import { InquiryType } from '../../../generated/prisma/enums';
 import { CreateInquiryDto } from './dtos/requests/create-inquiry-request.dto';
@@ -33,6 +34,7 @@ export class VisitorController {
     private readonly honService: HonService,
     private readonly paymentService: PaymentService,
     private readonly requestParser: RequestParser,
+    private readonly badWordsService: BadWordsService,
   ) {}
 
   @ApiOperation({ summary: 'Register visitor' })
@@ -58,6 +60,58 @@ export class VisitorController {
     );
   }
 
+  @ApiOperation({ summary: 'Get current visitor profile' })
+  @Get('me')
+  async getMe() {
+    const visitorId = this.requestParser.getVisitorId();
+    if (!visitorId)
+      throw new BadRequestException('Visitor ID가 유효하지 않습니다.');
+    const visitor = await prisma.visitor.findUnique({
+      where: { id: visitorId },
+    });
+    if (!visitor) throw new NotFoundException('방문자를 찾을 수 없습니다.');
+    return { success: true, data: visitor };
+  }
+
+  @ApiOperation({ summary: 'Check if nickname exists' })
+  @Get('check-nickname')
+  async checkNickname(@Query('nickname') nickname: string) {
+    if (!nickname) throw new BadRequestException('Nickname is required.');
+    if (this.badWordsService.containsBadWord(nickname)) {
+      throw new BadRequestException('사용할 수 없는 단어가 포함되어 있습니다.');
+    }
+    const visitor = await prisma.visitor.findUnique({ where: { nickname } });
+    return { success: true, exists: !!visitor };
+  }
+
+  @ApiOperation({ summary: 'Set nickname (only once)' })
+  @Post('nickname')
+  async setNickname(@Body('nickname') nickname: string) {
+    const visitorId = this.requestParser.getVisitorId();
+    if (!visitorId)
+      throw new BadRequestException('Visitor ID가 유효하지 않습니다.');
+    if (!nickname || nickname.length > 30)
+      throw new BadRequestException('유효하지 않은 닉네임입니다.');
+    if (this.badWordsService.containsBadWord(nickname))
+      throw new BadRequestException('사용할 수 없는 단어가 포함되어 있습니다.');
+
+    const visitor = await prisma.visitor.findUnique({
+      where: { id: visitorId },
+    });
+    if (!visitor) throw new NotFoundException('방문자를 찾을 수 없습니다.');
+    if (visitor.nickname)
+      throw new BadRequestException('이미 닉네임이 설정되어 있습니다.');
+
+    const existing = await prisma.visitor.findUnique({ where: { nickname } });
+    if (existing) throw new BadRequestException('이미 사용 중인 닉네임입니다.');
+
+    await prisma.visitor.update({
+      where: { id: visitorId },
+      data: { nickname },
+    });
+
+    return { success: true };
+  }
   @ApiOperation({ summary: 'Submit an inquiry' })
   @Post('inquiries')
   async createInquiry(@Body() body: CreateInquiryDto) {
@@ -313,5 +367,33 @@ export class VisitorController {
 
     const events = await this.honService.getHonEvents(visitorId);
     return { success: true, data: events };
+  }
+
+  @ApiOperation({ summary: 'Report a nickname' })
+  @Post('nickname-report')
+  async reportNickname(
+    @Body('targetNickname') targetNickname: string,
+    @Body('reason') reason?: string,
+  ) {
+    const reporterId = this.requestParser.getVisitorId();
+    if (!reporterId) throw new BadRequestException('Visitor ID is required.');
+    if (!targetNickname)
+      throw new BadRequestException('Target nickname is required.');
+
+    const targetVisitor = await prisma.visitor.findUnique({
+      where: { nickname: targetNickname },
+    });
+    if (!targetVisitor)
+      throw new NotFoundException('해당 닉네임을 찾을 수 없습니다.');
+
+    await prisma.nicknameReport.create({
+      data: {
+        targetNickname,
+        reporterId,
+        reason: reason || null,
+      },
+    });
+
+    return { success: true };
   }
 }

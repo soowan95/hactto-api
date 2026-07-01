@@ -1,0 +1,17 @@
+enum NicknameReportStatus {
+  PENDING
+  BLOCKED
+  REJECTED
+}
+
+model NicknameReport {
+  id             String               @id @default(uuid())
+  targetNickname String               @db.VarChar(30)
+  reporterId     String
+  reason         String?              @db.VarChar(200)
+  status         NicknameReportStatus @default(PENDING)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@map("nickname_report")
+}

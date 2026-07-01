@@ -3,6 +3,6 @@ import { DomainVisitor } from '../../domain/aggregates/visitor.entity';
 
 export class InfraVisitorMapper {
   static toEntity(raw: Visitor): DomainVisitor {
-    return new DomainVisitor(raw.id, raw.ip, raw.isBlocked);
+    return new DomainVisitor(raw.id, raw.ip);
   }
 }
