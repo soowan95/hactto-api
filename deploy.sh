@@ -63,3 +63,6 @@ docker compose stop api-${CURRENT_COLOR}
 docker compose rm -f api-${CURRENT_COLOR}
 
 echo "Deployment to ${TARGET_COLOR} completed successfully!"
+
+echo "7. Cleaning up dangling Docker images..."
+docker image prune -f
