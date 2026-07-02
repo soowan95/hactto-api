@@ -111,9 +111,9 @@ describe('ManagerController', () => {
     it('should throw NotFoundException if visitor is not found', async () => {
       (prisma.visitor.findUnique as jest.Mock).mockResolvedValue(null);
 
-      await expect(controller.blockVisitor('visitor-1')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        controller.blockVisitor('visitor-1', { reason: 'spam' }),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should block visitor, update DB and save to redis status', async () => {
@@ -121,7 +121,9 @@ describe('ManagerController', () => {
         id: 'visitor-1',
       });
 
-      const result = await controller.blockVisitor('visitor-1');
+      const result = await controller.blockVisitor('visitor-1', {
+        reason: 'spam',
+      });
 
       expect(result).toEqual({ success: true });
       expect(mockVisitorRepository.updateBlockStatus).toHaveBeenCalledWith(

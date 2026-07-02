@@ -41,7 +41,7 @@ export class HonService {
     const currentPaid = currentHon ? currentHon.paidBalance : 0;
     const newPaid = currentPaid + (isFree ? 0 : honAmount);
     const newFree = currentFree + (isFree ? honAmount : 0);
-    const totalBalance = currentFree + newPaid;
+    const totalBalance = newFree + newPaid;
 
     await this.honRepository.saveHon({
       visitorId,
@@ -53,6 +53,8 @@ export class HonService {
       visitorId,
       type: 'CHARGE',
       amount: honAmount,
+      freeAmount: isFree ? honAmount : 0,
+      paidAmount: isFree ? 0 : honAmount,
       balance: totalBalance,
       description: description || '결제 충전',
     });
@@ -219,6 +221,8 @@ export class HonService {
       visitorId,
       type: 'DEDUCT',
       amount: -amount,
+      freeAmount: -(free - newFree),
+      paidAmount: -(paid - newPaid),
       balance: newTotalBalance,
       description: description || '혼 차감',
     });
@@ -256,6 +260,8 @@ export class HonService {
       visitorId,
       type: amount >= 0 ? 'ADMIN_PROVISION' : 'ADMIN_DEDUCT',
       amount,
+      freeAmount: newFree - free,
+      paidAmount: newPaid - paid,
       balance: newTotalBalance,
       description: amount >= 0 ? '관리자 지급' : '관리자 차감',
     });

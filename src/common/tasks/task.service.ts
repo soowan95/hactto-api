@@ -283,23 +283,186 @@ export class TaskService {
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, {
     timeZone: 'Asia/Seoul',
   })
-  async resetDailyFreeHon() {
-    if (!process.env.PORTONE_API_SECRET) {
-      this.logger.log(
-        'PORTONE_API_SECRET가 설정되어 있지 않아, 매일 자정 무료 HON을 50개로 초기화합니다.',
-      );
-      try {
-        await prisma.hon.updateMany({
-          data: {
-            freeBalance: 50,
-          },
-        });
-        this.logger.log(
-          '성공적으로 모든 사용자의 무료 HON을 50개로 초기화했습니다.',
-        );
-      } catch (error) {
-        this.logger.error('무료 HON 일괄 초기화 중 오류 발생:', error);
+  async processAdminHonEvents() {
+    this.logger.log('🔄 Starting daily admin HON events processing...');
+    const now = new Date();
+    try {
+      const activeEvents = await prisma.adminHonEventSetting.findMany({
+        where: {
+          isActive: true,
+          startsAt: { lte: now },
+          OR: [{ endsAt: null }, { endsAt: { gte: now } }],
+        },
+      });
+
+      if (activeEvents.length === 0) {
+        this.logger.log('실행할 활성 HON 이벤트가 없습니다.');
+        return;
       }
+
+      for (const event of activeEvents) {
+        this.logger.log(
+          `Processing event ${event.id} (Type: ${event.type}, Amount: ${event.amount})`,
+        );
+
+        if (event.type === 'RESET') {
+          // freeBalance < amount 인 유저만 대상
+          const eligibleHons = await prisma.hon.findMany({
+            where: { freeBalance: { lt: event.amount } },
+            select: { visitorId: true, freeBalance: true, paidBalance: true },
+          });
+
+          if (eligibleHons.length === 0) continue;
+
+          const honEventData = eligibleHons.map((hon) => ({
+            visitorId: hon.visitorId,
+            type: 'ADMIN_PROVISION',
+            amount: event.amount - hon.freeBalance,
+            freeAmount: event.amount - hon.freeBalance,
+            paidAmount: 0,
+            balance: event.amount + hon.paidBalance,
+            description: '자동 이벤트 초기화',
+          }));
+
+          await prisma.$transaction([
+            prisma.honEvent.createMany({ data: honEventData }),
+            prisma.hon.updateMany({
+              where: { freeBalance: { lt: event.amount } },
+              data: { freeBalance: event.amount },
+            }),
+          ]);
+          this.logger.log(
+            `Reset ${eligibleHons.length} users' HON to ${event.amount}.`,
+          );
+        } else if (event.type === 'ADD') {
+          const allHons = await prisma.hon.findMany({
+            select: { visitorId: true, freeBalance: true, paidBalance: true },
+          });
+
+          if (allHons.length === 0) continue;
+
+          const honEventData = allHons.map((hon) => ({
+            visitorId: hon.visitorId,
+            type: 'ADMIN_PROVISION',
+            amount: event.amount,
+            freeAmount: event.amount,
+            paidAmount: 0,
+            balance: hon.freeBalance + hon.paidBalance + event.amount,
+            description: '자동 이벤트 지급',
+          }));
+
+          await prisma.$transaction([
+            prisma.honEvent.createMany({ data: honEventData }),
+            prisma.hon.updateMany({
+              data: { freeBalance: { increment: event.amount } },
+            }),
+          ]);
+          this.logger.log(
+            `Added ${event.amount} HON to ${allHons.length} users.`,
+          );
+        }
+      }
+    } catch (error) {
+      this.logger.error('자동 HON 이벤트 처리 중 오류 발생:', error);
+    }
+  }
+  @Cron(CronExpression.EVERY_DAY_AT_3AM, {
+    timeZone: 'Asia/Seoul',
+  })
+  async cleanupOrphanedS3Images() {
+    this.logger.debug('🗑️ Starting orphaned S3 images cleanup...');
+    try {
+      const region = process.env.AWS_REGION || 'ap-northeast-2';
+      const s3Bucket = process.env.AWS_S3_BUCKET || 'hactto-board-attachments';
+
+      if (
+        !process.env.AWS_ACCESS_KEY_ID ||
+        !process.env.AWS_SECRET_ACCESS_KEY
+      ) {
+        this.logger.warn('Skipping S3 cleanup: AWS credentials not found.');
+        return;
+      }
+
+      const s3Client = new S3Client({
+        region: region,
+        credentials: {
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        },
+      });
+
+      // 1. Fetch all imageUrls from DB
+      const postsWithImages = await prisma.post.findMany({
+        where: { imageUrl: { not: null } },
+        select: { imageUrl: true },
+      });
+
+      // Store raw keys from the URL
+      const activeKeys = new Set<string>();
+      postsWithImages.forEach((post) => {
+        if (post.imageUrl) {
+          try {
+            const url = new URL(post.imageUrl);
+            activeKeys.add(url.pathname.substring(1)); // Remove leading '/'
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      });
+
+      // 2. Paginate over S3 objects
+      let isTruncated = true;
+      let continuationToken: string | undefined;
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      let totalDeleted = 0;
+
+      while (isTruncated) {
+        const listCmd = new ListObjectsV2Command({
+          Bucket: s3Bucket,
+          Prefix: 'uploads/',
+          ContinuationToken: continuationToken,
+        });
+
+        const response = await s3Client.send(listCmd);
+        const objects = response.Contents || [];
+
+        const keysToDelete: { Key: string }[] = [];
+
+        for (const obj of objects) {
+          if (
+            obj.Key &&
+            obj.LastModified &&
+            obj.LastModified < twentyFourHoursAgo
+          ) {
+            if (!activeKeys.has(obj.Key)) {
+              keysToDelete.push({ Key: obj.Key });
+            }
+          }
+        }
+
+        // 3. Delete in batches of 1000 (S3 API limit)
+        if (keysToDelete.length > 0) {
+          for (let i = 0; i < keysToDelete.length; i += 1000) {
+            const chunk = keysToDelete.slice(i, i + 1000);
+            await s3Client.send(
+              new DeleteObjectsCommand({
+                Bucket: s3Bucket,
+                Delete: { Objects: chunk, Quiet: true },
+              }),
+            );
+            totalDeleted += chunk.length;
+          }
+        }
+
+        isTruncated = response.IsTruncated || false;
+        continuationToken = response.NextContinuationToken;
+      }
+
+      this.logger.debug(
+        `✅ S3 cleanup completed. Deleted ${totalDeleted} orphaned objects.`,
+      );
+    } catch (err) {
+      this.logger.error('S3 cleanup job failed:', err);
     }
   }
   @Cron(CronExpression.EVERY_DAY_AT_3AM, {

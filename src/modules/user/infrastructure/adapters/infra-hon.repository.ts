@@ -106,6 +106,8 @@ export class InfraHonRepository implements IHonRepository {
         visitorId: event.visitorId,
         type: event.type,
         amount: event.amount,
+        freeAmount: event.freeAmount,
+        paidAmount: event.paidAmount,
         balance: event.balance,
         description: event.description,
       },
