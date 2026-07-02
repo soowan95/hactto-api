@@ -13,5 +13,7 @@ model PersonalPrediction {
   winningNumber    WinningNumber     @relation(fields: [episode], references: [episode])
   personalAnalysis PersonalAnalysis? // 1:1 분석 결과
 
+  createdAt DateTime @default(now()) @map("created_at")
+
   @@map("personal_prediction")
 }

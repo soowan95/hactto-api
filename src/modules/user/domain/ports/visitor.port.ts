@@ -6,5 +6,4 @@ export interface IVisitorRepository {
   insert(id: string, ip: string): Promise<void>;
   findById(id: string): Promise<DomainVisitor | null>;
   updateIp(id: string, ip: string): Promise<void>;
-  updateBlockStatus(id: string, isBlocked: boolean): Promise<void>;
 }
