@@ -55,9 +55,11 @@ export class PaymentController {
       dto.paymentKey,
       dto.amount,
     );
+    const projection = aggregate.toProjection();
+    const isTest = this.paymentService.isTestMode();
     return plainToInstance(
       ConfirmPaymentResponseDto,
-      aggregate.toProjection(),
+      { ...projection, isTest },
       {
         excludeExtraneousValues: true,
       },

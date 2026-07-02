@@ -5,13 +5,25 @@ import { PaymentClient } from '@portone/server-sdk';
 export class PortoneClient {
   private readonly logger = new Logger(PortoneClient.name);
   private readonly paymentClient: ReturnType<typeof PaymentClient>;
+  private readonly isTest: boolean;
 
   constructor() {
-    const apiSecret = process.env.PORTONE_API_SECRET || 'test_secret_key';
+    let apiSecret = process.env.PORTONE_API_SECRET;
+    if (!apiSecret) {
+      apiSecret = process.env.PORTONE_TEST_API_SECRET || 'test_secret_key';
+      this.isTest = true;
+    } else {
+      this.isTest = false;
+    }
+    
     this.logger.log(
-      `Initializing PortoneClient with API secret starting with: ${apiSecret ? apiSecret.substring(0, 8) : 'null'}`,
+      `Initializing PortoneClient with API secret starting with: ${apiSecret.substring(0, 8)}`,
     );
     this.paymentClient = PaymentClient({ secret: apiSecret });
+  }
+
+  isTestMode(): boolean {
+    return this.isTest;
   }
 
   /**

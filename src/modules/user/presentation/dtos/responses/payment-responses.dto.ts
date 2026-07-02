@@ -38,6 +38,9 @@ export class PaymentResponseDto {
 
   @Expose()
   cancelledAt?: Date;
+
+  @Expose()
+  isTest?: boolean;
 }
 export class ConfirmPaymentResponseDto extends PaymentResponseDto {}
 export class CancelPaymentResponseDto extends PaymentResponseDto {}

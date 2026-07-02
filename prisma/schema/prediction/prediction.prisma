@@ -13,6 +13,8 @@ model Prediction {
   winningNumber WinningNumber @relation(fields: [episode], references: [episode])
   algorithm     Algorithm     @relation(fields: [algorithmType], references: [type])
 
+  createdAt DateTime @default(now()) @map("created_at")
+
   predictionAnalysis PredictionAnalysis?
 
   @@map("prediction")

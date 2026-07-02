@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { LogLevel, ValidationPipe } from '@nestjs/common';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { ResponseTransformInterceptor } from './common/interceptors/response-transform.interceptor';
+import { MobileReadOnlyGuard } from './common/guards/mobile-read-only.guard';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 
@@ -48,6 +49,9 @@ async function bootstrap() {
     new LoggingInterceptor(), // Logs HTTP request details and measures response time
     new ResponseTransformInterceptor(reflector), // Standardizes all HTTP responses into a consistent format
   );
+
+  // Global Guards
+  app.useGlobalGuards(new MobileReadOnlyGuard());
 
   // CORS
   app.enableCors({

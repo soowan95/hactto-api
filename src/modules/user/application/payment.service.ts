@@ -130,7 +130,7 @@ export class PaymentService {
     await this.save(aggregate);
 
     // 결제 승인 완료 시 금액별 크레딧(Hon) 충전 또는 정기 구독 권한 지급 처리
-    if (portoneResult.success) {
+    if (portoneResult.success && !this.portoneClient.isTestMode()) {
       const visitorId = projection.visitorId;
       const paymentId = projection.paymentId;
 
@@ -158,6 +158,10 @@ export class PaymentService {
     }
 
     return aggregate;
+  }
+
+  isTestMode(): boolean {
+    return this.portoneClient.isTestMode();
   }
 
   /**

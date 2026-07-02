@@ -11,6 +11,7 @@ export class InfraPersonalPredictionMapper {
       pp4WnNo: entity.numbers[3],
       pp5WnNo: entity.numbers[4],
       pp6WnNo: entity.numbers[5],
+      createdAt: new Date(),
     };
   }
 }

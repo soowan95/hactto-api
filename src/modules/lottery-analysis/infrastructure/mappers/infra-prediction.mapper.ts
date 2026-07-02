@@ -90,6 +90,7 @@ export class InfraPredictionMapper {
       weights: JSON.stringify(entity.weights.toValues()),
       numbers: JSON.stringify(mappedObject),
       visitorId: entity.visitorId ?? null,
+      createdAt: new Date(),
     };
   }
 }

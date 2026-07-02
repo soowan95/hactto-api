@@ -4,9 +4,9 @@
 model PaymentEvent {
   id        String   @id @default(uuid())
   paymentId String   @map("payment_id") // Aggregate ID
-  version   Int      @map("version")    // 동일 paymentId 내에서의 순서 (낙관적 락 및 정렬용)
+  version   Int      @map("version") // 동일 paymentId 내에서의 순서 (낙관적 락 및 정렬용)
   eventType String   @map("event_type") // PaymentRequested, PaymentApproved, PaymentCancelled, PaymentFailed 등
-  payload   Json     @map("payload")    // 이벤트 상세 데이터 (토스 페이먼츠 응답 값 등)
+  payload   Json     @map("payload") // 이벤트 상세 데이터 (토스 페이먼츠 응답 값 등)
   createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([paymentId, version])
@@ -19,12 +19,12 @@ model PaymentEvent {
  */
 model PaymentProjection {
   paymentId   String    @id @map("payment_id")
-  visitorId   String    @map("visitor_id")   // userId -> visitorId 변경
+  visitorId   String    @map("visitor_id") // userId -> visitorId 변경
   amount      Int       @map("amount")
   orderId     String    @unique @map("order_id")
   orderName   String    @map("order_name")
-  status      String    @map("status")       // READY, PAID, CANCELLED, FAILED
-  paymentKey  String?   @map("payment_key")  // 토스 페이먼츠 키
+  status      String    @map("status") // READY, PAID, CANCELLED, FAILED
+  paymentKey  String?   @map("payment_key") // 토스 페이먼츠 키
   failReason  String?   @map("fail_reason")
   approvedAt  DateTime? @map("approved_at")
   cancelledAt DateTime? @map("cancelled_at")
