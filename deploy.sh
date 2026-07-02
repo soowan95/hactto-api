@@ -25,17 +25,7 @@ echo "1. Pulling latest image..."
 docker compose pull api-${TARGET_COLOR}
 
 echo "1.5. Running Database Migrations..."
-# Prisma CLI migration requires SSL parameters for AWS RDS
-DB_URL=$(grep '^DATABASE_URL=' .env | sed 's/^DATABASE_URL=//' | tr -d '"' | tr -d "'")
-if [[ "$DB_URL" != *"sslaccept"* ]]; then
-  if [[ "$DB_URL" == *"?"* ]]; then
-    DB_URL="${DB_URL}&sslaccept=accept_invalid_certs"
-  else
-    DB_URL="${DB_URL}?sslaccept=accept_invalid_certs"
-  fi
-fi
-
-docker compose run --rm -e DATABASE_URL="$DB_URL" api-${TARGET_COLOR} npx prisma migrate deploy
+docker compose run --rm api-${TARGET_COLOR} node scripts/run-migrations.js
 
 echo "2. Starting ${TARGET_COLOR} container..."
 docker compose up -d api-${TARGET_COLOR}
