@@ -24,6 +24,9 @@ fi
 echo "1. Pulling latest image..."
 docker compose pull api-${TARGET_COLOR}
 
+echo "1.5. Running Database Migrations..."
+docker compose run --rm api-${TARGET_COLOR} npx prisma migrate deploy
+
 echo "2. Starting ${TARGET_COLOR} container..."
 docker compose up -d api-${TARGET_COLOR}
 
