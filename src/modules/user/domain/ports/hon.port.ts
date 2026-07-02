@@ -24,6 +24,8 @@ export interface HonEventData {
   visitorId: string;
   type: string;
   amount: number;
+  freeAmount: number;
+  paidAmount: number;
   balance: number;
   description?: string | null;
   createdAt?: Date;

@@ -15,7 +15,7 @@ export class PortoneClient {
     } else {
       this.isTest = false;
     }
-    
+
     this.logger.log(
       `Initializing PortoneClient with API secret starting with: ${apiSecret.substring(0, 8)}`,
     );

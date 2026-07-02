@@ -36,7 +36,9 @@ model HonEvent {
   visitorId   String   @map("visitor_id")
   type        String   @map("type") // CHARGE, DEDUCT, ADMIN_PROVISION, REFUND_RECOVERY 등
   amount      Int      @map("amount") // 변동량 (양수/음수)
-  balance     Int      @map("balance") // 변동 후 잔액
+  freeAmount  Int      @default(0) @map("free_amount") // 이벤트/무료 혼 변동량
+  paidAmount  Int      @default(0) @map("paid_amount") // 결제/유료 혼 변동량
+  balance     Int      @map("balance") // 변동 후 총 잔액
   description String?  @map("description") // "결제 충전", "로또 예측 분석 이용", "환불 회수" 등
   createdAt   DateTime @default(now()) @map("created_at")
 
@@ -44,4 +46,17 @@ model HonEvent {
 
   @@index([visitorId])
   @@map("hon_event")
+}
+
+model AdminHonEventSetting {
+  id        Int       @id @default(autoincrement())
+  type      String    @map("type") // 'RESET', 'ADD'
+  amount    Int       @map("amount") // 변동량
+  startsAt  DateTime  @map("starts_at")
+  endsAt    DateTime? @map("ends_at") // null이면 영구
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@map("admin_hon_event_setting")
 }

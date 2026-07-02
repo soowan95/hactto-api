@@ -283,23 +283,87 @@ export class TaskService {
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, {
     timeZone: 'Asia/Seoul',
   })
-  async resetDailyFreeHon() {
-    if (!process.env.PORTONE_API_SECRET) {
-      this.logger.log(
-        'PORTONE_API_SECRET가 설정되어 있지 않아, 매일 자정 무료 HON을 50개로 초기화합니다.',
-      );
-      try {
-        await prisma.hon.updateMany({
-          data: {
-            freeBalance: 50,
-          },
-        });
-        this.logger.log(
-          '성공적으로 모든 사용자의 무료 HON을 50개로 초기화했습니다.',
-        );
-      } catch (error) {
-        this.logger.error('무료 HON 일괄 초기화 중 오류 발생:', error);
+  async processAdminHonEvents() {
+    this.logger.log('🔄 Starting daily admin HON events processing...');
+    const now = new Date();
+    try {
+      const activeEvents = await prisma.adminHonEventSetting.findMany({
+        where: {
+          isActive: true,
+          startsAt: { lte: now },
+          OR: [{ endsAt: null }, { endsAt: { gte: now } }],
+        },
+      });
+
+      if (activeEvents.length === 0) {
+        this.logger.log('실행할 활성 HON 이벤트가 없습니다.');
+        return;
       }
+
+      for (const event of activeEvents) {
+        this.logger.log(
+          `Processing event ${event.id} (Type: ${event.type}, Amount: ${event.amount})`,
+        );
+
+        if (event.type === 'RESET') {
+          // freeBalance < amount 인 유저만 대상
+          const eligibleHons = await prisma.hon.findMany({
+            where: { freeBalance: { lt: event.amount } },
+            select: { visitorId: true, freeBalance: true, paidBalance: true },
+          });
+
+          if (eligibleHons.length === 0) continue;
+
+          const honEventData = eligibleHons.map((hon) => ({
+            visitorId: hon.visitorId,
+            type: 'ADMIN_PROVISION',
+            amount: event.amount - hon.freeBalance,
+            freeAmount: event.amount - hon.freeBalance,
+            paidAmount: 0,
+            balance: event.amount + hon.paidBalance,
+            description: '자동 이벤트 초기화',
+          }));
+
+          await prisma.$transaction([
+            prisma.honEvent.createMany({ data: honEventData }),
+            prisma.hon.updateMany({
+              where: { freeBalance: { lt: event.amount } },
+              data: { freeBalance: event.amount },
+            }),
+          ]);
+          this.logger.log(
+            `Reset ${eligibleHons.length} users' HON to ${event.amount}.`,
+          );
+        } else if (event.type === 'ADD') {
+          const allHons = await prisma.hon.findMany({
+            select: { visitorId: true, freeBalance: true, paidBalance: true },
+          });
+
+          if (allHons.length === 0) continue;
+
+          const honEventData = allHons.map((hon) => ({
+            visitorId: hon.visitorId,
+            type: 'ADMIN_PROVISION',
+            amount: event.amount,
+            freeAmount: event.amount,
+            paidAmount: 0,
+            balance: hon.freeBalance + hon.paidBalance + event.amount,
+            description: '자동 이벤트 지급',
+          }));
+
+          await prisma.$transaction([
+            prisma.honEvent.createMany({ data: honEventData }),
+            prisma.hon.updateMany({
+              data: { freeBalance: { increment: event.amount } },
+            }),
+          ]);
+          this.logger.log(
+            `Added ${event.amount} HON to ${allHons.length} users.`,
+          );
+        }
+      }
+    } catch (error) {
+      this.logger.error('자동 HON 이벤트 처리 중 오류 발생:', error);
     }
   }
   @Cron(CronExpression.EVERY_DAY_AT_3AM, {

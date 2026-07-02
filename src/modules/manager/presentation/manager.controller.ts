@@ -29,6 +29,7 @@ import {
   GrantSubscriptionDto,
   BlockVisitorDto,
 } from './dtos/requests/visitor-requests.dto';
+import { CreateAdminHonEventDto } from './dtos/requests/admin-hon-event.dto';
 import {
   IVisitorRepository,
   VISITOR_REPOSITORY_TOKEN,
@@ -807,6 +808,59 @@ export class ManagerController {
     if (isNaN(numId)) throw new BadRequestException('Invalid ID');
 
     await prisma.post.delete({
+      where: { id: numId },
+    });
+    return { success: true };
+  }
+
+  // ==========================================
+  // 관리자 HON 자동 지급/초기화 이벤트 설정 API
+  // ==========================================
+
+  @ApiOperation({ summary: '관리자 HON 이벤트 설정 생성' })
+  @Post('hon-events')
+  async createHonEventSetting(@Body() dto: CreateAdminHonEventDto) {
+    const event = await prisma.adminHonEventSetting.create({
+      data: {
+        type: dto.type,
+        amount: dto.amount,
+        startsAt: new Date(dto.startsAt),
+        endsAt: dto.endsAt ? new Date(dto.endsAt) : null,
+        isActive: dto.isActive ?? true,
+      },
+    });
+    return { success: true, data: event };
+  }
+
+  @ApiOperation({ summary: '관리자 HON 이벤트 설정 목록 조회' })
+  @Get('hon-events')
+  async getHonEventSettings() {
+    const events = await prisma.adminHonEventSetting.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+    return { success: true, data: events };
+  }
+
+  @ApiOperation({ summary: '관리자 HON 이벤트 수동 종료 (비활성화)' })
+  @Patch('hon-events/:id/terminate')
+  async terminateHonEventSetting(@Param('id') id: string) {
+    const numId = parseInt(id, 10);
+    if (isNaN(numId)) throw new BadRequestException('Invalid ID');
+
+    const event = await prisma.adminHonEventSetting.update({
+      where: { id: numId },
+      data: { isActive: false },
+    });
+    return { success: true, data: event };
+  }
+
+  @ApiOperation({ summary: '관리자 HON 이벤트 설정 삭제' })
+  @Delete('hon-events/:id')
+  async deleteHonEventSetting(@Param('id') id: string) {
+    const numId = parseInt(id, 10);
+    if (isNaN(numId)) throw new BadRequestException('Invalid ID');
+
+    await prisma.adminHonEventSetting.delete({
       where: { id: numId },
     });
     return { success: true };
