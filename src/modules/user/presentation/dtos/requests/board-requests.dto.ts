@@ -36,6 +36,13 @@ export class CreatePostDto {
   @IsOptional()
   @IsNumber()
   lottoRound?: number;
+
+  @ApiPropertyOptional({
+    description: 'Lotto identifier from QR code (only for WINNING)',
+  })
+  @IsOptional()
+  @IsString()
+  lottoIdentifier?: string;
 }
 
 export class ReportPostDto {

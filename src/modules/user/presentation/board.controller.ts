@@ -311,6 +311,8 @@ export class BoardController {
           body.category === BoardCategory.WINNING ? body.lottoRank : null,
         lottoRound:
           body.category === BoardCategory.WINNING ? body.lottoRound : null,
+        lottoIdentifier:
+          body.category === BoardCategory.WINNING ? body.lottoIdentifier : null,
       },
     });
 
@@ -481,6 +483,19 @@ export class BoardController {
       throw new BadRequestException('이미지 URL이 필요합니다.');
     }
     const result = await this.lottoOcrService.analyzeLottoImage(imageUrl);
+
+    // 중복 로또 용지 검사 로직
+    if (result.lottoIdentifier) {
+      const existing = await prisma.post.findUnique({
+        where: { lottoIdentifier: result.lottoIdentifier },
+      });
+      if (existing) {
+        throw new BadRequestException(
+          '이미 인증된 로또 용지입니다. 중복 인증은 불가합니다.',
+        );
+      }
+    }
+
     return { success: true, data: result };
   }
 }

@@ -10,38 +10,41 @@ enum ReportStatus {
 }
 
 model Post {
-  id        Int           @id @default(autoincrement())
-  visitorId String        @map("visitor_id")
-  category  BoardCategory
-  title     String        @db.VarChar(100)
-  content   String        @db.Text
-  imageUrl  String?       @map("image_url") @db.VarChar(500)
-  lottoRank Int?          @map("lotto_rank")
-  lottoRound Int?         @map("lotto_round")
-  createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime      @updatedAt @map("updated_at")
+  id              Int           @id @default(autoincrement())
+  visitorId       String        @map("visitor_id")
+  category        BoardCategory
+  title           String        @db.VarChar(100)
+  content         String        @db.Text
+  imageUrl        String?       @map("image_url") @db.VarChar(500)
+  lottoRank       Int?          @map("lotto_rank")
+  lottoRound      Int?          @map("lotto_round")
+  lottoIdentifier String?       @unique @map("lotto_identifier") @db.VarChar(500)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  isDeleted       Boolean       @default(false) @map("is_deleted")
+  isBlocked       Boolean       @default(false) @map("is_blocked")
 
-  visitor   Visitor       @relation(fields: [visitorId], references: [id], onDelete: Cascade)
-  reports   PostReport[]
-  comments  PostComment[]
-  likes     PostLike[]
+  visitor  Visitor       @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  reports  PostReport[]
+  comments PostComment[]
+  likes    PostLike[]
 
   @@index([visitorId])
   @@map("post")
 }
 
 model PostReport {
-  id          Int          @id @default(autoincrement())
-  postId      Int          @map("post_id")
-  visitorId   String       @map("visitor_id")
-  reason      String       @db.Text
-  answer      String?      @db.Text
-  status      ReportStatus @default(PENDING)
-  createdAt   DateTime     @default(now()) @map("created_at")
-  answeredAt  DateTime?    @map("answered_at")
+  id         Int          @id @default(autoincrement())
+  postId     Int          @map("post_id")
+  visitorId  String       @map("visitor_id")
+  reason     String       @db.Text
+  answer     String?      @db.Text
+  status     ReportStatus @default(PENDING)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  answeredAt DateTime?    @map("answered_at")
 
-  post        Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
-  visitor     Visitor      @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  post    Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  visitor Visitor @relation(fields: [visitorId], references: [id], onDelete: Cascade)
 
   @@index([postId])
   @@index([visitorId])
@@ -53,13 +56,17 @@ model PostComment {
   postId    Int      @map("post_id")
   visitorId String   @map("visitor_id")
   content   String   @db.Text
+  isBlocked Boolean  @default(false) @map("is_blocked")
+  parentId  Int?     @map("parent_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  post      Post           @relation(fields: [postId], references: [id], onDelete: Cascade)
-  visitor   Visitor        @relation(fields: [visitorId], references: [id], onDelete: Cascade)
-  likes     CommentLike[]
-  reports   CommentReport[]
+  post    Post            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  visitor Visitor         @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  parent  PostComment?    @relation("CommentToComment", fields: [parentId], references: [id], onDelete: Cascade)
+  replies PostComment[]   @relation("CommentToComment")
+  likes   CommentLike[]
+  reports CommentReport[]
 
   @@index([postId])
   @@index([visitorId])
@@ -71,8 +78,8 @@ model PostLike {
   visitorId String   @map("visitor_id")
   createdAt DateTime @default(now()) @map("created_at")
 
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  visitor   Visitor  @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  post    Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  visitor Visitor @relation(fields: [visitorId], references: [id], onDelete: Cascade)
 
   @@id([postId, visitorId])
   @@map("post_like")
@@ -83,28 +90,27 @@ model CommentLike {
   visitorId String   @map("visitor_id")
   createdAt DateTime @default(now()) @map("created_at")
 
-  comment   PostComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  visitor   Visitor     @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  comment PostComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  visitor Visitor     @relation(fields: [visitorId], references: [id], onDelete: Cascade)
 
   @@id([commentId, visitorId])
   @@map("comment_like")
 }
 
 model CommentReport {
-  id          Int          @id @default(autoincrement())
-  commentId   Int          @map("comment_id")
-  visitorId   String       @map("visitor_id")
-  reason      String       @db.Text
-  answer      String?      @db.Text
-  status      ReportStatus @default(PENDING)
-  createdAt   DateTime     @default(now()) @map("created_at")
-  answeredAt  DateTime?    @map("answered_at")
+  id         Int          @id @default(autoincrement())
+  commentId  Int          @map("comment_id")
+  visitorId  String       @map("visitor_id")
+  reason     String       @db.Text
+  answer     String?      @db.Text
+  status     ReportStatus @default(PENDING)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  answeredAt DateTime?    @map("answered_at")
 
-  comment     PostComment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  visitor     Visitor      @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  comment PostComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  visitor Visitor     @relation(fields: [visitorId], references: [id], onDelete: Cascade)
 
   @@index([commentId])
   @@index([visitorId])
   @@map("comment_report")
 }
-
