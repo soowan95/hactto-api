@@ -9,6 +9,7 @@ import {
   Param,
   Query,
   NotFoundException,
+  Patch,
 } from '@nestjs/common';
 import {
   IVisitorRepository,
@@ -80,6 +81,9 @@ export class VisitorController {
     if (this.badWordsService.containsBadWord(nickname)) {
       throw new BadRequestException('사용할 수 없는 단어가 포함되어 있습니다.');
     }
+    if (nickname.includes('관리자')) {
+      return { success: true, exists: true };
+    }
     const visitor = await prisma.visitor.findUnique({ where: { nickname } });
     return { success: true, exists: !!visitor };
   }
@@ -94,6 +98,10 @@ export class VisitorController {
       throw new BadRequestException('유효하지 않은 닉네임입니다.');
     if (this.badWordsService.containsBadWord(nickname))
       throw new BadRequestException('사용할 수 없는 단어가 포함되어 있습니다.');
+    if (nickname.includes('관리자'))
+      throw new BadRequestException(
+        '관리자가 포함된 닉네임은 사용할 수 없습니다.',
+      );
 
     const visitor = await prisma.visitor.findUnique({
       where: { id: visitorId },
@@ -395,5 +403,56 @@ export class VisitorController {
     });
 
     return { success: true };
+  }
+  @ApiOperation({ summary: 'Get visitor notifications' })
+  @Get('notifications')
+  async getNotifications() {
+    const visitorId = this.requestParser.getVisitorId();
+    if (!visitorId) throw new BadRequestException('Visitor ID is required.');
+
+    const notifications = await prisma.notification.findMany({
+      where: { visitorId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return { success: true, data: notifications };
+  }
+
+  @ApiOperation({ summary: 'Get unread notification count' })
+  @Get('notifications/unread-count')
+  async getUnreadNotificationCount() {
+    const visitorId = this.requestParser.getVisitorId();
+    if (!visitorId) throw new BadRequestException('Visitor ID is required.');
+
+    const count = await prisma.notification.count({
+      where: { visitorId, isRead: false },
+    });
+
+    return { success: true, data: { count } };
+  }
+
+  @ApiOperation({ summary: 'Mark notification as read' })
+  @Patch('notifications/:id/read')
+  async markNotificationAsRead(@Param('id') id: string) {
+    const numId = parseInt(id, 10);
+    if (isNaN(numId)) throw new BadRequestException('Invalid ID');
+
+    const visitorId = this.requestParser.getVisitorId();
+    if (!visitorId) throw new BadRequestException('Visitor ID is required.');
+
+    const notification = await prisma.notification.findFirst({
+      where: { id: numId, visitorId },
+    });
+
+    if (!notification) {
+      throw new NotFoundException('Notification not found');
+    }
+
+    const updated = await prisma.notification.update({
+      where: { id: numId },
+      data: { isRead: true },
+    });
+
+    return { success: true, data: updated };
   }
 }
