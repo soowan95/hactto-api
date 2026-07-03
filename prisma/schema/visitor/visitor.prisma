@@ -14,6 +14,7 @@ model Visitor {
   postLikes      PostLike[]
   commentLikes   CommentLike[]
   commentReports CommentReport[]
+  notifications  Notification[]
 
   @@map("visitor")
 }
