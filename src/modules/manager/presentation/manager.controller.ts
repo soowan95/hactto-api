@@ -30,6 +30,7 @@ import {
   BlockVisitorDto,
 } from './dtos/requests/visitor-requests.dto';
 import { CreateAdminHonEventDto } from './dtos/requests/admin-hon-event.dto';
+import { SendNotificationDto } from './dtos/requests/notification-requests.dto';
 import {
   IVisitorRepository,
   VISITOR_REPOSITORY_TOKEN,
@@ -486,6 +487,7 @@ export class ManagerController {
     return {
       id: visitor.id,
       ip: visitor.ip,
+      nickname: visitor.nickname,
       isBlocked: !!activeBlock,
       blockDetail: activeBlock
         ? {
@@ -563,6 +565,22 @@ export class ManagerController {
     });
 
     await this.redisService.set(`visitor-blocked:${id}`, 'false', 86400 * 7);
+
+    return { success: true };
+  }
+
+  @ApiOperation({ summary: 'Reset visitor nickname' })
+  @Post('visitors/:id/reset-nickname')
+  async resetVisitorNickname(@Param('id') id: string) {
+    const visitor = await prisma.visitor.findUnique({ where: { id } });
+    if (!visitor) {
+      throw new NotFoundException('방문자를 찾을 수 없습니다.');
+    }
+
+    await prisma.visitor.update({
+      where: { id },
+      data: { nickname: null },
+    });
 
     return { success: true };
   }
@@ -864,5 +882,44 @@ export class ManagerController {
       where: { id: numId },
     });
     return { success: true };
+  }
+
+  @ApiOperation({ summary: 'Send a notification to a specific user' })
+  @Post('notifications')
+  async sendNotification(@Body() body: SendNotificationDto) {
+    const { targetType, target, title, content } = body;
+    let visitorId = '';
+
+    if (targetType === 'NICKNAME') {
+      const visitor = await prisma.visitor.findUnique({
+        where: { nickname: target },
+      });
+      if (!visitor) {
+        throw new NotFoundException(
+          '해당 닉네임을 가진 사용자를 찾을 수 없습니다.',
+        );
+      }
+      visitorId = visitor.id;
+    } else {
+      const visitor = await prisma.visitor.findUnique({
+        where: { id: target },
+      });
+      if (!visitor) {
+        throw new NotFoundException(
+          '해당 ID를 가진 사용자를 찾을 수 없습니다.',
+        );
+      }
+      visitorId = visitor.id;
+    }
+
+    const notification = await prisma.notification.create({
+      data: {
+        visitorId,
+        title,
+        content,
+      },
+    });
+
+    return { success: true, data: notification };
   }
 }

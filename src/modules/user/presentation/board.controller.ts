@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Delete,
+  Patch,
   Param,
   Body,
   Query,
@@ -25,6 +26,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { LottoOcrService } from '../application/lotto-ocr.service';
+import { RedisService } from '../../../helpers/redis/application/redis.service';
 
 @ApiTags('- Board')
 @Controller('user/board')
@@ -32,6 +34,7 @@ export class BoardController {
   constructor(
     private readonly requestParser: RequestParser,
     private readonly lottoOcrService: LottoOcrService,
+    private readonly redisService: RedisService,
   ) {}
 
   @ApiOperation({ summary: 'Get posts with pagination and category filter' })
@@ -73,6 +76,7 @@ export class BoardController {
         include: {
           visitor: { select: { nickname: true } },
           _count: { select: { likes: true, comments: true } },
+          attachments: true,
         },
       }),
       prisma.post.count({ where }),
@@ -105,6 +109,7 @@ export class BoardController {
       include: {
         visitor: { select: { nickname: true } },
         _count: { select: { likes: true, comments: true } },
+        attachments: true,
         comments: {
           orderBy: { createdAt: 'desc' },
           include: {
@@ -179,11 +184,18 @@ export class BoardController {
     if (!visitorId)
       throw new UnauthorizedException('방문자 ID가 유효하지 않습니다.');
 
+    const masterKey = this.requestParser.getMasterKey();
+    let isAdmin = false;
+    if (masterKey) {
+      isAdmin = await this.redisService.validateMasterKey(masterKey);
+    }
+
     const comment = await prisma.postComment.create({
       data: {
         postId: numId,
         visitorId,
         content,
+        isAdmin,
       },
     });
     return { success: true, data: comment };
@@ -300,6 +312,12 @@ export class BoardController {
       );
     }
 
+    const masterKey = this.requestParser.getMasterKey();
+    let isAdmin = false;
+    if (masterKey) {
+      isAdmin = await this.redisService.validateMasterKey(masterKey);
+    }
+
     const post = await prisma.post.create({
       data: {
         visitorId,
@@ -307,16 +325,90 @@ export class BoardController {
         title: body.title,
         content: body.content,
         imageUrl: body.imageUrl,
+        originalFileName: body.originalFileName ?? null,
+        isAdmin,
         lottoRank:
           body.category === BoardCategory.WINNING ? body.lottoRank : null,
         lottoRound:
           body.category === BoardCategory.WINNING ? body.lottoRound : null,
         lottoIdentifier:
           body.category === BoardCategory.WINNING ? body.lottoIdentifier : null,
+        attachments: body.attachments?.length
+          ? {
+              create: body.attachments.map((att: any) => ({
+                imageUrl: att.imageUrl,
+                originalFileName: att.originalFileName ?? null,
+              })),
+            }
+          : undefined,
+      },
+      include: {
+        attachments: true,
       },
     });
 
     return { success: true, data: post };
+  }
+
+  @ApiOperation({ summary: 'Update a post' })
+  @Patch(':id')
+  async updatePost(@Param('id') id: string, @Body() body: any) {
+    const numId = parseInt(id, 10);
+    if (isNaN(numId)) {
+      throw new BadRequestException('올바르지 않은 ID 형식입니다.');
+    }
+
+    const visitorId = this.requestParser.getVisitorId();
+    const masterKey = this.requestParser.getMasterKey();
+
+    const post = await prisma.post.findUnique({ where: { id: numId } });
+    if (!post) {
+      throw new NotFoundException('게시글을 찾을 수 없습니다.');
+    }
+
+    let isAdmin = false;
+    if (masterKey) {
+      isAdmin = await this.redisService.validateMasterKey(masterKey);
+    }
+
+    if (post.visitorId !== visitorId && !isAdmin) {
+      throw new BadRequestException('본인의 게시글만 수정할 수 있습니다.');
+    }
+
+    if (post.isAdmin && !isAdmin) {
+      throw new BadRequestException(
+        '관리자가 작성한 게시글은 관리자만 수정할 수 있습니다.',
+      );
+    }
+
+    const updatedPost = await prisma.post.update({
+      where: { id: numId },
+      data: {
+        title: body.title !== undefined ? body.title : post.title,
+        content: body.content !== undefined ? body.content : post.content,
+        imageUrl: body.imageUrl !== undefined ? body.imageUrl : post.imageUrl,
+        originalFileName:
+          body.imageUrl === null
+            ? null
+            : body.originalFileName !== undefined
+              ? body.originalFileName
+              : post.originalFileName,
+        ...(body.attachments !== undefined && {
+          attachments: {
+            deleteMany: {},
+            create: body.attachments.map((att: any) => ({
+              imageUrl: att.imageUrl,
+              originalFileName: att.originalFileName ?? null,
+            })),
+          },
+        }),
+      },
+      include: {
+        attachments: true,
+      },
+    });
+
+    return { success: true, data: updatedPost };
   }
 
   @ApiOperation({ summary: 'Delete a post' })
@@ -344,6 +436,12 @@ export class BoardController {
 
     if (post.visitorId !== visitorId && !isAdmin) {
       throw new BadRequestException('본인의 게시글만 삭제할 수 있습니다.');
+    }
+
+    if (post.isAdmin && !isAdmin) {
+      throw new BadRequestException(
+        '관리자가 작성한 게시글은 관리자만 삭제할 수 있습니다.',
+      );
     }
 
     if (post.imageUrl) {
@@ -423,6 +521,7 @@ export class BoardController {
   async getPresignedUrl(
     @Body('filename') filename: string,
     @Body('contentType') contentType: string,
+    @Body('originalFilename') originalFilename?: string,
   ) {
     if (!filename || !contentType) {
       throw new BadRequestException('파일명과 Content-Type을 지정해야 합니다.');
@@ -432,8 +531,6 @@ export class BoardController {
     const s3Bucket = process.env.AWS_S3_BUCKET || 'hactto-board-attachments';
 
     if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
-      // AWS credentials가 없으면 프론트엔드가 업로드 요청 시 실패할 수 있도록 임시(Mock)로라도 생성하여 반환하거나 에러를 발생시킴
-      // 여기서는 명시적인 에러를 발생시킵니다.
       throw new BadRequestException(
         '서버에 S3 인증 정보가 설정되지 않았습니다.',
       );
@@ -450,11 +547,17 @@ export class BoardController {
 
     const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
     const key = `uploads/${Date.now()}-${safeFilename}`;
+    // Preserve the real filename (Korean etc.) for display
+    const displayFilename = originalFilename || filename;
 
     const command = new PutObjectCommand({
       Bucket: s3Bucket,
       Key: key,
       ContentType: contentType,
+      // Store original filename in S3 metadata
+      Metadata: {
+        'original-filename': encodeURIComponent(displayFilename),
+      },
     });
 
     let uploadUrl = '';
@@ -472,6 +575,7 @@ export class BoardController {
       data: {
         uploadUrl,
         imageUrl,
+        originalFilename: displayFilename,
       },
     };
   }

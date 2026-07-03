@@ -465,5 +465,4 @@ export class TaskService {
       this.logger.error('S3 cleanup job failed:', err);
     }
   }
-
 }
