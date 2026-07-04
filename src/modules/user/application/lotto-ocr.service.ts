@@ -8,7 +8,7 @@ import {
   GetObjectCommand,
   PutObjectCommand,
 } from '@aws-sdk/client-s3';
-import { Jimp } from 'jimp';
+import sharp, { OverlayOptions } from 'sharp';
 import jsQR from 'jsqr';
 import { prisma } from '../../../libs/prisma';
 
@@ -69,13 +69,15 @@ export class LottoOcrService {
     let qrEpisode: number | undefined;
     let qrNumbers: number[][] = [];
     let qrUrl: string | undefined;
-    let image;
     try {
-      image = await Jimp.read(buffer);
       // JSQR에 넘길 이미지 데이터 (대용량 이미지에서 QR 인식이 실패하는 것을 방지하기 위해 리사이징)
-      const qrImage = image.clone().resize({ w: 800 });
-      const qrData = new Uint8ClampedArray(qrImage.bitmap.data);
-      const decoded = jsQR(qrData, qrImage.bitmap.width, qrImage.bitmap.height);
+      const { data, info } = await sharp(buffer)
+        .resize({ width: 800 })
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      const qrData = new Uint8ClampedArray(data);
+      const decoded = jsQR(qrData, info.width, info.height);
       if (decoded) {
         if (
           !decoded.data.includes('lotto') &&
@@ -138,7 +140,7 @@ export class LottoOcrService {
 
     return this.parseTextractAndBlur(
       response,
-      image,
+      buffer,
       s3Bucket,
       s3Key,
       qrEpisode,
@@ -149,7 +151,7 @@ export class LottoOcrService {
 
   private async parseTextractAndBlur(
     response: any,
-    image: any,
+    buffer: Buffer,
     s3Bucket: string,
     s3Key: string,
     qrEpisode?: number,
@@ -359,11 +361,13 @@ export class LottoOcrService {
 
     // 4. Blur 처리 및 S3 업로드
     try {
-      const blurred = image.clone();
-      blurred.pixelate(15);
-      blurred.blur(20);
+      const metadata = await sharp(buffer).metadata();
+      const imgW = metadata.width!;
+      const imgH = metadata.height!;
 
-      const comp = async (block: any) => {
+      const snippets: OverlayOptions[] = [];
+
+      const extractSnippet = async (block: any) => {
         if (!block || !block.Geometry?.BoundingBox) return;
         const box = block.Geometry.BoundingBox;
         let left = Math.max(0, box.Left - 0.01);
@@ -371,32 +375,47 @@ export class LottoOcrService {
         let width = Math.min(1 - left, box.Width + 0.02);
         let height = Math.min(1 - top, box.Height + 0.02);
 
-        let px = Math.floor(left * image.bitmap.width);
-        let py = Math.floor(top * image.bitmap.height);
-        let pw = Math.floor(width * image.bitmap.width);
-        let ph = Math.floor(height * image.bitmap.height);
+        let px = Math.floor(left * imgW);
+        let py = Math.floor(top * imgH);
+        let pw = Math.floor(width * imgW);
+        let ph = Math.floor(height * imgH);
 
-        const snippet = image.clone().crop({ x: px, y: py, w: pw, h: ph });
-        blurred.composite(snippet, px, py);
+        try {
+          const snippetBuffer = await sharp(buffer)
+            .extract({ left: px, top: py, width: pw, height: ph })
+            .toBuffer();
+          snippets.push({ input: snippetBuffer, left: px, top: py });
+        } catch {
+          // Ignore if out of bounds
+        }
       };
 
       // 당첨된 경우만 원본 남김
-      await comp(epBlock);
+      await extractSnippet(epBlock);
       for (const wb of winningBlocks) {
-        await comp(wb);
+        await extractSnippet(wb);
       }
 
-      const blurredBuffer = await blurred.getBuffer('image/png');
+      // 배경을 블러 처리 (해상도가 높을 수 있으므로 시그마를 크게 줌)
+      const blurredBuffer = await sharp(buffer).blur(30).toBuffer();
+
+      const finalImage = sharp(blurredBuffer);
+      if (snippets.length > 0) {
+        finalImage.composite(snippets);
+      }
+
+      const finalBuffer = await finalImage.png().toBuffer();
+
       await this.s3Client.send(
         new PutObjectCommand({
           Bucket: s3Bucket,
           Key: s3Key,
-          Body: blurredBuffer,
+          Body: finalBuffer,
           ContentType: 'image/png',
         }),
       );
     } catch (e) {
-      console.error(e);
+      console.error('Blur failed:', e);
       // 블러 처리에 실패해도 분석 결과 자체는 반환함
     }
 
