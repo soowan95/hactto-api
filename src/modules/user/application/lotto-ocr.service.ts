@@ -60,7 +60,9 @@ export class LottoOcrService {
       const getRes = await this.s3Client.send(
         new GetObjectCommand({ Bucket: s3Bucket, Key: s3Key }),
       );
-      buffer = await streamToBuffer(getRes.Body);
+      const rawBuffer = await streamToBuffer(getRes.Body);
+      // EXIF 방향 정보에 맞게 이미지를 회전시킨 후 EXIF를 제거한 순수 버퍼로 변환 (회전 버그 방지)
+      buffer = await sharp(rawBuffer).rotate().toBuffer();
     } catch (e) {
       console.error(e);
       throw new BadRequestException('이미지를 가져올 수 없습니다.');
