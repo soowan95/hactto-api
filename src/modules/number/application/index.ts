@@ -1,5 +1,6 @@
 import { FetchWinningNumbersHandler } from './command-handlers/fetch-winning-numbers.handler';
 import { FetchRecentWinningNumberHandler } from './command-handlers/fetch-recent-winning-number.handler';
+import { FetchWinningShopsHandler } from './command-handlers/fetch-winning-shops.handler';
 import { GetAllWinningNumbersHandler } from './query-handlers/get-all-winning-numbers.handler';
 import { GetLatestWinningNumberHandler } from './query-handlers/get-latest-winning-number.handler';
 import { GetWinningNumberByEpisodeHandler } from './query-handlers/get-winning-number-by-episode.handler';
@@ -10,6 +11,7 @@ import { GetLotteryBallStatusHandler } from './query-handlers/get-lottery-ball-s
 export const CommandHandlers = [
   FetchWinningNumbersHandler,
   FetchRecentWinningNumberHandler,
+  FetchWinningShopsHandler,
 ];
 
 export const QueryHandlers = [
