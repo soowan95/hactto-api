@@ -10,14 +10,17 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
 import { WinningNumberShowResponseDto } from './dtos/responses/winning-number-show-response.dto';
+import { WinningShopShowResponseDto } from './dtos/responses/winning-shop-show-response.dto';
 import { Admin } from '../../../common/decorators/admin.decorator';
 import { DomainWinningNumber } from '../domain/aggregates/winning-number.entity';
 import { plainToInstance } from 'class-transformer';
 
 import { FetchWinningNumbersCommand } from '../application/commands/fetch-winning-numbers.command';
+import { FetchWinningShopsCommand } from '../application/commands/fetch-winning-shops.command';
 import { GetAllWinningNumbersQuery } from '../application/queries/get-all-winning-numbers.query';
 import { GetLatestWinningNumberQuery } from '../application/queries/get-latest-winning-number.query';
 import { GetWinningNumberByEpisodeQuery } from '../application/queries/get-winning-number-by-episode.query';
+import { GetWinningShopsByEpisodeQuery } from '../application/queries/get-winning-shops-by-episode.query';
 import { GetLotteryBallStatusQuery } from '../application/queries/get-lottery-ball-status.query';
 import { LotteryBallStatus } from '../domain/aggregates/lottery-ball-status.entity';
 import { LotteryBallStatusShowResponseDto } from './dtos/responses/lottery-ball-status-show-response.dto';
@@ -110,6 +113,34 @@ export class WinningNumberController {
     @Query('latestEpisode', ParseIntPipe) latestEpisode: number,
   ): Promise<void> {
     const command = new FetchWinningNumbersCommand(latestEpisode);
+    await this.commandBus.execute(command);
+  }
+
+  @ApiOperation({
+    summary: 'Get winning shops by episode',
+  })
+  @ApiParam({ name: 'episode', required: true, description: '회차 번호' })
+  @ResponseMessage('success.read')
+  @Get(':episode/shops')
+  async findShopsByEpisode(
+    @Param('episode', ParseIntPipe) episode: number,
+  ): Promise<WinningShopShowResponseDto[]> {
+    const query = new GetWinningShopsByEpisodeQuery(episode);
+    const shops = await this.queryBus.execute<
+      GetWinningShopsByEpisodeQuery,
+      any[]
+    >(query);
+    return plainToInstance(WinningShopShowResponseDto, shops);
+  }
+
+  @ApiOperation({
+    summary: 'Fetch and sync all missing winning shops from 동행복권',
+  })
+  @Admin()
+  @ResponseMessage('success.fetch.all')
+  @Post('shops/fetch')
+  async fetchShops(): Promise<void> {
+    const command = new FetchWinningShopsCommand();
     await this.commandBus.execute(command);
   }
 }
