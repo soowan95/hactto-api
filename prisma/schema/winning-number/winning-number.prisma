@@ -17,6 +17,7 @@ model WinningNumber {
   personalPredictions PersonalPrediction[] // 개인 예측번호 결과
 
   winningNumberAnalysis WinningNumberAnalysis?
+  winningShops          WinningShop[]
 
   @@map("winning_number")
 }

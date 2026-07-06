@@ -1,0 +1,17 @@
+model WinningShop {
+  id            Int      @id @default(autoincrement())
+  episode       Int      @map("episode")
+  rank          Int      @map("rank")
+  sortOrder     Int      @map("sort_order")
+  shopName      String   @map("shop_name")
+  shopAddress   String   @map("shop_address")
+  purchaseType  String   @map("purchase_type")
+  region        String   @map("region")
+  shopLatitude  Float?   @map("shop_latitude")
+  shopLongitude Float?   @map("shop_longitude")
+
+  winningNumber WinningNumber @relation(fields: [episode], references: [episode], onDelete: Cascade)
+
+  @@index([episode])
+  @@map("winning_shop")
+}
