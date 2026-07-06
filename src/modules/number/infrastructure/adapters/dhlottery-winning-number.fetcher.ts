@@ -30,16 +30,24 @@ export class DhlotteryWinningNumberFetcher implements IWinningNumberFetcher {
     );
     const data = response.data;
     const list = data?.data?.list || [];
-    return list.map((item: any) => ({
-      rank: Number(item.wnShpRnk),
-      sortOrder: Number(item.rnum),
-      shopName: String(item.shpNm || ''),
-      shopAddress: String(item.shpAddr || ''),
-      purchaseType: String(item.atmtPsvYnTxt || ''),
-      region: String(item.region || ''),
-      shopLatitude: item.shpLat ? Number(item.shpLat) : null,
-      shopLongitude: item.shpLot ? Number(item.shpLot) : null,
-    }));
+    return list.map((item: any) => {
+      const pType = item.atmtPsvYnTxt;
+      const parsedPurchaseType =
+        !pType || pType === 'null' || pType === null
+          ? '알수없음'
+          : String(pType);
+
+      return {
+        rank: Number(item.wnShpRnk),
+        sortOrder: Number(item.rnum),
+        shopName: String(item.shpNm || ''),
+        shopAddress: String(item.shpAddr || ''),
+        purchaseType: parsedPurchaseType,
+        region: String(item.region || ''),
+        shopLatitude: item.shpLat ? Number(item.shpLat) : null,
+        shopLongitude: item.shpLot ? Number(item.shpLot) : null,
+      };
+    });
   }
 
   async fetchByEpisode(episode: number): Promise<ExternalLotteryData[]> {

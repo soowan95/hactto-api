@@ -3,7 +3,6 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { CommandBus } from '@nestjs/cqrs';
 import { HacttoCronExpression } from './hactto-cron-expression.enum';
 import { FetchRecentWinningNumberCommand } from '../../modules/number/application/commands/fetch-recent-winning-number.command';
-import { FetchWinningShopsCommand } from '../../modules/number/application/commands/fetch-winning-shops.command';
 import { AnalyzeCommand } from '../../modules/lottery-analysis/application/commands/analyze.command';
 import { SystemStatusService } from '../utils/system-status/system-status.service';
 import {
@@ -108,10 +107,6 @@ export class TaskService {
           this.logger.debug(
             `Reliability analysis completed for episode ${result.episode}.`,
           );
-
-          this.logger.debug(`Triggering winning shops synchronization...`);
-          await this.commandBus.execute(new FetchWinningShopsCommand());
-          this.logger.debug(`Winning shops synchronization completed.`);
           return;
         }
 
