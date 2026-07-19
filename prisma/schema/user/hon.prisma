@@ -2,12 +2,12 @@
  * 방문자의 혼(Hon) 잔액 모델
  */
 model Hon {
-  visitorId   String   @id @map("visitor_id")
+  userId      String   @id @map("user_id")
   freeBalance Int      @default(0) @map("free_balance") // 이벤트/무료 혼(Hon) 개수
   paidBalance Int      @default(0) @map("paid_balance") // 결제/유료 혼(Hon) 개수
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  visitor Visitor @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("hon")
 }
@@ -16,7 +16,7 @@ model Hon {
  * 방문자의 정기 구독 상태 모델
  */
 model Subscription {
-  visitorId     String   @id @map("visitor_id")
+  userId        String   @id @map("user_id")
   plan          String   @map("plan") // MONTHLY, YEARLY
   status        String   @map("status") // ACTIVE, CANCELLED, EXPIRED
   billingKey    String   @map("billing_key") // 포트원 빌링키
@@ -26,14 +26,14 @@ model Subscription {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  visitor Visitor @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("subscription")
 }
 
 model HonEvent {
   id          Int      @id @default(autoincrement())
-  visitorId   String   @map("visitor_id")
+  userId      String   @map("user_id")
   type        String   @map("type") // CHARGE, DEDUCT, ADMIN_PROVISION, REFUND_RECOVERY 등
   amount      Int      @map("amount") // 변동량 (양수/음수)
   freeAmount  Int      @default(0) @map("free_amount") // 이벤트/무료 혼 변동량
@@ -42,9 +42,9 @@ model HonEvent {
   description String?  @map("description") // "결제 충전", "로또 예측 분석 이용", "환불 회수" 등
   createdAt   DateTime @default(now()) @map("created_at")
 
-  visitor Visitor @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([visitorId])
+  @@index([userId])
   @@map("hon_event")
 }
 

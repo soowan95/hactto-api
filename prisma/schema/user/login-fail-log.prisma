@@ -1,0 +1,12 @@
+model LoginFailLog {
+  id          Int       @id @default(autoincrement())
+  ip          String
+  email       String
+  failCount   Int       @default(0) @map("fail_count")
+  lockedUntil DateTime? @map("locked_until")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@unique([ip, email])
+  @@map("login_fail_log")
+}

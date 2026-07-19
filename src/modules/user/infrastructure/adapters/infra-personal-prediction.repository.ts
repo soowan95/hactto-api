@@ -33,14 +33,14 @@ export class InfraPersonalPredictionRepository implements IPersonalPredictionRep
     });
   }
 
-  async findByUser(visitorId: string): Promise<
+  async findByUser(userId: string): Promise<
     {
       prediction: DomainPersonalPrediction;
       analysis: DomainPersonalAnalysis | null;
     }[]
   > {
     const results = await prisma.personalPrediction.findMany({
-      where: { visitorId },
+      where: { userId },
       include: {
         personalAnalysis: true,
       },
@@ -51,7 +51,7 @@ export class InfraPersonalPredictionRepository implements IPersonalPredictionRep
 
     return results.map((row) => {
       const prediction = new DomainPersonalPrediction(
-        row.visitorId,
+        row.userId,
         row.episode,
         [
           row.pp1WnNo,

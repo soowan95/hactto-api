@@ -2,12 +2,14 @@ import {
   Body,
   Controller,
   Get,
-  Headers,
   Param,
   Post,
   Put,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiHeader, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { AlgorithmResponsesDto } from './dtos/responses/algorithm-responses.dto';
 import { plainToInstance } from 'class-transformer';
@@ -46,17 +48,12 @@ export class AlgorithmController {
   @ApiOperation({
     summary: 'Get prediction history for a user',
   })
-  @ApiHeader({
-    name: 'x-visitor-id',
-    required: false,
-    description: '방문자 식별자',
-  })
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('success.read')
   @Get('history')
-  async getHistory(
-    @Headers('x-visitor-id') visitorId?: string,
-  ): Promise<AlgorithmHistoryResponseDto[]> {
-    const query = new GetPredictionHistoryQuery(visitorId);
+  async getHistory(@Req() req: any): Promise<AlgorithmHistoryResponseDto[]> {
+    const userId = req.user?.sub || req.user?.id;
+    const query = new GetPredictionHistoryQuery(userId);
     const results: any[] = await this.queryBus.execute(query);
     return plainToInstance(AlgorithmHistoryResponseDto, results);
   }
@@ -111,21 +108,18 @@ export class AlgorithmController {
     name: 'type',
     description: '알고리즘 타입',
   })
-  @ApiHeader({
-    name: 'x-visitor-id',
-    required: false,
-    description: '방문자 식별자',
-  })
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('success.generate')
   @Post(':type/generate')
   async generatePrediction(
     @Param('type') type: string,
     @Body() dto: GeneratePredictionRequestDto,
-    @Headers('x-visitor-id') visitorId?: string,
+    @Req() req: any,
   ): Promise<GeneratePredictionResponseDto> {
+    const userId = req.user?.sub || req.user?.id;
     const command = new GeneratePredictionCommand(
       type,
-      visitorId,
+      userId,
       dto.weights,
       dto.oddCount,
     );

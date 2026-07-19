@@ -3,7 +3,7 @@ import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 export class ReadyPaymentRequestDto {
   @IsString()
   @IsNotEmpty()
-  visitorId: string;
+  userId: string;
 
   @IsNumber()
   amount: number;

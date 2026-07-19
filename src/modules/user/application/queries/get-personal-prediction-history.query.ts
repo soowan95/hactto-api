@@ -1,3 +1,3 @@
 export class GetPersonalPredictionHistoryQuery {
-  constructor(public readonly visitorId?: string) {}
+  constructor(public readonly userId?: string) {}
 }

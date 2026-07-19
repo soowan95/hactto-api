@@ -9,13 +9,13 @@ import { prisma } from '../../../../libs/prisma';
 
 @Injectable()
 export class InfraHonRepository implements IHonRepository {
-  async getHon(visitorId: string): Promise<HonData | null> {
+  async getHon(userId: string): Promise<HonData | null> {
     const record = await prisma.hon.findUnique({
-      where: { visitorId },
+      where: { userId },
     });
     if (!record) return null;
     return {
-      visitorId: record.visitorId,
+      userId: record.userId,
       freeBalance: record.freeBalance,
       paidBalance: record.paidBalance,
       updatedAt: record.updatedAt,
@@ -23,53 +23,29 @@ export class InfraHonRepository implements IHonRepository {
   }
 
   async saveHon(data: HonData): Promise<void> {
-    const visitorExists = await prisma.visitor.findUnique({
-      where: { id: data.visitorId },
-    });
-    if (!visitorExists) {
-      await prisma.visitor.create({
-        data: {
-          id: data.visitorId,
-          ip: '0.0.0.0',
-        },
-      });
-    }
-
     await prisma.hon.upsert({
-      where: { visitorId: data.visitorId },
+      where: { userId: data.userId },
       update: {
         freeBalance: data.freeBalance,
         paidBalance: data.paidBalance,
       },
       create: {
-        visitorId: data.visitorId,
+        userId: data.userId,
         freeBalance: data.freeBalance,
         paidBalance: data.paidBalance,
       },
     });
   }
 
-  async getSubscription(visitorId: string): Promise<SubscriptionData | null> {
+  async getSubscription(userId: string): Promise<SubscriptionData | null> {
     const record = await prisma.subscription.findUnique({
-      where: { visitorId },
+      where: { userId },
     });
     if (!record) return null;
     return record;
   }
 
   async saveSubscription(data: SubscriptionData): Promise<void> {
-    const visitorExists = await prisma.visitor.findUnique({
-      where: { id: data.visitorId },
-    });
-    if (!visitorExists) {
-      await prisma.visitor.create({
-        data: {
-          id: data.visitorId,
-          ip: '0.0.0.0',
-        },
-      });
-    }
-
     const updateData = {
       plan: data.plan,
       status: data.status,
@@ -80,10 +56,10 @@ export class InfraHonRepository implements IHonRepository {
     };
 
     await prisma.subscription.upsert({
-      where: { visitorId: data.visitorId },
+      where: { userId: data.userId },
       update: updateData,
       create: {
-        visitorId: data.visitorId,
+        userId: data.userId,
         ...updateData,
       },
     });
@@ -103,7 +79,7 @@ export class InfraHonRepository implements IHonRepository {
   async saveHonEvent(event: HonEventData): Promise<void> {
     await prisma.honEvent.create({
       data: {
-        visitorId: event.visitorId,
+        userId: event.userId,
         type: event.type,
         amount: event.amount,
         freeAmount: event.freeAmount,
@@ -114,9 +90,9 @@ export class InfraHonRepository implements IHonRepository {
     });
   }
 
-  async getHonEvents(visitorId: string): Promise<HonEventData[]> {
+  async getHonEvents(userId: string): Promise<HonEventData[]> {
     return prisma.honEvent.findMany({
-      where: { visitorId },
+      where: { userId },
       orderBy: { createdAt: 'desc' },
     });
   }

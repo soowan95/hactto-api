@@ -18,7 +18,7 @@ export class AlgorithmExecutor {
     algorithm: DomainAlgorithm,
     episode: number,
     data: number[][],
-    visitorId?: string,
+    userId?: string,
     weights?: number[],
     oddCount?: number,
     ballStatusReader?: BallStatusReader,
@@ -66,7 +66,7 @@ export class AlgorithmExecutor {
       result,
       DomainAnalysis.create(result, temperatures),
       undefined,
-      visitorId,
+      userId,
     );
   }
 }

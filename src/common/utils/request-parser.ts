@@ -1,7 +1,6 @@
 import { Request } from 'express';
 import { ForbiddenException, Inject, Injectable, Scope } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
-import * as crypto from 'node:crypto';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RequestParser {
@@ -40,27 +39,17 @@ export class RequestParser {
     return {};
   }
 
-  getVisitorId() {
+  getUserId() {
+    const req = this.request as any;
+    if (req.user && req.user.sub) return req.user.sub;
+    if (req.user && req.user.id) return req.user.id;
+
     const headerId =
-      (this.request.headers['x-visitor-id'] as string) ||
-      (this.request.query?.visitorId as string) ||
-      (this.request.body?.visitorId as string);
+      (this.request.headers['x-user-id'] as string) ||
+      (this.request.query?.userId as string) ||
+      (this.request.body?.userId as string);
 
-    if (headerId) return headerId;
-
-    try {
-      const ip = this.getIpOrThrow();
-      if (ip) {
-        return crypto
-          .createHash('sha256')
-          .update(ip)
-          .digest('hex')
-          .substring(0, 16);
-      }
-    } catch {
-      // Ignore
-    }
-    return undefined;
+    return headerId || undefined;
   }
 
   getMasterKey() {

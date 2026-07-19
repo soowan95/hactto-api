@@ -10,7 +10,9 @@ import {
   BadRequestException,
   NotFoundException,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { prisma } from '../../../libs/prisma';
 import { RequestParser } from '../../../common/utils/request-parser';
@@ -74,7 +76,7 @@ export class BoardController {
         skip,
         take: limit,
         include: {
-          visitor: { select: { nickname: true } },
+          user: { select: { id: true, nickname: true, avatarUrl: true } },
           _count: { select: { likes: true, comments: true } },
           attachments: true,
         },
@@ -97,9 +99,9 @@ export class BoardController {
       throw new BadRequestException('올바르지 않은 ID 형식입니다.');
     }
 
-    let visitorId: string | undefined = undefined;
+    let userId: string | undefined = undefined;
     try {
-      visitorId = this.requestParser.getVisitorId();
+      userId = this.requestParser.getUserId();
     } catch (e) {
       console.error(e);
     }
@@ -107,18 +109,18 @@ export class BoardController {
     const post = await prisma.post.findUnique({
       where: { id: numId },
       include: {
-        visitor: { select: { nickname: true } },
+        user: { select: { id: true, nickname: true, avatarUrl: true } },
         _count: { select: { likes: true, comments: true } },
         attachments: true,
         comments: {
           orderBy: { createdAt: 'desc' },
           include: {
-            visitor: { select: { nickname: true } },
+            user: { select: { id: true, nickname: true, avatarUrl: true } },
             _count: { select: { likes: true } },
-            likes: visitorId ? { where: { visitorId } } : false,
+            likes: userId ? { where: { userId } } : false,
           },
         },
-        likes: visitorId ? { where: { visitorId } } : false,
+        likes: userId ? { where: { userId } } : false,
       },
     });
 
@@ -145,31 +147,33 @@ export class BoardController {
   }
 
   @ApiOperation({ summary: 'Toggle post like' })
+  @UseGuards(JwtAuthGuard)
   @Post(':id/like')
   async toggleLike(@Param('id') id: string) {
     const numId = parseInt(id, 10);
     if (isNaN(numId))
       throw new BadRequestException('올바르지 않은 ID 형식입니다.');
-    const visitorId = this.requestParser.getVisitorId();
-    if (!visitorId)
+    const userId = this.requestParser.getUserId();
+    if (!userId)
       throw new UnauthorizedException('방문자 ID가 유효하지 않습니다.');
 
     const existing = await prisma.postLike.findUnique({
-      where: { postId_visitorId: { postId: numId, visitorId } },
+      where: { postId_userId: { postId: numId, userId } },
     });
 
     if (existing) {
       await prisma.postLike.delete({
-        where: { postId_visitorId: { postId: numId, visitorId } },
+        where: { postId_userId: { postId: numId, userId } },
       });
       return { success: true, liked: false };
     } else {
-      await prisma.postLike.create({ data: { postId: numId, visitorId } });
+      await prisma.postLike.create({ data: { postId: numId, userId } });
       return { success: true, liked: true };
     }
   }
 
   @ApiOperation({ summary: 'Create comment' })
+  @UseGuards(JwtAuthGuard)
   @Post(':id/comments')
   async createComment(
     @Param('id') id: string,
@@ -180,8 +184,8 @@ export class BoardController {
       throw new BadRequestException('올바르지 않은 ID 형식입니다.');
     if (!content) throw new BadRequestException('내용이 필요합니다.');
 
-    const visitorId = this.requestParser.getVisitorId();
-    if (!visitorId)
+    const userId = this.requestParser.getUserId();
+    if (!userId)
       throw new UnauthorizedException('방문자 ID가 유효하지 않습니다.');
 
     const masterKey = this.requestParser.getMasterKey();
@@ -193,7 +197,7 @@ export class BoardController {
     const comment = await prisma.postComment.create({
       data: {
         postId: numId,
-        visitorId,
+        userId,
         content,
         isAdmin,
       },
@@ -202,6 +206,7 @@ export class BoardController {
   }
 
   @ApiOperation({ summary: 'Delete comment' })
+  @UseGuards(JwtAuthGuard)
   @Delete(':id/comments/:commentId')
   async deleteComment(
     @Param('id') id: string,
@@ -212,15 +217,15 @@ export class BoardController {
     if (isNaN(numId) || isNaN(numCommentId))
       throw new BadRequestException('Invalid ID');
 
-    const visitorId = this.requestParser.getVisitorId();
-    if (!visitorId)
+    const userId = this.requestParser.getUserId();
+    if (!userId)
       throw new UnauthorizedException('방문자 ID가 유효하지 않습니다.');
 
     const comment = await prisma.postComment.findUnique({
       where: { id: numCommentId },
     });
     if (!comment) throw new NotFoundException('댓글이 존재하지 않습니다.');
-    if (comment.visitorId !== visitorId)
+    if (comment.userId !== userId)
       throw new UnauthorizedException('삭제 권한이 없습니다.');
 
     await prisma.postComment.delete({ where: { id: numCommentId } });
@@ -228,6 +233,7 @@ export class BoardController {
   }
 
   @ApiOperation({ summary: 'Toggle comment like' })
+  @UseGuards(JwtAuthGuard)
   @Post(':id/comments/:commentId/like')
   async toggleCommentLike(
     @Param('id') id: string,
@@ -236,28 +242,29 @@ export class BoardController {
     const numCommentId = parseInt(commentId, 10);
     if (isNaN(numCommentId)) throw new BadRequestException('Invalid ID');
 
-    const visitorId = this.requestParser.getVisitorId();
-    if (!visitorId)
+    const userId = this.requestParser.getUserId();
+    if (!userId)
       throw new UnauthorizedException('방문자 ID가 유효하지 않습니다.');
 
     const existing = await prisma.commentLike.findUnique({
-      where: { commentId_visitorId: { commentId: numCommentId, visitorId } },
+      where: { commentId_userId: { commentId: numCommentId, userId } },
     });
 
     if (existing) {
       await prisma.commentLike.delete({
-        where: { commentId_visitorId: { commentId: numCommentId, visitorId } },
+        where: { commentId_userId: { commentId: numCommentId, userId } },
       });
       return { success: true, liked: false };
     } else {
       await prisma.commentLike.create({
-        data: { commentId: numCommentId, visitorId },
+        data: { commentId: numCommentId, userId },
       });
       return { success: true, liked: true };
     }
   }
 
   @ApiOperation({ summary: 'Report comment' })
+  @UseGuards(JwtAuthGuard)
   @Post(':id/comments/:commentId/report')
   async reportComment(
     @Param('id') id: string,
@@ -268,14 +275,14 @@ export class BoardController {
     if (isNaN(numCommentId)) throw new BadRequestException('Invalid ID');
     if (!reason) throw new BadRequestException('사유를 입력해주세요.');
 
-    const visitorId = this.requestParser.getVisitorId();
-    if (!visitorId)
+    const userId = this.requestParser.getUserId();
+    if (!userId)
       throw new UnauthorizedException('방문자 ID가 유효하지 않습니다.');
 
     await prisma.commentReport.create({
       data: {
         commentId: numCommentId,
-        visitorId,
+        userId,
         reason,
       },
     });
@@ -284,26 +291,18 @@ export class BoardController {
   }
 
   @ApiOperation({ summary: 'Create a post' })
+  @UseGuards(JwtAuthGuard)
   @Post()
   async createPost(@Body() body: CreatePostDto) {
-    const visitorId = this.requestParser.getVisitorId();
-    if (!visitorId) {
+    const userId = this.requestParser.getUserId();
+    if (!userId) {
       throw new BadRequestException('방문자 ID가 존재하지 않습니다.');
     }
 
-    // Ensure visitor exists in DB
-    let visitor = await prisma.visitor.findUnique({ where: { id: visitorId } });
-    if (!visitor) {
-      let ip = '0.0.0.0';
-      try {
-        ip = this.requestParser.getIpOrThrow();
-      } catch {}
-      await prisma.visitor.create({
-        data: { id: visitorId, ip },
-      });
-      await prisma.hon.create({
-        data: { visitorId, freeBalance: 50, paidBalance: 0 },
-      });
+    // Ensure user exists in DB
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException('회원 정보를 찾을 수 없습니다.');
     }
 
     if (body.category === BoardCategory.WINNING && !body.imageUrl) {
@@ -320,7 +319,7 @@ export class BoardController {
 
     const post = await prisma.post.create({
       data: {
-        visitorId,
+        userId,
         category: body.category,
         title: body.title,
         content: body.content,
@@ -351,6 +350,7 @@ export class BoardController {
   }
 
   @ApiOperation({ summary: 'Update a post' })
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   async updatePost(@Param('id') id: string, @Body() body: any) {
     const numId = parseInt(id, 10);
@@ -358,7 +358,7 @@ export class BoardController {
       throw new BadRequestException('올바르지 않은 ID 형식입니다.');
     }
 
-    const visitorId = this.requestParser.getVisitorId();
+    const userId = this.requestParser.getUserId();
     const masterKey = this.requestParser.getMasterKey();
 
     const post = await prisma.post.findUnique({ where: { id: numId } });
@@ -371,7 +371,7 @@ export class BoardController {
       isAdmin = await this.redisService.validateMasterKey(masterKey);
     }
 
-    if (post.visitorId !== visitorId && !isAdmin) {
+    if (post.userId !== userId && !isAdmin) {
       throw new BadRequestException('본인의 게시글만 수정할 수 있습니다.');
     }
 
@@ -412,6 +412,7 @@ export class BoardController {
   }
 
   @ApiOperation({ summary: 'Delete a post' })
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   async deletePost(@Param('id') id: string) {
     const numId = parseInt(id, 10);
@@ -419,7 +420,7 @@ export class BoardController {
       throw new BadRequestException('올바르지 않은 ID 형식입니다.');
     }
 
-    const visitorId = this.requestParser.getVisitorId();
+    const userId = this.requestParser.getUserId();
     const masterKey = this.requestParser.getMasterKey();
 
     const post = await prisma.post.findUnique({ where: { id: numId } });
@@ -434,7 +435,7 @@ export class BoardController {
       isAdmin = true;
     }
 
-    if (post.visitorId !== visitorId && !isAdmin) {
+    if (post.userId !== userId && !isAdmin) {
       throw new BadRequestException('본인의 게시글만 삭제할 수 있습니다.');
     }
 
@@ -476,6 +477,7 @@ export class BoardController {
   }
 
   @ApiOperation({ summary: 'Report a post' })
+  @UseGuards(JwtAuthGuard)
   @Post(':id/report')
   async reportPost(@Param('id') id: string, @Body() body: ReportPostDto) {
     const numId = parseInt(id, 10);
@@ -483,8 +485,8 @@ export class BoardController {
       throw new BadRequestException('올바르지 않은 ID 형식입니다.');
     }
 
-    const visitorId = this.requestParser.getVisitorId();
-    if (!visitorId) {
+    const userId = this.requestParser.getUserId();
+    if (!userId) {
       throw new BadRequestException('방문자 ID가 존재하지 않습니다.');
     }
 
@@ -497,7 +499,7 @@ export class BoardController {
     const existing = await prisma.postReport.findFirst({
       where: {
         postId: numId,
-        visitorId,
+        userId,
       },
     });
 
@@ -508,7 +510,7 @@ export class BoardController {
     const report = await prisma.postReport.create({
       data: {
         postId: numId,
-        visitorId,
+        userId,
         reason: body.reason,
       },
     });
@@ -517,6 +519,7 @@ export class BoardController {
   }
 
   @ApiOperation({ summary: 'Generate S3 presigned URL for image upload' })
+  @UseGuards(JwtAuthGuard)
   @Post('presigned-url')
   async getPresignedUrl(
     @Body('filename') filename: string,
@@ -581,6 +584,7 @@ export class BoardController {
   }
 
   @ApiOperation({ summary: 'Analyze Lotto Image for Winning Rank' })
+  @UseGuards(JwtAuthGuard)
   @Post('analyze-lotto')
   async analyzeLotto(@Body('imageUrl') imageUrl: string) {
     if (!imageUrl) {

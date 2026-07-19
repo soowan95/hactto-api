@@ -5,11 +5,12 @@ import { TaskService } from './common/tasks/task.service';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AdminGuard } from './common/guards/admin.guard';
 import { APP_GUARD } from '@nestjs/core';
-import { KoreaIpGuard } from './common/guards/korea-ip.guard';
+import { IpAccessGuard } from './common/guards/ip-access.guard';
 import expressStatusMonitor from 'express-status-monitor';
 import { StatusMonitorMiddleware } from './common/middlewares/status-monitor.middleware';
 import { CommonModule } from './common/common.module';
 import { CqrsModule } from '@nestjs/cqrs';
+import { GatewayModule } from './gateway.module';
 
 @Module({
   imports: [
@@ -18,13 +19,14 @@ import { CqrsModule } from '@nestjs/cqrs';
     RootModule,
     RedisModule,
     CommonModule,
+    GatewayModule,
   ],
   providers: [
     TaskService,
     AdminGuard,
     {
       provide: APP_GUARD,
-      useClass: KoreaIpGuard,
+      useClass: IpAccessGuard,
     },
   ],
 })

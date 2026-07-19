@@ -5,7 +5,7 @@ import {
 
 export class PaymentAggregate {
   private paymentId: string;
-  private visitorId: string;
+  private userId: string;
   private amount: number;
   private orderId: string;
   private orderName: string;
@@ -23,7 +23,7 @@ export class PaymentAggregate {
   // 신규 결제 초기화 (READY 상태 생성)
   public static create(
     paymentId: string,
-    visitorId: string,
+    userId: string,
     amount: number,
     orderId: string,
     orderName: string,
@@ -34,7 +34,7 @@ export class PaymentAggregate {
         paymentId,
         version: 1,
         eventType: 'PaymentRequested',
-        payload: { visitorId, amount, orderId, orderName },
+        payload: { userId, amount, orderId, orderName },
       },
       true,
     );
@@ -115,7 +115,7 @@ export class PaymentAggregate {
   public toProjection(): PaymentProjectionData {
     return {
       paymentId: this.paymentId,
-      visitorId: this.visitorId,
+      userId: this.userId,
       amount: this.amount,
       orderId: this.orderId,
       orderName: this.orderName,
@@ -140,7 +140,7 @@ export class PaymentAggregate {
     switch (event.eventType) {
       case 'PaymentRequested':
         this.paymentId = event.paymentId;
-        this.visitorId = event.payload.visitorId;
+        this.userId = event.payload.userId;
         this.amount = event.payload.amount;
         this.orderId = event.payload.orderId;
         this.orderName = event.payload.orderName;

@@ -17,11 +17,8 @@ export class MobileReadOnlyGuard implements CanActivate {
 
     if (isMobile) {
       // Allow only GET methods
-      // Allow visitor/register so they can be initialized (WelcomeModal won't loop)
-      if (
-        request.method !== 'GET' &&
-        !request.url.includes('/visitor/register')
-      ) {
+      // Allow user/register so they can be initialized (WelcomeModal won't loop)
+      if (request.method !== 'GET' && !request.url.includes('/user/register')) {
         throw new ForbiddenException(
           '모바일에서는 조회(GET) 기능만 이용할 수 있습니다.',
         );

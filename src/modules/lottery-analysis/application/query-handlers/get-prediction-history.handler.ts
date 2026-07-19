@@ -29,18 +29,18 @@ export class GetPredictionHistoryHandler implements IQueryHandler<GetPredictionH
   ) {}
 
   async execute(query: GetPredictionHistoryQuery): Promise<any[]> {
-    if (!query.visitorId) {
+    if (!query.userId) {
       return [];
     }
 
-    const cacheKey = `user:${query.visitorId}:predictions:history`;
+    const cacheKey = `user:${query.userId}:predictions:history`;
 
     const cachedData = await this.redisService.get(cacheKey);
     if (cachedData) {
       return JSON.parse(cachedData);
     }
 
-    const results = await this.repository.findByUser(query.visitorId);
+    const results = await this.repository.findByUser(query.userId);
     if (results.length === 0) return [];
 
     const episodes = Array.from(new Set(results.map((r) => r.episode)));

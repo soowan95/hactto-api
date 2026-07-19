@@ -22,7 +22,7 @@ export class InfraPaymentMapper {
   static toProjectionData(raw: PaymentProjection): PaymentProjectionData {
     return {
       paymentId: raw.paymentId,
-      visitorId: raw.visitorId,
+      userId: raw.userId,
       amount: raw.amount,
       orderId: raw.orderId,
       orderName: raw.orderName,

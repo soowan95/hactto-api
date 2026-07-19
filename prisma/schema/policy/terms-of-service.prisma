@@ -1,0 +1,8 @@
+model TermsOfService {
+  id        Int      @id @default(autoincrement())
+  version   String?  @db.VarChar(50)
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("terms_of_service")
+}

@@ -1,14 +1,14 @@
 export const HON_REPOSITORY_TOKEN = Symbol('HON_REPOSITORY_TOKEN');
 
 export interface HonData {
-  visitorId: string;
+  userId: string;
   freeBalance: number;
   paidBalance: number;
   updatedAt?: Date;
 }
 
 export interface SubscriptionData {
-  visitorId: string;
+  userId: string;
   plan: string;
   status: string;
   billingKey: string;
@@ -21,7 +21,7 @@ export interface SubscriptionData {
 
 export interface HonEventData {
   id?: number;
-  visitorId: string;
+  userId: string;
   type: string;
   amount: number;
   freeAmount: number;
@@ -35,7 +35,7 @@ export interface IHonRepository {
   /**
    * 방문자의 혼(Hon) 정보를 조회합니다.
    */
-  getHon(visitorId: string): Promise<HonData | null>;
+  getHon(userId: string): Promise<HonData | null>;
 
   /**
    * 방문자의 혼(Hon) 정보를 저장/갱신합니다.
@@ -45,7 +45,7 @@ export interface IHonRepository {
   /**
    * 방문자의 구독 정보를 조회합니다.
    */
-  getSubscription(visitorId: string): Promise<SubscriptionData | null>;
+  getSubscription(userId: string): Promise<SubscriptionData | null>;
 
   /**
    * 방문자의 구독 정보를 저장/갱신합니다.
@@ -65,5 +65,5 @@ export interface IHonRepository {
   /**
    * 방문자의 혼(Hon) 이벤트 기록들을 가져옵니다.
    */
-  getHonEvents(visitorId: string): Promise<HonEventData[]>;
+  getHonEvents(userId: string): Promise<HonEventData[]>;
 }
