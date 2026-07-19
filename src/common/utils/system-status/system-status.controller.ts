@@ -1,13 +1,5 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Query,
-  Sse,
-  MessageEvent,
-} from '@nestjs/common';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Controller, Get, Post, Query } from '@nestjs/common';
+
 import { SystemStatusService } from './system-status.service';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
@@ -40,25 +32,5 @@ export class SystemStatusController {
       message: detailed.message,
       estimatedCompletionTime: detailed.estimatedCompletionTime,
     };
-  }
-
-  @ApiOperation({
-    summary: 'Stream system analysis status changes using SSE',
-  })
-  @Sse('sse')
-  sse(): Observable<MessageEvent> {
-    return this.systemStatusService.statusStream$.pipe(
-      map(
-        (status) =>
-          ({
-            data: {
-              inProgress: status.inProgress,
-              progress: status.progress,
-              message: status.message,
-              estimatedCompletionTime: status.estimatedCompletionTime,
-            },
-          }) as MessageEvent,
-      ),
-    );
   }
 }

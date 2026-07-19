@@ -2,12 +2,12 @@ import { IsString, IsNotEmpty, IsIn, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class SendNotificationDto {
-  @ApiProperty({ description: 'Target type', enum: ['VISITOR_ID', 'NICKNAME'] })
+  @ApiProperty({ description: 'Target type', enum: ['USER_ID', 'NICKNAME'] })
   @IsString()
-  @IsIn(['VISITOR_ID', 'NICKNAME'])
-  targetType: 'VISITOR_ID' | 'NICKNAME';
+  @IsIn(['USER_ID', 'NICKNAME'])
+  targetType: 'USER_ID' | 'NICKNAME';
 
-  @ApiProperty({ description: 'Visitor ID or Nickname' })
+  @ApiProperty({ description: 'User ID or Nickname' })
   @IsString()
   @IsNotEmpty()
   target: string;

@@ -9,7 +9,7 @@ export interface IPersonalPredictionRepository {
     prediction: DomainPersonalPrediction,
     analysis: DomainPersonalAnalysis,
   ): Promise<void>;
-  findByUser(visitorId: string): Promise<
+  findByUser(userId: string): Promise<
     {
       prediction: DomainPersonalPrediction;
       analysis: DomainPersonalAnalysis | null;

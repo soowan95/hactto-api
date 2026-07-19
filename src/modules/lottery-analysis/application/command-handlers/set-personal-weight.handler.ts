@@ -7,7 +7,7 @@ export class SetPersonalWeightHandler implements ICommandHandler<SetPersonalWeig
   constructor(private readonly redisService: RedisService) {}
 
   async execute(command: SetPersonalWeightCommand): Promise<void> {
-    const cacheKey = `user:${command.visitorId}:algorithm:${command.algorithm}:weights`;
+    const cacheKey = `user:${command.userId}:algorithm:${command.algorithm}:weights`;
     await this.redisService.del(cacheKey);
     await this.redisService.set(cacheKey, JSON.stringify(command.weights));
   }

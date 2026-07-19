@@ -21,7 +21,7 @@ export class HonService {
    */
   async chargeHon(
     paymentId: string,
-    visitorId: string,
+    userId: string,
     honAmount: number,
     isFree: boolean = false,
     description?: string,
@@ -33,10 +33,10 @@ export class HonService {
       paymentId,
       version: nextVersion,
       eventType: 'HonCharged',
-      payload: { visitorId, chargedHon: honAmount },
+      payload: { userId, chargedHon: honAmount },
     });
 
-    const currentHon = await this.honRepository.getHon(visitorId);
+    const currentHon = await this.honRepository.getHon(userId);
     const currentFree = currentHon ? currentHon.freeBalance : 0;
     const currentPaid = currentHon ? currentHon.paidBalance : 0;
     const newPaid = currentPaid + (isFree ? 0 : honAmount);
@@ -44,13 +44,13 @@ export class HonService {
     const totalBalance = newFree + newPaid;
 
     await this.honRepository.saveHon({
-      visitorId,
+      userId,
       freeBalance: newFree,
       paidBalance: newPaid,
     });
 
     await this.honRepository.saveHonEvent({
-      visitorId,
+      userId,
       type: 'CHARGE',
       amount: honAmount,
       freeAmount: isFree ? honAmount : 0,
@@ -65,7 +65,7 @@ export class HonService {
    */
   async startSubscription(
     paymentId: string,
-    visitorId: string,
+    userId: string,
     plan: string,
     billingKey: string,
   ): Promise<void> {
@@ -82,7 +82,7 @@ export class HonService {
     }
 
     // Check for existing active/cancelled subscription to extend the period if upgrading MONTHLY -> YEARLY
-    const existing = await this.honRepository.getSubscription(visitorId);
+    const existing = await this.honRepository.getSubscription(userId);
     if (existing && existing.endsAt > now) {
       if (existing.plan === 'MONTHLY' && plan === 'YEARLY') {
         startsAt = existing.startsAt;
@@ -95,11 +95,11 @@ export class HonService {
       paymentId,
       version: nextVersion,
       eventType: 'SubscriptionStarted',
-      payload: { visitorId, plan, billingKey, nextPaymentAt: endsAt },
+      payload: { userId, plan, billingKey, nextPaymentAt: endsAt },
     });
 
     await this.honRepository.saveSubscription({
-      visitorId,
+      userId,
       plan,
       status: 'ACTIVE',
       billingKey,
@@ -112,22 +112,22 @@ export class HonService {
   /**
    * 3. 방문자 혼 정보 조회
    */
-  async getHon(visitorId: string) {
-    return this.honRepository.getHon(visitorId);
+  async getHon(userId: string) {
+    return this.honRepository.getHon(userId);
   }
 
   /**
    * 4. 방문자 정기 구독 조회
    */
-  async getSubscription(visitorId: string) {
-    return this.honRepository.getSubscription(visitorId);
+  async getSubscription(userId: string) {
+    return this.honRepository.getSubscription(userId);
   }
 
   /**
    * 정기 구독 취소 (해지 예약)
    */
-  async cancelSubscription(visitorId: string): Promise<void> {
-    const subscription = await this.honRepository.getSubscription(visitorId);
+  async cancelSubscription(userId: string): Promise<void> {
+    const subscription = await this.honRepository.getSubscription(userId);
     if (!subscription || subscription.status !== 'ACTIVE') {
       throw new BadRequestException(
         '해지 가능한 활성 구독이 존재하지 않습니다.',
@@ -146,7 +146,7 @@ export class HonService {
       paymentId: randomUUID(),
       version: 1,
       eventType: 'SubscriptionCancelled',
-      payload: { visitorId },
+      payload: { userId },
     });
   }
 
@@ -154,17 +154,17 @@ export class HonService {
    * 5. 방문자 혼 차감 (구독자인 경우 면제)
    */
   async deductHon(
-    visitorId: string,
+    userId: string,
     amount: number,
     description?: string,
     deductPaidFirst: boolean = false,
   ): Promise<void> {
-    const subscription = await this.honRepository.getSubscription(visitorId);
+    const subscription = await this.honRepository.getSubscription(userId);
     if (subscription && subscription.status === 'ACTIVE') {
       return; // ACTIVE 구독자는 무제한
     }
 
-    const hon = await this.honRepository.getHon(visitorId);
+    const hon = await this.honRepository.getHon(userId);
     const free = hon ? hon.freeBalance : 0;
     const paid = hon ? hon.paidBalance : 0;
     const totalBalance = free + paid;
@@ -212,13 +212,13 @@ export class HonService {
     const newTotalBalance = newFree + newPaid;
 
     await this.honRepository.saveHon({
-      visitorId,
+      userId,
       freeBalance: newFree,
       paidBalance: newPaid,
     });
 
     await this.honRepository.saveHonEvent({
-      visitorId,
+      userId,
       type: 'DEDUCT',
       amount: -amount,
       freeAmount: -(free - newFree),
@@ -231,16 +231,16 @@ export class HonService {
   /**
    * 6. 관리자 수동 혼(Hon) 지급/차감
    */
-  async provisionHonByAdmin(visitorId: string, amount: number): Promise<void> {
+  async provisionHonByAdmin(userId: string, amount: number): Promise<void> {
     const paymentId = `admin-provision-${randomUUID()}`;
     await this.paymentRepository.saveEvent({
       paymentId,
       version: 1,
       eventType: 'AdminHonProvisioned',
-      payload: { visitorId, amount },
+      payload: { userId, amount },
     });
 
-    const currentHon = await this.honRepository.getHon(visitorId);
+    const currentHon = await this.honRepository.getHon(userId);
     const free = currentHon ? currentHon.freeBalance : 0;
     const paid = currentHon ? currentHon.paidBalance : 0;
 
@@ -251,13 +251,13 @@ export class HonService {
     const newTotalBalance = free + newPaid;
 
     await this.honRepository.saveHon({
-      visitorId,
+      userId,
       freeBalance: newFree,
       paidBalance: newPaid,
     });
 
     await this.honRepository.saveHonEvent({
-      visitorId,
+      userId,
       type: amount >= 0 ? 'ADMIN_PROVISION' : 'ADMIN_DEDUCT',
       amount,
       freeAmount: newFree - free,
@@ -267,12 +267,12 @@ export class HonService {
     });
   }
 
-  async getHonEvents(visitorId: string) {
-    return this.honRepository.getHonEvents(visitorId);
+  async getHonEvents(userId: string) {
+    return this.honRepository.getHonEvents(userId);
   }
 
   async provisionUnlimitedSubscriptionByAdmin(
-    visitorId: string,
+    userId: string,
     endsAt: Date,
   ): Promise<void> {
     const paymentId = `admin-unlimited-${randomUUID()}`;
@@ -282,11 +282,11 @@ export class HonService {
       paymentId,
       version: 1,
       eventType: 'AdminUnlimitedSubscriptionProvisioned',
-      payload: { visitorId, startsAt: now, endsAt },
+      payload: { userId, startsAt: now, endsAt },
     });
 
     await this.honRepository.saveSubscription({
-      visitorId,
+      userId,
       plan: 'UNLIMITED',
       status: 'ACTIVE',
       billingKey: 'ADMIN_FREE_PASS',
@@ -297,12 +297,12 @@ export class HonService {
   }
 
   async bulkProvisionHonByAdmin(amount: number): Promise<void> {
-    const visitors = await prisma.visitor.findMany({
+    const users = await prisma.user.findMany({
       select: { id: true },
     });
 
     // Process sequentially to avoid database lock and guarantee correct event ordering
-    for (const v of visitors) {
+    for (const v of users) {
       try {
         await this.provisionHonByAdmin(v.id, amount);
       } catch (error) {

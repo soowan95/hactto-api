@@ -1,5 +1,6 @@
-import { ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Body, Controller, Get, Headers, Post } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
 import { SavePersonalPredictionRequestDto } from './dtos/requests/save-personal-prediction-request.dto';
@@ -15,34 +16,26 @@ export class PersonalPredictionController {
   ) {}
 
   @ApiOperation({ summary: '개인 예측 당첨이력 조회' })
-  @ApiHeader({
-    name: 'x-visitor-id',
-    required: false,
-    description: '방문자 식별자',
-  })
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('success.read')
   @Get('history')
-  async getHistory(
-    @Headers('x-visitor-id') visitorId?: string,
-  ): Promise<any[]> {
-    const query = new GetPersonalPredictionHistoryQuery(visitorId);
+  async getHistory(@Req() req: any): Promise<any[]> {
+    const userId = req.user?.sub || req.user?.id;
+    const query = new GetPersonalPredictionHistoryQuery(userId);
     return this.queryBus.execute(query);
   }
 
   @ApiOperation({ summary: '예측번호 저장 (정하기)' })
-  @ApiHeader({
-    name: 'x-visitor-id',
-    required: true,
-    description: '방문자 식별자',
-  })
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('success.create')
   @Post()
   async save(
-    @Headers('x-visitor-id') visitorId: string,
+    @Req() req: any,
     @Body() dto: SavePersonalPredictionRequestDto,
   ): Promise<void> {
+    const userId = req.user?.sub || req.user?.id;
     const command = new SavePersonalPredictionCommand(
-      visitorId,
+      userId,
       dto.episode,
       dto.prediction,
     );

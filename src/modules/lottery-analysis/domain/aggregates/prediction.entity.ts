@@ -12,7 +12,7 @@ export class DomainPrediction extends AggregateRoot {
   public readonly episode: number;
   public readonly weights: Weights;
   public readonly numberSet: LottoNumberSet;
-  public readonly visitorId?: string;
+  public readonly userId?: string;
   public analysis: DomainAnalysis;
 
   constructor(
@@ -22,7 +22,7 @@ export class DomainPrediction extends AggregateRoot {
     numbers: number[],
     analysis: DomainAnalysis,
     id?: number,
-    visitorId?: string,
+    userId?: string,
   ) {
     super();
     this.algorithm = algorithm;
@@ -30,7 +30,7 @@ export class DomainPrediction extends AggregateRoot {
     this.weights = new Weights(weights);
     this.numberSet = new LottoNumberSet(numbers);
     this.id = id;
-    this.visitorId = visitorId;
+    this.userId = userId;
     this.analysis = analysis;
   }
 
@@ -52,7 +52,7 @@ export class DomainPrediction extends AggregateRoot {
   ): void {
     if (!this.isNonZero()) {
       this.analysis.setReliability(-1);
-      this.apply(new PredictionAnalyzedEvent(this.visitorId, this.analysis));
+      this.apply(new PredictionAnalyzedEvent(this.userId, this.analysis));
       return;
     }
 
@@ -71,6 +71,6 @@ export class DomainPrediction extends AggregateRoot {
     const finalScore = Math.round(score * 10) / 10;
 
     this.analysis.setReliability(finalScore);
-    this.apply(new PredictionAnalyzedEvent(this.visitorId, this.analysis));
+    this.apply(new PredictionAnalyzedEvent(this.userId, this.analysis));
   }
 }

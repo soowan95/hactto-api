@@ -10,20 +10,20 @@ import {
 import { RequestParser } from '../utils/request-parser';
 import { RedisService } from '../../helpers/redis/application/redis.service';
 import {
-  IVisitorRepository,
-  VISITOR_REPOSITORY_TOKEN,
-} from '../../modules/user/domain/ports/visitor.port';
+  IUserRepository,
+  USER_REPOSITORY_TOKEN,
+} from '../../modules/user/domain/ports/user.port';
 import { Response } from 'express';
 import * as crypto from 'crypto';
 import { prisma } from '../../libs/prisma';
 
 @Injectable({ scope: Scope.REQUEST })
-export class KoreaIpGuard implements CanActivate {
-  private readonly logger = new Logger(KoreaIpGuard.name);
+export class IpAccessGuard implements CanActivate {
+  private readonly logger = new Logger(IpAccessGuard.name);
 
   constructor(
-    @Inject(VISITOR_REPOSITORY_TOKEN)
-    private readonly repository: IVisitorRepository,
+    @Inject(USER_REPOSITORY_TOKEN)
+    private readonly repository: IUserRepository,
     private readonly requestParser: RequestParser,
     private readonly redisService: RedisService,
   ) {}
@@ -62,39 +62,39 @@ export class KoreaIpGuard implements CanActivate {
       throw new ForbiddenException('IP 주소를 식별할 수 없습니다.');
     }
 
-    let visitorId = this.requestParser.getVisitorId();
-    if (!visitorId) {
-      visitorId = crypto
+    let userId = this.requestParser.getUserId();
+    if (!userId) {
+      userId = crypto
         .createHash('sha256')
         .update(ip)
         .digest('hex')
         .substring(0, 16);
     }
 
-    if (visitorId) {
-      const blockedRedisKey = `visitor-blocked:${visitorId}`;
+    if (userId) {
+      const blockedRedisKey = `user-blocked:${userId}`;
       let isBlockedCache = await this.redisService.get(blockedRedisKey);
 
       if (isBlockedCache === 'true') {
         throw new ForbiddenException({
           message: '차단된 사용자입니다.',
           ip,
-          visitorId,
+          userId,
         });
       }
 
-      const redisKey = `visitor-ip:${visitorId}`;
+      const redisKey = `user-ip:${userId}`;
       let savedIp = await this.redisService.get(redisKey);
-      let visitorEntity: any = null;
+      let userEntity: any = null;
 
       // redis cache 에 없으면 DB 조회.
       if (!savedIp || isBlockedCache === null) {
-        visitorEntity = await this.repository.findById(visitorId);
-        if (visitorEntity) {
-          savedIp = visitorEntity.ip;
+        userEntity = await this.repository.findById(userId);
+        if (userEntity) {
+          savedIp = userEntity.ip;
           const activeBlock = await prisma.block.findFirst({
             where: {
-              visitorId,
+              userId,
               OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
             },
           });
@@ -111,7 +111,7 @@ export class KoreaIpGuard implements CanActivate {
         throw new ForbiddenException({
           message: '차단된 사용자입니다.',
           ip,
-          visitorId,
+          userId,
         });
       }
 
@@ -123,12 +123,12 @@ export class KoreaIpGuard implements CanActivate {
         }
       } else if (savedIp === '0.0.0.0') {
         // 결제 모듈 등에서 0.0.0.0으로 임시 저장된 경우, 현재 실제 IP로 업데이트 후 통과
-        await this.repository.updateIp(visitorId, ip);
+        await this.repository.updateIp(userId, ip);
         await this.redisService.set(redisKey, ip, 86400 * 30);
       } else if (savedIp !== ip) {
-        // 그 다음부터는 visitorId 검증해서 다른 IP 에서는 해당 visitorId 사용못하게 처리
+        // 그 다음부터는 userId 검증해서 다른 IP 에서는 해당 userId 사용못하게 처리
         this.logger.warn(
-          `Visitor ID hijacking detected! ID: ${visitorId}. Saved IP: ${savedIp}, Current IP: ${ip}`,
+          `User ID hijacking detected! ID: ${userId}. Saved IP: ${savedIp}, Current IP: ${ip}`,
         );
         throw new ForbiddenException(
           '허용되지 않은 접근 주소입니다. (IP 불일치)',

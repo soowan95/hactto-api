@@ -28,7 +28,7 @@ export class PaymentService {
    * 1. 결제 준비 단계 (Command: Request Payment)
    */
   async readyPayment(
-    visitorId: string,
+    userId: string,
     amount: number,
     orderId: string,
     orderName: string,
@@ -36,7 +36,7 @@ export class PaymentService {
     // 진행 중인 환불 문의 또는 수락 대기 중인 환불 건이 있는지 확인
     const activeRefundInquiry = await prisma.inquiry.findFirst({
       where: {
-        visitorId,
+        userId,
         type: 'REFUND',
         OR: [{ status: 'PENDING' }, { refundStatus: 'PROPOSED' }],
       },
@@ -51,7 +51,7 @@ export class PaymentService {
     // 구독 정보 조회
     const subscription = await prisma.subscription.findFirst({
       where: {
-        visitorId,
+        userId,
         status: 'ACTIVE',
       },
     });
@@ -77,7 +77,7 @@ export class PaymentService {
     // Aggregate 생성 (내부적으로 version 1의 PaymentRequested 이벤트 발행)
     const aggregate = PaymentAggregate.create(
       paymentId,
-      visitorId,
+      userId,
       amount,
       orderId,
       orderName,
@@ -131,26 +131,26 @@ export class PaymentService {
 
     // 결제 승인 완료 시 금액별 크레딧(Hon) 충전 또는 정기 구독 권한 지급 처리
     if (portoneResult.success && !this.portoneClient.isTestMode()) {
-      const visitorId = projection.visitorId;
+      const userId = projection.userId;
       const paymentId = projection.paymentId;
 
       if (amount === 1000) {
-        await this.honService.chargeHon(paymentId, visitorId, 30);
+        await this.honService.chargeHon(paymentId, userId, 30);
       } else if (amount === 3000) {
-        await this.honService.chargeHon(paymentId, visitorId, 100);
+        await this.honService.chargeHon(paymentId, userId, 100);
       } else if (amount === 5000) {
-        await this.honService.chargeHon(paymentId, visitorId, 200);
+        await this.honService.chargeHon(paymentId, userId, 200);
       } else if (amount === 12000) {
         await this.honService.startSubscription(
           paymentId,
-          visitorId,
+          userId,
           'MONTHLY',
           paymentKey,
         );
       } else if (amount === 100000) {
         await this.honService.startSubscription(
           paymentId,
-          visitorId,
+          userId,
           'YEARLY',
           paymentKey,
         );

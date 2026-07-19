@@ -12,9 +12,9 @@ import { CommandHandlers, QueryHandlers } from './application';
 import { PersonalAnalysisController } from './presentation/personal-analysis.controller';
 import { BadWordsService } from './application/bad-words.service';
 import { PersonalPredictionController } from './presentation/personal-prediction.controller';
-import { VISITOR_REPOSITORY_TOKEN } from './domain/ports/visitor.port';
-import { InfraVisitorRepository } from './infrastructure/adapters/infra-visitor.repository';
-import { VisitorController } from './presentation/visitor.controller';
+import { USER_REPOSITORY_TOKEN } from './domain/ports/user.port';
+import { InfraUserRepository } from './infrastructure/adapters/infra-user.repository';
+import { UserController } from './presentation/user.controller';
 import { HON_REPOSITORY_TOKEN } from './domain/ports/hon.port';
 import { InfraHonRepository } from './infrastructure/adapters/infra-hon.repository';
 import { HonService } from './application/hon.service';
@@ -25,13 +25,15 @@ import { PortoneClient } from './infrastructure/clients/portone.client';
 import { PaymentController } from './presentation/payment.controller';
 import { BoardController } from './presentation/board.controller';
 import { LottoOcrService } from './application/lotto-ocr.service';
+import {} from './presentation/policy.controller';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [CqrsModule, WinningNumberModule, HttpModule],
+  imports: [CqrsModule, WinningNumberModule, HttpModule, AuthModule],
   controllers: [
     PersonalAnalysisController,
     PersonalPredictionController,
-    VisitorController,
+    UserController,
     PaymentController,
     BoardController,
   ],
@@ -50,8 +52,8 @@ import { LottoOcrService } from './application/lotto-ocr.service';
       useClass: UserBallStatusAdapter,
     },
     {
-      provide: VISITOR_REPOSITORY_TOKEN,
-      useClass: InfraVisitorRepository,
+      provide: USER_REPOSITORY_TOKEN,
+      useClass: InfraUserRepository,
     },
     {
       provide: HON_REPOSITORY_TOKEN,
@@ -71,7 +73,7 @@ import { LottoOcrService } from './application/lotto-ocr.service';
   ],
   exports: [
     PERSONAL_ANALYSIS_REPOSITORY_TOKEN,
-    VISITOR_REPOSITORY_TOKEN,
+    USER_REPOSITORY_TOKEN,
     HonService,
     PaymentService,
     HON_REPOSITORY_TOKEN,

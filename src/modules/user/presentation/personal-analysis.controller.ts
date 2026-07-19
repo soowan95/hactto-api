@@ -1,11 +1,13 @@
-import { ApiOperation, ApiTags, ApiHeader } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   Body,
   Controller,
   Post,
-  Headers,
+  Req,
+  UseGuards,
   BadRequestException,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
 import { AnalyzePersonalPredictionRequestDto } from './dtos/requests/analyze-personal-prediction-request.dto';
 import { AnalyzePersonalPredictionCommand } from '../application/commands/analyze-personal-prediction.command';
@@ -24,22 +26,19 @@ export class PersonalAnalysisController {
   ) {}
 
   @ApiOperation({ summary: 'Analyze personal prediction' })
-  @ApiHeader({
-    name: 'x-visitor-id',
-    required: true,
-    description: '방문자 식별자',
-  })
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('success.alanyze')
   @Post()
   async analyze(
+    @Req() req: any,
     @Body() dto: AnalyzePersonalPredictionRequestDto,
-    @Headers('x-visitor-id') visitorId?: string,
   ): Promise<AnalyzePersonalPredictionResponseDto> {
-    if (!visitorId) {
-      throw new BadRequestException('Visitor ID가 필요합니다.');
+    const userId = req.user?.sub || req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('User ID가 필요합니다.');
     }
 
-    await this.honService.deductHon(visitorId, 5, '로또 번호 분석');
+    await this.honService.deductHon(userId, 5, '로또 번호 분석');
 
     const command = new AnalyzePersonalPredictionCommand(dto.prediction);
     const personalAnalysis = await this.commandBus.execute<

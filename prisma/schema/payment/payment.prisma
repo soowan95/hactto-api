@@ -19,7 +19,7 @@ model PaymentEvent {
  */
 model PaymentProjection {
   paymentId   String    @id @map("payment_id")
-  visitorId   String    @map("visitor_id") // userId -> visitorId 변경
+  userId      String    @map("user_id") // userId -> userId 변경
   amount      Int       @map("amount")
   orderId     String    @unique @map("order_id")
   orderName   String    @map("order_name")
@@ -31,6 +31,6 @@ model PaymentProjection {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  @@index([visitorId])
+  @@index([userId])
   @@map("payment_projection")
 }

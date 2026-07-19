@@ -17,7 +17,7 @@ export class InfraPredictionRepository implements IPredictionRepository {
       episode: raw.episode,
       weights: raw.weights,
       numbers: raw.numbers,
-      visitorId: raw.visitorId,
+      userId: raw.userId,
     };
 
     if (prediction.analysis && prediction.analysis.sum !== 0) {
@@ -124,7 +124,7 @@ export class InfraPredictionRepository implements IPredictionRepository {
                 episode: raw.episode,
                 weights: raw.weights,
                 numbers: raw.numbers,
-                visitorId: raw.visitorId,
+                userId: raw.userId,
                 predictionAnalysis: {
                   create: {
                     analysis: {
@@ -230,12 +230,12 @@ export class InfraPredictionRepository implements IPredictionRepository {
     });
   }
 
-  async findByUser(visitorId?: string): Promise<DomainPrediction[]> {
-    if (!visitorId) return [];
+  async findByUser(userId?: string): Promise<DomainPrediction[]> {
+    if (!userId) return [];
 
     const results = await prisma.prediction.findMany({
       where: {
-        visitorId,
+        userId,
       },
       include: {
         algorithm: true,
@@ -387,7 +387,7 @@ export class InfraPredictionRepository implements IPredictionRepository {
   async findAllSystemPredictions(): Promise<DomainPrediction[]> {
     const results = await prisma.prediction.findMany({
       where: {
-        visitorId: null,
+        userId: null,
       },
       include: {
         algorithm: true,
@@ -409,7 +409,7 @@ export class InfraPredictionRepository implements IPredictionRepository {
   > {
     return prisma.prediction.findMany({
       where: {
-        visitorId: null,
+        userId: null,
       },
       select: {
         episode: true,

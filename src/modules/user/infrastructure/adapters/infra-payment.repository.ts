@@ -30,7 +30,7 @@ export class InfraPaymentRepository implements IPaymentRepository {
 
   async saveProjection(projection: PaymentProjectionData): Promise<void> {
     const data = {
-      visitorId: projection.visitorId,
+      userId: projection.userId,
       amount: projection.amount,
       orderId: projection.orderId,
       orderName: projection.orderName,

@@ -1,4 +1,7 @@
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import * as crypto from 'crypto';
 import {
   BadRequestException,
   Controller,
@@ -12,9 +15,9 @@ import {
   Patch,
 } from '@nestjs/common';
 import {
-  IVisitorRepository,
-  VISITOR_REPOSITORY_TOKEN,
-} from '../domain/ports/visitor.port';
+  IUserRepository,
+  USER_REPOSITORY_TOKEN,
+} from '../domain/ports/user.port';
 import { RedisService } from '../../../helpers/redis/application/redis.service';
 import { RequestParser } from '../../../common/utils/request-parser';
 import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
@@ -25,12 +28,12 @@ import { prisma } from '../../../libs/prisma';
 import { InquiryType } from '../../../generated/prisma/enums';
 import { CreateInquiryDto } from './dtos/requests/create-inquiry-request.dto';
 
-@ApiTags('- Visitor')
-@Controller('visitor')
-export class VisitorController {
+@ApiTags('- User')
+@Controller('user')
+export class UserController {
   constructor(
-    @Inject(VISITOR_REPOSITORY_TOKEN)
-    private readonly visitorRepository: IVisitorRepository,
+    @Inject(USER_REPOSITORY_TOKEN)
+    private readonly userRepository: IUserRepository,
     private readonly redisService: RedisService,
     private readonly honService: HonService,
     private readonly paymentService: PaymentService,
@@ -38,40 +41,39 @@ export class VisitorController {
     private readonly badWordsService: BadWordsService,
   ) {}
 
-  @ApiOperation({ summary: 'Register visitor' })
-  @ResponseMessage('success.register.visitor')
+  @ApiOperation({ summary: 'Register user' })
+  @ResponseMessage('success.register.user')
   @Post('register')
   async register(): Promise<void> {
     const ip = this.requestParser.getIpOrThrow();
-    const visitorId = this.requestParser.getVisitorId();
+    const userId = this.requestParser.getUserId();
 
-    if (!visitorId) {
-      throw new BadRequestException('Visitor ID가 유효하지 않습니다.');
+    if (!userId) {
+      throw new BadRequestException('User ID가 유효하지 않습니다.');
     }
 
-    const redisKey = `visitor-ip:${visitorId}`;
+    const redisKey = `user-ip:${userId}`;
     await this.redisService.set(redisKey, ip, 604800); // 7 days expiration
-    await this.visitorRepository.insert(visitorId, ip);
+    await this.userRepository.insert(userId, ip);
     await this.honService.chargeHon(
-      `${visitorId}-register`,
-      visitorId,
+      `${userId}-register`,
+      userId,
       50,
       true,
       '첫 방문',
     );
   }
 
-  @ApiOperation({ summary: 'Get current visitor profile' })
+  @ApiOperation({ summary: 'Get current user profile' })
   @Get('me')
   async getMe() {
-    const visitorId = this.requestParser.getVisitorId();
-    if (!visitorId)
-      throw new BadRequestException('Visitor ID가 유효하지 않습니다.');
-    const visitor = await prisma.visitor.findUnique({
-      where: { id: visitorId },
+    const userId = this.requestParser.getUserId();
+    if (!userId) throw new BadRequestException('User ID가 유효하지 않습니다.');
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
     });
-    if (!visitor) throw new NotFoundException('방문자를 찾을 수 없습니다.');
-    return { success: true, data: visitor };
+    if (!user) throw new NotFoundException('방문자를 찾을 수 없습니다.');
+    return { success: true, data: user };
   }
 
   @ApiOperation({ summary: 'Check if nickname exists' })
@@ -84,16 +86,15 @@ export class VisitorController {
     if (nickname.includes('관리자')) {
       return { success: true, exists: true };
     }
-    const visitor = await prisma.visitor.findUnique({ where: { nickname } });
-    return { success: true, exists: !!visitor };
+    const user = await prisma.user.findUnique({ where: { nickname } });
+    return { success: true, exists: !!user };
   }
 
   @ApiOperation({ summary: 'Set nickname (only once)' })
   @Post('nickname')
   async setNickname(@Body('nickname') nickname: string) {
-    const visitorId = this.requestParser.getVisitorId();
-    if (!visitorId)
-      throw new BadRequestException('Visitor ID가 유효하지 않습니다.');
+    const userId = this.requestParser.getUserId();
+    if (!userId) throw new BadRequestException('User ID가 유효하지 않습니다.');
     if (!nickname || nickname.length > 30)
       throw new BadRequestException('유효하지 않은 닉네임입니다.');
     if (this.badWordsService.containsBadWord(nickname))
@@ -103,18 +104,18 @@ export class VisitorController {
         '관리자가 포함된 닉네임은 사용할 수 없습니다.',
       );
 
-    const visitor = await prisma.visitor.findUnique({
-      where: { id: visitorId },
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
     });
-    if (!visitor) throw new NotFoundException('방문자를 찾을 수 없습니다.');
-    if (visitor.nickname)
+    if (!user) throw new NotFoundException('방문자를 찾을 수 없습니다.');
+    if (user.nickname)
       throw new BadRequestException('이미 닉네임이 설정되어 있습니다.');
 
-    const existing = await prisma.visitor.findUnique({ where: { nickname } });
+    const existing = await prisma.user.findUnique({ where: { nickname } });
     if (existing) throw new BadRequestException('이미 사용 중인 닉네임입니다.');
 
-    await prisma.visitor.update({
-      where: { id: visitorId },
+    await prisma.user.update({
+      where: { id: userId },
       data: { nickname },
     });
 
@@ -123,8 +124,8 @@ export class VisitorController {
   @ApiOperation({ summary: 'Submit an inquiry' })
   @Post('inquiries')
   async createInquiry(@Body() body: CreateInquiryDto) {
-    const visitorId = this.requestParser.getVisitorId();
-    if (!visitorId) {
+    const userId = this.requestParser.getUserId();
+    if (!userId) {
       throw new BadRequestException('방문자 ID가 존재하지 않습니다.');
     }
 
@@ -132,7 +133,7 @@ export class VisitorController {
     if (body.type === InquiryType.BLOCK || body.type === InquiryType.REFUND) {
       const existing = await prisma.inquiry.findFirst({
         where: {
-          visitorId,
+          userId,
           type: body.type,
           OR: [{ status: 'PENDING' }, { refundStatus: 'PROPOSED' }],
         },
@@ -144,26 +145,26 @@ export class VisitorController {
       }
     }
 
-    // Ensure visitor exists
-    let visitor = await prisma.visitor.findUnique({
-      where: { id: visitorId },
+    // Ensure user exists
+    let user = await prisma.user.findUnique({
+      where: { id: userId },
     });
-    if (!visitor) {
+    if (!user) {
       let ip = '0.0.0.0';
       try {
         ip = this.requestParser.getIpOrThrow();
       } catch {}
-      visitor = await prisma.visitor.create({
-        data: { id: visitorId, ip },
+      user = await prisma.user.create({
+        data: { id: userId, ip },
       });
       await prisma.hon.create({
-        data: { visitorId, freeBalance: 50, paidBalance: 0 },
+        data: { userId, freeBalance: 50, paidBalance: 0 },
       });
     }
 
     const inquiry = await prisma.inquiry.create({
       data: {
-        visitorId,
+        userId,
         title: body.title,
         content: body.content,
         type: body.type,
@@ -176,15 +177,15 @@ export class VisitorController {
     return { success: true, data: inquiry };
   }
 
-  @ApiOperation({ summary: 'Get visitor inquiries' })
+  @ApiOperation({ summary: 'Get user inquiries' })
   @Get('inquiries')
   async getInquiries(@Query('type') type?: string) {
-    const visitorId = this.requestParser.getVisitorId();
-    if (!visitorId) {
+    const userId = this.requestParser.getUserId();
+    if (!userId) {
       throw new BadRequestException('방문자 ID가 존재하지 않습니다.');
     }
 
-    const where: any = { visitorId };
+    const where: any = { userId };
     if (type && type !== 'ALL') {
       where.type = type;
     }
@@ -219,14 +220,14 @@ export class VisitorController {
     const numId = parseInt(id, 10);
     if (isNaN(numId))
       throw new BadRequestException('올바르지 않은 ID 형식입니다.');
-    const visitorId = this.requestParser.getVisitorId();
-    if (!visitorId) {
+    const userId = this.requestParser.getUserId();
+    if (!userId) {
       throw new BadRequestException('방문자 ID가 존재하지 않습니다.');
     }
 
     const inquiry = await prisma.inquiry.findFirst({
-      where: { id: numId, visitorId },
-      include: { visitor: { include: { hon: true } } },
+      where: { id: numId, userId },
+      include: { user: { include: { hon: true } } },
     });
     if (!inquiry) {
       throw new NotFoundException('문의 내역을 찾을 수 없습니다.');
@@ -241,9 +242,9 @@ export class VisitorController {
       throw new BadRequestException('연동된 결제 내역이 없습니다.');
     }
 
-    // Fetch all successful payments for this visitor
+    // Fetch all successful payments for this user
     const payments = await prisma.paymentProjection.findMany({
-      where: { visitorId, status: 'PAID' },
+      where: { userId, status: 'PAID' },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -266,7 +267,7 @@ export class VisitorController {
       return { payment: p, chargedHon: ch, refundableLimit: p.amount };
     });
 
-    const currentPaidBalance = inquiry.visitor.hon?.paidBalance ?? 0;
+    const currentPaidBalance = inquiry.user.hon?.paidBalance ?? 0;
     let totalRefundAmount = 0;
     let remainingHon = 0;
 
@@ -303,7 +304,7 @@ export class VisitorController {
     // Deduct remaining charged HON
     if (remainingHon > 0) {
       await this.honService.deductHon(
-        visitorId,
+        userId,
         remainingHon,
         '환불 처리로 인한 회수',
         true,
@@ -332,13 +333,13 @@ export class VisitorController {
     const numId = parseInt(id, 10);
     if (isNaN(numId))
       throw new BadRequestException('올바르지 않은 ID 형식입니다.');
-    const visitorId = this.requestParser.getVisitorId();
-    if (!visitorId) {
+    const userId = this.requestParser.getUserId();
+    if (!userId) {
       throw new BadRequestException('방문자 ID가 존재하지 않습니다.');
     }
 
     const inquiry = await prisma.inquiry.findFirst({
-      where: { id: numId, visitorId },
+      where: { id: numId, userId },
     });
     if (!inquiry) {
       throw new NotFoundException('문의 내역을 찾을 수 없습니다.');
@@ -365,15 +366,15 @@ export class VisitorController {
     return { success: true, data: updatedInquiry };
   }
 
-  @ApiOperation({ summary: 'Get visitor hon events' })
+  @ApiOperation({ summary: 'Get user hon events' })
   @Get('hon-events')
   async getHonEvents() {
-    const visitorId = this.requestParser.getVisitorId();
-    if (!visitorId) {
+    const userId = this.requestParser.getUserId();
+    if (!userId) {
       throw new BadRequestException('방문자 ID가 존재하지 않습니다.');
     }
 
-    const events = await this.honService.getHonEvents(visitorId);
+    const events = await this.honService.getHonEvents(userId);
     return { success: true, data: events };
   }
 
@@ -383,15 +384,15 @@ export class VisitorController {
     @Body('targetNickname') targetNickname: string,
     @Body('reason') reason?: string,
   ) {
-    const reporterId = this.requestParser.getVisitorId();
-    if (!reporterId) throw new BadRequestException('Visitor ID is required.');
+    const reporterId = this.requestParser.getUserId();
+    if (!reporterId) throw new BadRequestException('User ID is required.');
     if (!targetNickname)
       throw new BadRequestException('Target nickname is required.');
 
-    const targetVisitor = await prisma.visitor.findUnique({
+    const targetUser = await prisma.user.findUnique({
       where: { nickname: targetNickname },
     });
-    if (!targetVisitor)
+    if (!targetUser)
       throw new NotFoundException('해당 닉네임을 찾을 수 없습니다.');
 
     await prisma.nicknameReport.create({
@@ -404,14 +405,14 @@ export class VisitorController {
 
     return { success: true };
   }
-  @ApiOperation({ summary: 'Get visitor notifications' })
+  @ApiOperation({ summary: 'Get user notifications' })
   @Get('notifications')
   async getNotifications() {
-    const visitorId = this.requestParser.getVisitorId();
-    if (!visitorId) throw new BadRequestException('Visitor ID is required.');
+    const userId = this.requestParser.getUserId();
+    if (!userId) throw new BadRequestException('User ID is required.');
 
     const notifications = await prisma.notification.findMany({
-      where: { visitorId },
+      where: { userId },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -421,11 +422,11 @@ export class VisitorController {
   @ApiOperation({ summary: 'Get unread notification count' })
   @Get('notifications/unread-count')
   async getUnreadNotificationCount() {
-    const visitorId = this.requestParser.getVisitorId();
-    if (!visitorId) throw new BadRequestException('Visitor ID is required.');
+    const userId = this.requestParser.getUserId();
+    if (!userId) throw new BadRequestException('User ID is required.');
 
     const count = await prisma.notification.count({
-      where: { visitorId, isRead: false },
+      where: { userId, isRead: false },
     });
 
     return { success: true, data: { count } };
@@ -437,11 +438,11 @@ export class VisitorController {
     const numId = parseInt(id, 10);
     if (isNaN(numId)) throw new BadRequestException('Invalid ID');
 
-    const visitorId = this.requestParser.getVisitorId();
-    if (!visitorId) throw new BadRequestException('Visitor ID is required.');
+    const userId = this.requestParser.getUserId();
+    if (!userId) throw new BadRequestException('User ID is required.');
 
     const notification = await prisma.notification.findFirst({
-      where: { id: numId, visitorId },
+      where: { id: numId, userId },
     });
 
     if (!notification) {
@@ -454,5 +455,118 @@ export class VisitorController {
     });
 
     return { success: true, data: updated };
+  }
+  @ApiOperation({ summary: 'Get user profile' })
+  @Get('profile/:userId')
+  async getUserProfile(@Param('userId') targetUserId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { nickname: true, avatarUrl: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const winningPosts = await prisma.post.findMany({
+      where: {
+        userId: targetUserId,
+        lottoRank: { not: null, lte: 5 },
+        isDeleted: false,
+        isBlocked: false,
+      },
+      select: { lottoRank: true },
+    });
+
+    const winningStats = {
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
+    };
+
+    winningPosts.forEach((post) => {
+      if (post.lottoRank && post.lottoRank >= 1 && post.lottoRank <= 5) {
+        winningStats[post.lottoRank]++;
+      }
+    });
+
+    return {
+      success: true,
+      data: {
+        nickname: user.nickname,
+        avatarUrl: user.avatarUrl,
+        winningStats,
+      },
+    };
+  }
+
+  @ApiOperation({ summary: 'Get presigned URL for avatar upload' })
+  @Post('avatar/presigned-url')
+  async getAvatarPresignedUrl(
+    @Body('mimeType') mimeType: string,
+    @Body('extension') extension: string,
+  ) {
+    const userId = this.requestParser.getUserId();
+    if (!userId) {
+      throw new BadRequestException('User ID가 유효하지 않습니다.');
+    }
+
+    if (!mimeType.startsWith('image/')) {
+      throw new BadRequestException('이미지 파일만 업로드할 수 있습니다.');
+    }
+
+    const s3Bucket = process.env.AWS_S3_BUCKET || 'hactto-board-attachments';
+    const region = process.env.AWS_REGION || 'ap-northeast-2';
+    const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
+    const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+
+    if (!accessKeyId || !secretAccessKey) {
+      throw new Error('S3 credentials not configured');
+    }
+
+    const s3Client = new S3Client({
+      region,
+      credentials: {
+        accessKeyId,
+        secretAccessKey,
+      },
+    });
+
+    const uniqueId = crypto.randomUUID();
+    const key = `avatars/${userId}/${uniqueId}.${extension.replace('.', '')}`;
+    const command = new PutObjectCommand({
+      Bucket: s3Bucket,
+      Key: key,
+      ContentType: mimeType,
+    });
+
+    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+    const imageUrl = `https://${s3Bucket}.s3.${region}.amazonaws.com/${key}`;
+
+    return {
+      success: true,
+      data: {
+        uploadUrl,
+        imageUrl,
+      },
+    };
+  }
+
+  @ApiOperation({ summary: 'Update avatar URL' })
+  @Patch('avatar')
+  async updateAvatar(@Body('avatarUrl') avatarUrl: string) {
+    const userId = this.requestParser.getUserId();
+    if (!userId) {
+      throw new BadRequestException('User ID가 유효하지 않습니다.');
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl },
+    });
+
+    return { success: true };
   }
 }

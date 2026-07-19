@@ -26,8 +26,8 @@ export class PredictionGeneratedHandler implements IEventHandler<PredictionGener
   ) {}
 
   async handle(event: PredictionGeneratedEvent): Promise<void> {
-    if (event.visitorId) {
-      const cacheKey = `user:${event.visitorId}:predictions:history`;
+    if (event.userId) {
+      const cacheKey = `user:${event.userId}:predictions:history`;
       await this.redisService.del(cacheKey);
     }
 

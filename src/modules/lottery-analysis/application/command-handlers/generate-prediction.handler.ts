@@ -50,12 +50,12 @@ export class GeneratePredictionHandler implements ICommandHandler<GeneratePredic
       command.type,
     );
 
-    if (!command.visitorId) {
-      throw new Error('Visitor ID가 필요합니다.');
+    if (!command.userId) {
+      throw new Error('User ID가 필요합니다.');
     }
 
     await this.honService.deductHon(
-      command.visitorId,
+      command.userId,
       algorithmType.complexity,
       `로또 예측 생성(${algorithmType.name || command.type})`,
     );
@@ -64,7 +64,7 @@ export class GeneratePredictionHandler implements ICommandHandler<GeneratePredic
       algorithmType,
       latestEpisode + 1,
       winningNumbers.map((winningNumber) => winningNumber.numbers),
-      command.visitorId,
+      command.userId,
       command.weights,
       command.oddCount,
     );
@@ -91,7 +91,7 @@ export class GeneratePredictionHandler implements ICommandHandler<GeneratePredic
         prediction.id as number,
         prediction.algorithm.type,
         prediction.episode,
-        prediction.visitorId,
+        prediction.userId,
         prediction.getNumberArray(),
       ),
     );

@@ -36,7 +36,7 @@ export class PaymentController {
     @Body() dto: ReadyPaymentRequestDto,
   ): Promise<ReadyPaymentResponseDto> {
     const aggregate = await this.paymentService.readyPayment(
-      dto.visitorId,
+      dto.userId,
       dto.amount,
       dto.orderId,
       dto.orderName,
@@ -81,9 +81,9 @@ export class PaymentController {
 
   @Post('subscription/cancel')
   async cancelSubscription(
-    @Body('visitorId') visitorId: string,
+    @Body('userId') userId: string,
   ): Promise<{ success: boolean }> {
-    await this.honService.cancelSubscription(visitorId);
+    await this.honService.cancelSubscription(userId);
     return { success: true };
   }
 

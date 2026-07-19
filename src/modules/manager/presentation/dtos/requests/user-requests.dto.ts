@@ -10,7 +10,7 @@ export class GrantSubscriptionDto {
   endsAt: string;
 }
 
-export class BlockVisitorDto {
+export class BlockUserDto {
   @IsString()
   @IsOptional()
   description?: string;

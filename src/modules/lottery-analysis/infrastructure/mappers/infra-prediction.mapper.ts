@@ -69,7 +69,7 @@ export class InfraPredictionMapper {
       numbersArray,
       domainAnalysis,
       raw.id,
-      raw.visitorId ?? undefined,
+      raw.userId ?? undefined,
     );
   }
 
@@ -89,7 +89,7 @@ export class InfraPredictionMapper {
       episode: entity.episode,
       weights: JSON.stringify(entity.weights.toValues()),
       numbers: JSON.stringify(mappedObject),
-      visitorId: entity.visitorId ?? null,
+      userId: entity.userId ?? null,
       createdAt: new Date(),
     };
   }
