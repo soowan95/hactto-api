@@ -8,7 +8,7 @@ model Prediction {
   episode       Int // 로또 회차
   weights       String // 가중치 SET
   numbers       String // 당첨번호 SET
-  visitorId     String? @map("visitor_id")
+  userId        String? @map("user_id")
 
   winningNumber WinningNumber @relation(fields: [episode], references: [episode])
   algorithm     Algorithm     @relation(fields: [algorithmType], references: [type])

@@ -40,7 +40,7 @@ export class RedisController {
     allowed: boolean;
     pending: boolean;
     ip: string;
-    visitorId: string;
+    userId: string;
     hon?: any | null;
     subscription?: any | null;
   }> {
@@ -48,17 +48,17 @@ export class RedisController {
     try {
       ip = this.requestParser.getIpOrThrow();
     } catch {
-      return { allowed: false, pending: false, ip: 'unknown', visitorId: '' };
+      return { allowed: false, pending: false, ip: 'unknown', userId: '' };
     }
 
-    const visitorId = crypto
+    const userId = crypto
       .createHash('sha256')
       .update(ip)
       .digest('hex')
       .substring(0, 16);
 
-    const hon = await this.honService.getHon(visitorId);
-    const subscription = await this.honService.getSubscription(visitorId);
+    const hon = await this.honService.getHon(userId);
+    const subscription = await this.honService.getSubscription(userId);
 
     if (queryMk) {
       const isValidMasterKey =
@@ -67,12 +67,12 @@ export class RedisController {
         allowed: isValidMasterKey,
         pending: false,
         ip,
-        visitorId,
+        userId,
         hon,
         subscription,
       };
     }
 
-    return { allowed: true, pending: false, ip, visitorId, hon, subscription };
+    return { allowed: true, pending: false, ip, userId, hon, subscription };
   }
 }

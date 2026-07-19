@@ -13,7 +13,7 @@ export class PaymentResponseDto {
   paymentId: string;
 
   @Expose()
-  visitorId: string;
+  userId: string;
 
   @Expose()
   amount: number;

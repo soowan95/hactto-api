@@ -3,7 +3,7 @@ import { DomainPersonalPrediction } from '../../domain/aggregates/personal-perdi
 export class InfraPersonalPredictionMapper {
   static toPersistence(entity: DomainPersonalPrediction) {
     return {
-      visitorId: entity.visitorId,
+      userId: entity.userId,
       episode: entity.episode,
       pp1WnNo: entity.numbers[0],
       pp2WnNo: entity.numbers[1],

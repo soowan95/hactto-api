@@ -157,7 +157,7 @@ export class TaskService {
 
       for (const sub of expiredSubs) {
         try {
-          this.logger.log(`Processing renewal for visitor: ${sub.visitorId}`);
+          this.logger.log(`Processing renewal for user: ${sub.userId}`);
 
           // 1. 새로운 결제 ID 및 관련 파라미터 생성
           const paymentId = randomUUID();
@@ -182,7 +182,7 @@ export class TaskService {
               version: 1,
               eventType: 'PaymentRequested',
               payload: {
-                visitorId: sub.visitorId,
+                userId: sub.userId,
                 amount,
                 orderId: `renew-${paymentId}`,
                 orderName,
@@ -202,7 +202,7 @@ export class TaskService {
             // Projection 생성
             await this.paymentRepository.saveProjection({
               paymentId,
-              visitorId: sub.visitorId,
+              userId: sub.userId,
               amount,
               orderId: `renew-${paymentId}`,
               orderName,
@@ -229,14 +229,14 @@ export class TaskService {
               version: 3,
               eventType: 'SubscriptionRenewed',
               payload: {
-                visitorId: sub.visitorId,
+                userId: sub.userId,
                 plan: sub.plan,
                 nextPaymentAt,
               },
             });
 
             await this.honRepository.saveSubscription({
-              visitorId: sub.visitorId,
+              userId: sub.userId,
               plan: sub.plan,
               status: 'ACTIVE',
               billingKey: sub.billingKey,
@@ -246,12 +246,12 @@ export class TaskService {
             });
 
             this.logger.log(
-              `Successfully renewed subscription for visitor: ${sub.visitorId}`,
+              `Successfully renewed subscription for user: ${sub.userId}`,
             );
           } else {
             // 결제 실패 시 구독 만료 처리 및 실패 이벤트 기록
             this.logger.warn(
-              `Subscription renewal failed for visitor: ${sub.visitorId}. Reason: ${portoneResult.failReason}`,
+              `Subscription renewal failed for user: ${sub.userId}. Reason: ${portoneResult.failReason}`,
             );
 
             await this.paymentRepository.saveEvent({
@@ -259,7 +259,7 @@ export class TaskService {
               version: 1,
               eventType: 'SubscriptionRenewalFailed',
               payload: {
-                visitorId: sub.visitorId,
+                userId: sub.userId,
                 reason: portoneResult.failReason || 'Renewal payment failed',
               },
             });
@@ -272,7 +272,7 @@ export class TaskService {
           }
         } catch (subError) {
           this.logger.error(
-            `Error renewing subscription for visitor ${sub.visitorId}:`,
+            `Error renewing subscription for user ${sub.userId}:`,
             subError,
           );
         }
@@ -314,13 +314,13 @@ export class TaskService {
           // freeBalance < amount 인 유저만 대상
           const eligibleHons = await prisma.hon.findMany({
             where: { freeBalance: { lt: event.amount } },
-            select: { visitorId: true, freeBalance: true, paidBalance: true },
+            select: { userId: true, freeBalance: true, paidBalance: true },
           });
 
           if (eligibleHons.length === 0) continue;
 
           const honEventData = eligibleHons.map((hon) => ({
-            visitorId: hon.visitorId,
+            userId: hon.userId,
             type: 'ADMIN_PROVISION',
             amount: event.amount - hon.freeBalance,
             freeAmount: event.amount - hon.freeBalance,
@@ -341,13 +341,13 @@ export class TaskService {
           );
         } else if (event.type === 'ADD') {
           const allHons = await prisma.hon.findMany({
-            select: { visitorId: true, freeBalance: true, paidBalance: true },
+            select: { userId: true, freeBalance: true, paidBalance: true },
           });
 
           if (allHons.length === 0) continue;
 
           const honEventData = allHons.map((hon) => ({
-            visitorId: hon.visitorId,
+            userId: hon.userId,
             type: 'ADMIN_PROVISION',
             amount: event.amount,
             freeAmount: event.amount,

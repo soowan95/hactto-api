@@ -11,7 +11,7 @@ export interface PaymentEventRecord {
 
 export interface PaymentProjectionData {
   paymentId: string;
-  visitorId: string;
+  userId: string;
   amount: number;
   orderId: string;
   orderName: string;

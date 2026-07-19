@@ -27,28 +27,30 @@ import {
 import {
   ManageHonDto,
   GrantSubscriptionDto,
-  BlockVisitorDto,
-} from './dtos/requests/visitor-requests.dto';
+  BlockUserDto,
+} from './dtos/requests/user-requests.dto';
 import { CreateAdminHonEventDto } from './dtos/requests/admin-hon-event.dto';
 import { SendNotificationDto } from './dtos/requests/notification-requests.dto';
 import {
-  IVisitorRepository,
-  VISITOR_REPOSITORY_TOKEN,
-} from '../../user/domain/ports/visitor.port';
+  IUserRepository,
+  USER_REPOSITORY_TOKEN,
+} from '../../user/domain/ports/user.port';
 import { HonService } from '../../user/application/hon.service';
 import { RedisService } from '../../../helpers/redis/application/redis.service';
 import { BadWordsService } from '../../user/application/bad-words.service';
+import { AppGateway } from '../../../app.gateway';
 
 @ApiTags('- Admin Manager')
 @Admin()
 @Controller('manager')
 export class ManagerController {
   constructor(
-    @Inject(VISITOR_REPOSITORY_TOKEN)
-    private readonly visitorRepository: IVisitorRepository,
+    @Inject(USER_REPOSITORY_TOKEN)
+    private readonly userRepository: IUserRepository,
     private readonly honService: HonService,
     private readonly redisService: RedisService,
     private readonly badWordsService: BadWordsService,
+    private readonly appGateway: AppGateway,
   ) {}
 
   @ApiOperation({ summary: 'Get all inquiries for admin' })
@@ -63,7 +65,7 @@ export class ManagerController {
       where,
       orderBy: { createdAt: 'desc' },
       include: {
-        visitor: {
+        user: {
           include: {
             hon: true,
             subscription: true,
@@ -78,7 +80,7 @@ export class ManagerController {
         if (inq.type === 'REFUND') {
           // Find all successful payments
           const payments = await prisma.paymentProjection.findMany({
-            where: { visitorId: inq.visitorId, status: 'PAID' },
+            where: { userId: inq.userId, status: 'PAID' },
             orderBy: { createdAt: 'desc' },
           });
 
@@ -94,8 +96,8 @@ export class ManagerController {
               totalPaymentAmount += p.amount;
             }
 
-            const currentFree = inq.visitor.hon?.freeBalance ?? 0;
-            const currentPaid = inq.visitor.hon?.paidBalance ?? 0;
+            const currentFree = inq.user.hon?.freeBalance ?? 0;
+            const currentPaid = inq.user.hon?.paidBalance ?? 0;
             const totalBalance = currentFree + currentPaid;
             let refundAmount = 0;
 
@@ -113,7 +115,7 @@ export class ManagerController {
 
               const predictions = await prisma.prediction.findMany({
                 where: {
-                  visitorId: inq.visitorId,
+                  userId: inq.userId,
                   createdAt: { gte: paymentDate },
                 },
                 include: { algorithm: true },
@@ -121,7 +123,7 @@ export class ManagerController {
               const personalPredictions =
                 await prisma.personalPrediction.findMany({
                   where: {
-                    visitorId: inq.visitorId,
+                    userId: inq.userId,
                     createdAt: { gte: paymentDate },
                   },
                 });
@@ -204,7 +206,7 @@ export class ManagerController {
 
     const inquiry = await prisma.inquiry.findUnique({
       where: { id: numId },
-      include: { visitor: { include: { hon: true } } },
+      include: { user: { include: { hon: true } } },
     });
     if (!inquiry) {
       throw new NotFoundException('문의 내역을 찾을 수 없습니다.');
@@ -214,7 +216,7 @@ export class ManagerController {
     }
 
     const payments = await prisma.paymentProjection.findMany({
-      where: { visitorId: inquiry.visitorId, status: 'PAID' },
+      where: { userId: inquiry.userId, status: 'PAID' },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -235,7 +237,7 @@ export class ManagerController {
       totalPaymentAmount += p.amount;
     }
 
-    const currentPaid = inquiry.visitor.hon?.paidBalance ?? 0;
+    const currentPaid = inquiry.user.hon?.paidBalance ?? 0;
 
     let refundAmount = 0;
     let usedValue = 0;
@@ -255,14 +257,14 @@ export class ManagerController {
 
       const predictions = await prisma.prediction.findMany({
         where: {
-          visitorId: inquiry.visitorId,
+          userId: inquiry.userId,
           createdAt: { gte: paymentDate },
         },
         include: { algorithm: true },
       });
       const personalPredictions = await prisma.personalPrediction.findMany({
         where: {
-          visitorId: inquiry.visitorId,
+          userId: inquiry.userId,
           createdAt: { gte: paymentDate },
         },
       });
@@ -361,6 +363,8 @@ export class ManagerController {
       },
     });
 
+    this.appGateway.server.emit('new-notice', notice);
+
     return { success: true, data: notice };
   }
 
@@ -385,6 +389,8 @@ export class ManagerController {
       },
     });
 
+    this.appGateway.server.emit('new-notice', updatedNotice);
+
     return { success: true, data: updatedNotice };
   }
 
@@ -401,13 +407,14 @@ export class ManagerController {
     }
 
     await prisma.notice.delete({ where: { id: numId } });
+    this.appGateway.server.emit('delete-notice', { id: numId });
     return { success: true };
   }
 
-  // Merged Visitor Admin endpoints
-  @ApiOperation({ summary: 'Get all visitors with pagination' })
-  @Get('visitors')
-  async getAllVisitors(
+  // Merged User Admin endpoints
+  @ApiOperation({ summary: 'Get all users with pagination' })
+  @Get('users')
+  async getAllUsers(
     @Query('page') pageStr: string = '1',
     @Query('limit') limitStr: string = '100',
   ) {
@@ -415,8 +422,8 @@ export class ManagerController {
     const limit = parseInt(limitStr, 10) || 100;
     const skip = (page - 1) * limit;
 
-    const [visitors, total] = await Promise.all([
-      prisma.visitor.findMany({
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
         skip,
         take: limit,
         include: {
@@ -424,14 +431,14 @@ export class ManagerController {
           subscription: true,
         },
       }),
-      prisma.visitor.count(),
+      prisma.user.count(),
     ]);
 
-    const enrichedVisitors = await Promise.all(
-      visitors.map(async (v) => {
+    const enrichedUsers = await Promise.all(
+      users.map(async (v) => {
         const activeBlock = await prisma.block.findFirst({
           where: {
-            visitorId: v.id,
+            userId: v.id,
             OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
           },
         });
@@ -446,14 +453,14 @@ export class ManagerController {
 
     return {
       success: true,
-      data: enrichedVisitors,
+      data: enrichedUsers,
       meta: { total, page, limit },
     };
   }
-  @ApiOperation({ summary: 'Get visitor details for admin' })
-  @Get('visitors/:id')
-  async getVisitorDetails(@Param('id') id: string) {
-    let visitor = await prisma.visitor.findUnique({
+  @ApiOperation({ summary: 'Get user details for admin' })
+  @Get('users/:id')
+  async getUserDetails(@Param('id') id: string) {
+    let user = await prisma.user.findUnique({
       where: { id },
       include: {
         hon: true,
@@ -462,8 +469,8 @@ export class ManagerController {
       },
     });
 
-    if (!visitor) {
-      visitor = await prisma.visitor.findFirst({
+    if (!user) {
+      user = await prisma.user.findFirst({
         where: { ip: id },
         include: {
           hon: true,
@@ -473,21 +480,20 @@ export class ManagerController {
       });
     }
 
-    if (!visitor) {
+    if (!user) {
       throw new NotFoundException('방문자를 찾을 수 없습니다.');
     }
 
     const activeBlock =
-      visitor.block &&
-      (!visitor.block.expiresAt ||
-        new Date(visitor.block.expiresAt) > new Date())
-        ? visitor.block
+      user.block &&
+      (!user.block.expiresAt || new Date(user.block.expiresAt) > new Date())
+        ? user.block
         : null;
 
     return {
-      id: visitor.id,
-      ip: visitor.ip,
-      nickname: visitor.nickname,
+      id: user.id,
+      ip: user.ip,
+      nickname: user.nickname,
       isBlocked: !!activeBlock,
       blockDetail: activeBlock
         ? {
@@ -496,33 +502,32 @@ export class ManagerController {
             createdAt: activeBlock.createdAt,
           }
         : null,
-      honCount:
-        (visitor.hon?.freeBalance ?? 0) + (visitor.hon?.paidBalance ?? 0),
-      subscriptionEndsAt: visitor.subscription?.endsAt ?? null,
-      hon: visitor.hon
+      honCount: (user.hon?.freeBalance ?? 0) + (user.hon?.paidBalance ?? 0),
+      subscriptionEndsAt: user.subscription?.endsAt ?? null,
+      hon: user.hon
         ? {
-            freeBalance: visitor.hon.freeBalance,
-            paidBalance: visitor.hon.paidBalance,
-            balance: visitor.hon.freeBalance + visitor.hon.paidBalance,
+            freeBalance: user.hon.freeBalance,
+            paidBalance: user.hon.paidBalance,
+            balance: user.hon.freeBalance + user.hon.paidBalance,
           }
         : { freeBalance: 0, paidBalance: 0, balance: 0 },
-      subscription: visitor.subscription
+      subscription: user.subscription
         ? {
-            plan: visitor.subscription.plan,
-            status: visitor.subscription.status,
-            startsAt: visitor.subscription.startsAt,
-            endsAt: visitor.subscription.endsAt,
-            nextPaymentAt: visitor.subscription.nextPaymentAt,
+            plan: user.subscription.plan,
+            status: user.subscription.status,
+            startsAt: user.subscription.startsAt,
+            endsAt: user.subscription.endsAt,
+            nextPaymentAt: user.subscription.nextPaymentAt,
           }
         : null,
     };
   }
 
-  @ApiOperation({ summary: 'Block visitor' })
-  @Post('visitors/:id/block')
-  async blockVisitor(@Param('id') id: string, @Body() body: BlockVisitorDto) {
-    const visitor = await prisma.visitor.findUnique({ where: { id } });
-    if (!visitor) {
+  @ApiOperation({ summary: 'Block user' })
+  @Post('users/:id/block')
+  async blockUser(@Param('id') id: string, @Body() body: BlockUserDto) {
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
       throw new NotFoundException('방문자를 찾을 수 없습니다.');
     }
 
@@ -532,9 +537,9 @@ export class ManagerController {
         : null;
 
     await prisma.block.upsert({
-      where: { visitorId: id },
+      where: { userId: id },
       create: {
-        visitorId: id,
+        userId: id,
         description: body.description,
         period: body.period,
         expiresAt,
@@ -547,37 +552,37 @@ export class ManagerController {
       },
     });
 
-    await this.redisService.set(`visitor-blocked:${id}`, 'true', 86400 * 7);
+    await this.redisService.set(`user-blocked:${id}`, 'true', 86400 * 7);
 
     return { success: true };
   }
 
-  @ApiOperation({ summary: 'Unblock visitor' })
-  @Post('visitors/:id/unblock')
-  async unblockVisitor(@Param('id') id: string) {
-    const visitor = await prisma.visitor.findUnique({ where: { id } });
-    if (!visitor) {
+  @ApiOperation({ summary: 'Unblock user' })
+  @Post('users/:id/unblock')
+  async unblockUser(@Param('id') id: string) {
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
       throw new NotFoundException('방문자를 찾을 수 없습니다.');
     }
 
     await prisma.block.deleteMany({
-      where: { visitorId: id },
+      where: { userId: id },
     });
 
-    await this.redisService.set(`visitor-blocked:${id}`, 'false', 86400 * 7);
+    await this.redisService.set(`user-blocked:${id}`, 'false', 86400 * 7);
 
     return { success: true };
   }
 
-  @ApiOperation({ summary: 'Reset visitor nickname' })
-  @Post('visitors/:id/reset-nickname')
-  async resetVisitorNickname(@Param('id') id: string) {
-    const visitor = await prisma.visitor.findUnique({ where: { id } });
-    if (!visitor) {
+  @ApiOperation({ summary: 'Reset user nickname' })
+  @Post('users/:id/reset-nickname')
+  async resetUserNickname(@Param('id') id: string) {
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
       throw new NotFoundException('방문자를 찾을 수 없습니다.');
     }
 
-    await prisma.visitor.update({
+    await prisma.user.update({
       where: { id },
       data: { nickname: null },
     });
@@ -585,11 +590,11 @@ export class ManagerController {
     return { success: true };
   }
 
-  @ApiOperation({ summary: 'Add or deduct Hon for visitor' })
-  @Post('visitors/:id/hon')
+  @ApiOperation({ summary: 'Add or deduct Hon for user' })
+  @Post('users/:id/hon')
   async manageHon(@Param('id') id: string, @Body() body: ManageHonDto) {
-    const visitor = await prisma.visitor.findUnique({ where: { id } });
-    if (!visitor) {
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
       throw new NotFoundException('방문자를 찾을 수 없습니다.');
     }
 
@@ -598,13 +603,13 @@ export class ManagerController {
   }
 
   @ApiOperation({ summary: 'Grant free pass subscription' })
-  @Post('visitors/:id/subscription/unlimited')
+  @Post('users/:id/subscription/unlimited')
   async grantUnlimitedPass(
     @Param('id') id: string,
     @Body() body: GrantSubscriptionDto,
   ) {
-    const visitor = await prisma.visitor.findUnique({ where: { id } });
-    if (!visitor) {
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
       throw new NotFoundException('방문자를 찾을 수 없습니다.');
     }
 
@@ -618,27 +623,27 @@ export class ManagerController {
   @ApiOperation({ summary: 'Get manager dashboard stats' })
   @Get('stats')
   async getDashboardStats() {
-    const totalUsers = await prisma.visitor.count();
+    const totalUsers = await prisma.user.count();
     return { totalUsers };
   }
 
-  @ApiOperation({ summary: 'Bulk add or deduct Hon for all visitors' })
-  @Post('visitors/bulk-hon')
+  @ApiOperation({ summary: 'Bulk add or deduct Hon for all users' })
+  @Post('users/bulk-hon')
   async manageBulkHon(@Body() body: ManageHonDto) {
     await this.honService.bulkProvisionHonByAdmin(body.amount);
     return { success: true };
   }
 
-  @ApiOperation({ summary: 'Get visitor predictions for admin' })
-  @Get('visitors/:id/predictions')
-  async getVisitorPredictions(@Param('id') id: string) {
-    const visitor = await prisma.visitor.findUnique({ where: { id } });
-    if (!visitor) {
+  @ApiOperation({ summary: 'Get user predictions for admin' })
+  @Get('users/:id/predictions')
+  async getUserPredictions(@Param('id') id: string) {
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
       throw new NotFoundException('방문자를 찾을 수 없습니다.');
     }
 
     const predictions = await prisma.personalPrediction.findMany({
-      where: { visitorId: id },
+      where: { userId: id },
       orderBy: { id: 'desc' },
       include: {
         winningNumber: true,
@@ -729,7 +734,7 @@ export class ManagerController {
     });
 
     // Reset nickname of the offender
-    await prisma.visitor.updateMany({
+    await prisma.user.updateMany({
       where: { nickname: report.targetNickname },
       data: { nickname: null },
     });
@@ -888,37 +893,39 @@ export class ManagerController {
   @Post('notifications')
   async sendNotification(@Body() body: SendNotificationDto) {
     const { targetType, target, title, content } = body;
-    let visitorId = '';
+    let userId = '';
 
     if (targetType === 'NICKNAME') {
-      const visitor = await prisma.visitor.findUnique({
+      const user = await prisma.user.findUnique({
         where: { nickname: target },
       });
-      if (!visitor) {
+      if (!user) {
         throw new NotFoundException(
           '해당 닉네임을 가진 사용자를 찾을 수 없습니다.',
         );
       }
-      visitorId = visitor.id;
+      userId = user.id;
     } else {
-      const visitor = await prisma.visitor.findUnique({
+      const user = await prisma.user.findUnique({
         where: { id: target },
       });
-      if (!visitor) {
+      if (!user) {
         throw new NotFoundException(
           '해당 ID를 가진 사용자를 찾을 수 없습니다.',
         );
       }
-      visitorId = visitor.id;
+      userId = user.id;
     }
 
     const notification = await prisma.notification.create({
       data: {
-        visitorId,
+        userId,
         title,
         content,
       },
     });
+
+    this.appGateway.sendToUser(userId, 'new-notification', notification);
 
     return { success: true, data: notification };
   }

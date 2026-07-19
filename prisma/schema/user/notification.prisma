@@ -1,13 +1,13 @@
 model Notification {
   id        Int      @id @default(autoincrement())
-  visitorId String
+  userId    String
   title     String   @db.VarChar(100)
   content   String   @db.Text
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  visitor Visitor @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([visitorId])
+  @@index([userId])
   @@map("notification")
 }

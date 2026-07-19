@@ -42,7 +42,7 @@ export class SavePersonalPredictionHandler implements ICommandHandler<SavePerson
     );
 
     const predictionEntity = new DomainPersonalPrediction(
-      command.visitorId,
+      command.userId,
       command.episode,
       command.prediction,
     );
@@ -50,7 +50,7 @@ export class SavePersonalPredictionHandler implements ICommandHandler<SavePerson
     await this.personalPredictionRepository.save(predictionEntity, analysis);
 
     // Invalidate Cache
-    const cacheKey = `user:${command.visitorId}:personal-predictions:history`;
+    const cacheKey = `user:${command.userId}:personal-predictions:history`;
     await this.redisService.del(cacheKey);
   }
 }

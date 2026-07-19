@@ -7,7 +7,7 @@ export class GetPersonalWeightHandler implements IQueryHandler<GetPersonalWeight
   constructor(private readonly redisService: RedisService) {}
 
   async execute(query: GetPersonalWeightQuery): Promise<number[]> {
-    const cacheKey = `user:${query.visitorId}:algorithm:${query.algorithm}:weights`;
+    const cacheKey = `user:${query.userId}:algorithm:${query.algorithm}:weights`;
 
     const cachedData = await this.redisService.get(cacheKey);
     if (cachedData) {

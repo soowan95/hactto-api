@@ -30,14 +30,6 @@ export class LoggingInterceptor implements NestInterceptor {
       clientIp = clientIp.trim();
     }
 
-    // Bypass SSE logging to avoid filling console logs
-    if (
-      httpRequest.headers['accept'] === 'text/event-stream' ||
-      httpRequest.url.includes('/sse')
-    ) {
-      return next.handle();
-    }
-
     this.logger.log(
       `[${clientIp}] request url: ${httpRequest.url}, method: ${httpRequest.method}, body: ${JSON.stringify(httpRequest.body, null, 2)}`,
     );

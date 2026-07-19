@@ -1,6 +1,6 @@
 import { IpAddress } from '../vos/ip-address.vo';
 
-export class DomainVisitor {
+export class DomainUser {
   private readonly _ip: IpAddress;
 
   constructor(

@@ -22,9 +22,10 @@ import { WINNING_NUMBER_ANALYSIS_REPOSITORY_TOKEN } from './domain/ports/winning
 import { InfraWinningNumberAnalysisRepository } from './infrastructure/adapters/infra-winning-number-analysis.repository';
 
 import { UserModule } from '../user/user.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [CqrsModule, WinningNumberModule, UserModule],
+  imports: [CqrsModule, WinningNumberModule, UserModule, AuthModule],
   controllers: [
     AlgorithmController,
     PersonalWeightController,

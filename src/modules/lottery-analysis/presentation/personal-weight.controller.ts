@@ -1,10 +1,19 @@
-import { Body, Controller, Get, Headers, Post, Query } from '@nestjs/common';
-import { ApiHeader, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { SetPersonalWeightRequestDto } from './dtos/requests/set-personal-weight-request.dto';
 import { ResponseMessage } from '../../../common/decorators/response-message.decorator';
 import { SetPersonalWeightCommand } from '../application/commands/set-personal-weight.command';
 import { GetPersonalWeightQuery } from '../application/queries/get-personal-weight.query';
+import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('- Personal Weight')
 @Controller('personal-weights')
@@ -15,19 +24,16 @@ export class PersonalWeightController {
   ) {}
 
   @ApiOperation({ summary: '개인화 가중치 저장' })
-  @ApiHeader({
-    name: 'x-visitor-id',
-    required: true,
-    description: '방문자 식별자',
-  })
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('success.create')
   @Post()
   async setWeights(
-    @Headers('x-visitor-id') visitorId: string,
+    @Req() req: any,
     @Body() dto: SetPersonalWeightRequestDto,
   ): Promise<void> {
+    const userId = req.user?.sub || req.user?.id;
     const command = new SetPersonalWeightCommand(
-      visitorId,
+      userId,
       dto.algorithm,
       dto.weights,
     );
@@ -35,20 +41,17 @@ export class PersonalWeightController {
   }
 
   @ApiOperation({ summary: '개인화 가중치 조회' })
-  @ApiHeader({
-    name: 'x-visitor-id',
-    required: true,
-    description: '방문자 식별자',
-  })
+  @UseGuards(JwtAuthGuard)
   @ApiQuery({ name: 'algorithm', required: true })
   @ResponseMessage('success.read')
   @Get()
   async getWeights(
-    @Headers('x-visitor-id') visitorId: string,
+    @Req() req: any,
     @Query('algorithm')
     algorithm: string,
   ): Promise<number[]> {
-    const query = new GetPersonalWeightQuery(visitorId, algorithm);
+    const userId = req.user?.sub || req.user?.id;
+    const query = new GetPersonalWeightQuery(userId, algorithm);
     const result = await this.queryBus.execute<
       GetPersonalWeightQuery,
       number[]

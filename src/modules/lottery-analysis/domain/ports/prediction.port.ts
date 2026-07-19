@@ -10,7 +10,7 @@ export interface IPredictionRepository {
   findAllByAlgorithmAndReliabilityIsNotNull(
     algorithm: DomainAlgorithm,
   ): Promise<DomainPrediction[]>;
-  findByUser(visitorId?: string): Promise<DomainPrediction[]>;
+  findByUser(userId?: string): Promise<DomainPrediction[]>;
   findWithoutAnalysisReliability(): Promise<DomainPrediction[]>;
   findRecentEpisodeByReliabilityIsNotZero(): Promise<{
     episode: number;
