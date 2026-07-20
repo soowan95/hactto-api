@@ -1,0 +1,19 @@
+name: Check Nginx
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-nginx:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run script on EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            nginx -T || true
+            cat /etc/nginx/nginx.conf || true
+            cat /etc/nginx/sites-available/default || true
