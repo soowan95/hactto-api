@@ -107,13 +107,25 @@ export class AuthService {
     const password = await argon2.hash(passwordRaw);
     const id = await this.generateUniqueId();
 
-    const user = await prisma.user.create({
-      data: {
-        id,
-        email,
-        password,
-        nickname,
-      },
+    const user = await prisma.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: {
+          id,
+          email,
+          password,
+          nickname,
+        },
+      });
+
+      await tx.hon.create({
+        data: {
+          userId: id,
+          freeBalance: 50,
+          paidBalance: 0,
+        },
+      });
+
+      return createdUser;
     });
 
     return this.generateTokens(user.id);
