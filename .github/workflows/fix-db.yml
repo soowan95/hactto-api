@@ -48,25 +48,9 @@ jobs:
               const adapter = new PrismaMariaDb({ host, user, password, database, connectionLimit: 1, ssl: { rejectUnauthorized: false } });
               const prisma = new PrismaClient({ adapter });
             
-              await prisma.$executeRawUnsafe("ALTER TABLE `prediction` CHANGE `visitor_id` `user_id` VARCHAR(191) NULL;").catch(e => console.log(e.message));
-              await prisma.$executeRawUnsafe("ALTER TABLE `subscription` CHANGE `visitor_id` `user_id` VARCHAR(191) NOT NULL;").catch(e => console.log(e.message));
-              await prisma.$executeRawUnsafe("CREATE TABLE IF NOT EXISTS `login_fail_log` ( `id` INTEGER NOT NULL AUTO_INCREMENT, `ip` VARCHAR(191) NOT NULL, `fail_count` INTEGER NOT NULL DEFAULT 1, `last_failed_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3), `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3), `updated_at` DATETIME(3) NOT NULL, PRIMARY KEY (`id`) ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;").catch(e => console.log(e.message));
-              await prisma.$executeRawUnsafe("CREATE TABLE IF NOT EXISTS `privacy_policy` ( `id` VARCHAR(191) NOT NULL, `version` VARCHAR(191) NOT NULL, `content` TEXT NOT NULL, `is_active` BOOLEAN NOT NULL DEFAULT false, `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3), `updated_at` DATETIME(3) NOT NULL, PRIMARY KEY (`id`) ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;").catch(e => console.log(e.message));
-              await prisma.$executeRawUnsafe("CREATE TABLE IF NOT EXISTS `terms_of_service` ( `id` VARCHAR(191) NOT NULL, `version` VARCHAR(191) NOT NULL, `content` TEXT NOT NULL, `is_active` BOOLEAN NOT NULL DEFAULT false, `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3), `updated_at` DATETIME(3) NOT NULL, PRIMARY KEY (`id`) ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;").catch(e => console.log(e.message));
-              
-              console.log("Adding missing columns to user table individually...");
-              await prisma.$executeRawUnsafe("ALTER TABLE `user` ADD COLUMN `email` VARCHAR(191) NULL;").catch(e => console.log(e.message));
-              await prisma.$executeRawUnsafe("ALTER TABLE `user` ADD COLUMN `password` VARCHAR(191) NULL;").catch(e => console.log(e.message));
-              await prisma.$executeRawUnsafe("ALTER TABLE `user` ADD COLUMN `nickname` VARCHAR(30) NULL;").catch(e => console.log(e.message));
-              await prisma.$executeRawUnsafe("ALTER TABLE `user` ADD COLUMN `avatar_url` VARCHAR(500) NULL;").catch(e => console.log(e.message));
-              await prisma.$executeRawUnsafe("ALTER TABLE `user` ADD COLUMN `provider` VARCHAR(191) NOT NULL DEFAULT 'local';").catch(e => console.log(e.message));
-              await prisma.$executeRawUnsafe("ALTER TABLE `user` ADD COLUMN `provider_id` VARCHAR(191) NULL;").catch(e => console.log(e.message));
-              await prisma.$executeRawUnsafe("ALTER TABLE `user` ADD COLUMN `restore_token` VARCHAR(191) NULL;").catch(e => console.log(e.message));
-              await prisma.$executeRawUnsafe("ALTER TABLE `user` ADD COLUMN `deleted_at` DATETIME(3) NULL;").catch(e => console.log(e.message));
-              
-              await prisma.$executeRawUnsafe("ALTER TABLE `user` ADD UNIQUE INDEX `user_email_key`(`email`);").catch(e => console.log(e.message));
-              await prisma.$executeRawUnsafe("ALTER TABLE `user` ADD UNIQUE INDEX `user_nickname_key`(`nickname`);").catch(e => console.log(e.message));
-              await prisma.$executeRawUnsafe("ALTER TABLE `user` ADD UNIQUE INDEX `user_restore_token_key`(`restore_token`);").catch(e => console.log(e.message));
+              console.log("Dumping columns for user table:");
+              const cols = await prisma.$queryRawUnsafe("SHOW COLUMNS FROM `user`;");
+              console.log(JSON.stringify(cols, null, 2));
               
               await prisma.$disconnect();
               console.log("Done!");
