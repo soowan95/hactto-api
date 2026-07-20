@@ -15,3 +15,8 @@
 
 ## Pre-PR Requirements
 - Always run `npm run lint` and `npm run format` (or equivalent formatting/linting scripts) to ensure code quality before creating a Pull Request.
+## Deployment / `main` Branch Guidelines
+- **No Direct Pushes**: Never push directly to the `main` branch. All changes to `main` MUST go through a Pull Request from `dev` to prevent unsynced code and pipeline failures.
+- **Pre-Deployment Local Verification**: Before triggering any deployment or merging to `main`, you MUST locally verify that the code compiles successfully by running a full build (`npm run build`) and passes all linting (`npm run lint`).
+- **Secure Secret Handling in CI/CD**: When modifying GitHub Actions workflows (`.yml`), NEVER use direct string interpolation for secrets (e.g., `echo "${{ secrets.VAR }}"`). ALWAYS pass secrets via `env` variables or Docker BuildKit secrets (`--mount=type=secret`) to prevent Bash syntax injection and runtime crashes.
+- **Branch Context Awareness**: When debugging CI/CD pipelines, explicitly verify your current git branch (`git status`) before committing to ensure fixes are applied to the correct branch (e.g., `main`).
