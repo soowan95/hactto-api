@@ -20,6 +20,8 @@ export class AppGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer()
+  server: Server;
+
   private readonly logger = new Logger(AppGateway.name);
   private connectedClients = new Map<string, Socket>();
 
@@ -28,6 +30,7 @@ export class AppGateway
     private readonly systemStatusService: SystemStatusService,
   ) {}
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   afterInit(server: Server) {
     this.systemStatusService.statusStream$.subscribe((status) => {
       if (this.server) {
