@@ -28,12 +28,14 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/hactto-api:latest
-          build-args: |
-            NPM_TOKEN=${{ secrets.NPM_TOKEN }}
+          secrets: |
+            npm_token=${{ secrets.NPM_TOKEN }}
 
       - name: Create .env file from GitHub Secrets
+        env:
+          PROD_ENV: ${{ secrets.PROD_ENV_FILE }}
         run: |
-          echo "${{ secrets.PROD_ENV_FILE }}" > .env
+          echo "$PROD_ENV" > .env
 
       - name: Replace DockerHub Username in docker-compose.yml
         run: |

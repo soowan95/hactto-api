@@ -6,9 +6,9 @@ WORKDIR /app
 # Copy dependency files
 COPY package.json package-lock.json ./
 
-# Add NPM_TOKEN argument for private packages
-ARG NPM_TOKEN
-RUN echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc && \
+# Use BuildKit secrets to securely pass NPM_TOKEN without leaving it in the image history
+RUN --mount=type=secret,id=npm_token \
+    if [ -f /run/secrets/npm_token ]; then echo "//registry.npmjs.org/:_authToken=$(cat /run/secrets/npm_token)" > .npmrc; fi && \
     npm install && \
     rm -f .npmrc
 
