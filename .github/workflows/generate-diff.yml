@@ -7,15 +7,7 @@ jobs:
   generate-diff:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Create .env
-        env:
-          PROD_ENV: ${{ secrets.PROD_ENV_FILE }}
-        run: echo "$PROD_ENV" > .env
-
-      - name: Run diff script on EC2
+      - name: Run script on EC2
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -23,5 +15,5 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ~/hactto-api
-            npx prisma migrate diff --from-url "$(grep DATABASE_URL .env | cut -d '=' -f 2-)" --to-schema ./prisma/schema --script > diff.sql
+            docker exec hactto-api-blue npx prisma migrate diff --from-url "\$(grep DATABASE_URL .env | cut -d '=' -f 2-)" --to-schema ./prisma/schema --script > diff.sql
             cat diff.sql
