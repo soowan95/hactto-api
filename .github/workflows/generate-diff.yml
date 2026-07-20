@@ -15,6 +15,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ~/hactto-api
-            CONTAINER_ID=\$(docker ps -q -f "name=hactto-api-" | head -n 1)
-            docker exec \$CONTAINER_ID npx prisma migrate diff --from-url "\$(grep DATABASE_URL .env | cut -d '=' -f 2-)" --to-schema ./prisma/schema --script > diff.sql
+            CONTAINER_ID=$(docker ps -q -f "name=hactto-api-" | head -n 1)
+            docker exec $CONTAINER_ID npx prisma migrate diff --from-url "$(grep DATABASE_URL .env | cut -d '=' -f 2-)" --to-schema ./prisma/schema --script > diff.sql
             cat diff.sql
