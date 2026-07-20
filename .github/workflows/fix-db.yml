@@ -1,0 +1,30 @@
+name: Fix Production DB Migration
+on: workflow_dispatch
+jobs:
+  fix-db:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Create .env
+        env:
+          PROD_ENV: ${{ secrets.PROD_ENV_FILE }}
+        run: echo "$PROD_ENV" > .env
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Prisma Client
+        run: npx prisma generate --schema=./prisma/schema/
+
+      - name: Run manual DB fix script
+        run: node scripts/fix-prod-db.js
+
+      - name: Mark migration as applied
+        run: npx prisma migrate resolve --applied 20260720082800_rename_visitor_to_user
