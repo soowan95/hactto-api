@@ -21,8 +21,6 @@ export class ResponseTransformInterceptor<T> implements NestInterceptor<
 > {
   constructor(private reflector: Reflector) {}
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const request = context.switchToHttp().getRequest();
-
     const message = this.reflector.get<string>(
       'response-message',
       context.getHandler(),
