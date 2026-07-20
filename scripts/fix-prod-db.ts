@@ -1,6 +1,5 @@
 import 'dotenv/config';
-import { PrismaClient } from '../src/generated/prisma';
-const prisma = new PrismaClient();
+import { prisma } from '../src/libs/prisma';
 
 async function main() {
   console.log("Fixing migration for prediction table...");
