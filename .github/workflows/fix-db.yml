@@ -24,7 +24,7 @@ jobs:
         run: npx prisma generate --schema=./prisma/schema/
 
       - name: Run manual DB fix script
-        run: node scripts/fix-prod-db.js
+        run: npx ts-node scripts/fix-prod-db.ts
 
       - name: Mark migration as applied
         run: npx prisma migrate resolve --applied 20260720082800_rename_visitor_to_user
