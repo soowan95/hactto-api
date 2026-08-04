@@ -6,6 +6,7 @@ import { ResponseTransformInterceptor } from './common/interceptors/response-tra
 import { MobileReadOnlyGuard } from './common/guards/mobile-read-only.guard';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 
 async function bootstrap() {
   let corsOrigin: (string | RegExp)[] = [
@@ -34,6 +35,10 @@ async function bootstrap() {
   app.set('trust proxy', true);
 
   app.setGlobalPrefix('hactto/v1');
+
+  app.useStaticAssets(join(__dirname, '..', 'attachments'), {
+    prefix: '/hactto/v1/attachments',
+  });
 
   const reflector: Reflector = new Reflector();
 
