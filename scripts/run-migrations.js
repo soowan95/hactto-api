@@ -16,7 +16,10 @@ function runMigrations() {
   const encodedPassword = encodeURIComponent(password);
   
   // Construct Prisma connection string
-  const dbUrl = `mysql://${encodedUser}:${encodedPassword}@${host}:3306/${database}?sslaccept=accept_invalid_certs`;
+  let dbUrl = `mysql://${encodedUser}:${encodedPassword}@${host}:3306/${database}`;
+  if (process.env.DB_USE_SSL === 'true') {
+    dbUrl += '?sslaccept=accept_invalid_certs';
+  }
 
   console.log("Starting Prisma Migration...");
   try {
