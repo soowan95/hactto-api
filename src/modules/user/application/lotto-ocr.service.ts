@@ -3,26 +3,15 @@ import {
   TextractClient,
   DetectDocumentTextCommand,
 } from '@aws-sdk/client-textract';
-import {
-  S3Client,
-  GetObjectCommand,
-  PutObjectCommand,
-} from '@aws-sdk/client-s3';
+import * as fs from 'fs';
+import * as path from 'path';
 import sharp, { OverlayOptions } from 'sharp';
 import jsQR from 'jsqr';
 import { prisma } from '../../../libs/prisma';
 
-// S3 스트림을 버퍼로 변환하는 헬퍼 함수
-const streamToBuffer = async (stream: any): Promise<Buffer> => {
-  const chunks: any[] = [];
-  for await (const chunk of stream) chunks.push(chunk);
-  return Buffer.concat(chunks);
-};
 @Injectable()
 export class LottoOcrService {
   private textractClient: TextractClient;
-  private s3Client: S3Client;
-
   constructor() {
     const config = {
       region: process.env.AWS_REGION || 'ap-northeast-2',
@@ -32,40 +21,32 @@ export class LottoOcrService {
       },
     };
     this.textractClient = new TextractClient(config);
-    this.s3Client = new S3Client(config);
   }
 
   async analyzeLottoImage(
     imageUrl: string,
   ): Promise<{ episode: number; rank: number; lottoIdentifier?: string }> {
-    const s3Bucket = process.env.AWS_S3_BUCKET;
-    if (!s3Bucket) {
-      throw new BadRequestException('S3 Bucket is not configured.');
-    }
-
-    // Extract S3 key from imageUrl (e.g. https://bucket.s3.region.amazonaws.com/uploads/...)
-    let s3Key = '';
+    // 1. Read from local filesystem
+    let buffer: Buffer;
+    let filePath = '';
     try {
       const url = new URL(imageUrl);
-      // Remove leading slash
-      s3Key = url.pathname.substring(1);
-    } catch (e) {
-      console.error(e);
-      throw new BadRequestException('잘못된 이미지 URL입니다.');
-    }
-
-    // 1. Download from S3
-    let buffer: Buffer;
-    try {
-      const getRes = await this.s3Client.send(
-        new GetObjectCommand({ Bucket: s3Bucket, Key: s3Key }),
+      const filename = path.basename(url.pathname);
+      filePath = path.join(
+        __dirname,
+        '..',
+        '..',
+        '..',
+        '..',
+        'attachments',
+        filename,
       );
-      const rawBuffer = await streamToBuffer(getRes.Body);
+      const rawBuffer = await fs.promises.readFile(filePath);
       // EXIF 방향 정보에 맞게 이미지를 회전시킨 후 EXIF를 제거한 순수 버퍼로 변환 (회전 버그 방지)
       buffer = await sharp(rawBuffer).rotate().toBuffer();
     } catch (e) {
       console.error(e);
-      throw new BadRequestException('이미지를 가져올 수 없습니다.');
+      throw new BadRequestException('이미지를 로컬에서 가져올 수 없습니다.');
     }
 
     let qrEpisode: number | undefined;
@@ -143,8 +124,7 @@ export class LottoOcrService {
     return this.parseTextractAndBlur(
       response,
       buffer,
-      s3Bucket,
-      s3Key,
+      filePath,
       qrEpisode,
       qrNumbers,
       qrUrl,
@@ -154,8 +134,7 @@ export class LottoOcrService {
   private async parseTextractAndBlur(
     response: any,
     buffer: Buffer,
-    s3Bucket: string,
-    s3Key: string,
+    filePath: string,
     qrEpisode?: number,
     qrNumbers?: number[][],
     qrUrl?: string,
@@ -408,14 +387,7 @@ export class LottoOcrService {
 
       const finalBuffer = await finalImage.png().toBuffer();
 
-      await this.s3Client.send(
-        new PutObjectCommand({
-          Bucket: s3Bucket,
-          Key: s3Key,
-          Body: finalBuffer,
-          ContentType: 'image/png',
-        }),
-      );
+      await fs.promises.writeFile(filePath, finalBuffer);
     } catch (e) {
       console.error('Blur failed:', e);
       // 블러 처리에 실패해도 분석 결과 자체는 반환함

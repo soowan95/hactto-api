@@ -21,12 +21,11 @@ import {
   ReportPostDto,
 } from './dtos/requests/board-requests.dto';
 import { BoardCategory } from '../../../generated/prisma/client';
-import {
-  S3Client,
-  PutObjectCommand,
-  DeleteObjectCommand,
-} from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import * as fs from 'fs';
+import * as path from 'path';
 import { LottoOcrService } from '../application/lotto-ocr.service';
 import { RedisService } from '../../../helpers/redis/application/redis.service';
 
@@ -447,28 +446,22 @@ export class BoardController {
 
     if (post.imageUrl) {
       try {
-        const region = process.env.AWS_REGION || 'ap-northeast-2';
-        const s3Bucket =
-          process.env.AWS_S3_BUCKET || 'hactto-board-attachments';
-        const s3Client = new S3Client({
-          region: region,
-          credentials: {
-            accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-          },
-        });
-
         const url = new URL(post.imageUrl);
-        const key = url.pathname.substring(1); // Remove leading slash
-
-        await s3Client.send(
-          new DeleteObjectCommand({
-            Bucket: s3Bucket,
-            Key: key,
-          }),
+        const filename = path.basename(url.pathname);
+        const filePath = path.join(
+          __dirname,
+          '..',
+          '..',
+          '..',
+          '..',
+          'attachments',
+          filename,
         );
+        if (fs.existsSync(filePath)) {
+          await fs.promises.unlink(filePath);
+        }
       } catch (err) {
-        console.error('Failed to delete S3 object when deleting post:', err);
+        console.error('Failed to delete local object when deleting post:', err);
       }
     }
 
@@ -518,67 +511,45 @@ export class BoardController {
     return { success: true, data: report };
   }
 
-  @ApiOperation({ summary: 'Generate S3 presigned URL for image upload' })
+  @ApiOperation({ summary: 'Upload file for board' })
   @UseGuards(JwtAuthGuard)
-  @Post('presigned-url')
-  async getPresignedUrl(
-    @Body('filename') filename: string,
-    @Body('contentType') contentType: string,
-    @Body('originalFilename') originalFilename?: string,
-  ) {
-    if (!filename || !contentType) {
-      throw new BadRequestException('파일명과 Content-Type을 지정해야 합니다.');
+  @Post('upload')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: path.join(
+          __dirname,
+          '..',
+          '..',
+          '..',
+          '..',
+          'attachments',
+        ),
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const safeFilename = file.originalname.replace(
+            /[^a-zA-Z0-9.-]/g,
+            '_',
+          );
+          cb(null, `${uniqueSuffix}-${safeFilename}`);
+        },
+      }),
+    }),
+  )
+  async uploadFile(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('파일이 업로드되지 않았습니다.');
     }
 
-    const region = process.env.AWS_REGION || 'ap-northeast-2';
-    const s3Bucket = process.env.AWS_S3_BUCKET || 'hactto-board-attachments';
-
-    if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
-      throw new BadRequestException(
-        '서버에 S3 인증 정보가 설정되지 않았습니다.',
-      );
-    }
-
-    const s3Client = new S3Client({
-      region: region,
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      },
-      requestChecksumCalculation: 'WHEN_REQUIRED',
-    });
-
-    const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const key = `uploads/${Date.now()}-${safeFilename}`;
-    // Preserve the real filename (Korean etc.) for display
-    const displayFilename = originalFilename || filename;
-
-    const command = new PutObjectCommand({
-      Bucket: s3Bucket,
-      Key: key,
-      ContentType: contentType,
-      // Store original filename in S3 metadata
-      Metadata: {
-        'original-filename': encodeURIComponent(displayFilename),
-      },
-    });
-
-    let uploadUrl = '';
-    const imageUrl = `https://${s3Bucket}.s3.${region}.amazonaws.com/${key}`;
-
-    try {
-      uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
-    } catch (error) {
-      console.error('S3 Presigned URL Error:', error);
-      throw new BadRequestException('업로드 URL을 생성할 수 없습니다.');
-    }
+    const appUrl = process.env.APP_URL || 'http://localhost:3000';
+    const imageUrl = `${appUrl}/hactto/v1/attachments/${file.filename}`;
 
     return {
       success: true,
       data: {
-        uploadUrl,
         imageUrl,
-        originalFilename: displayFilename,
+        originalFilename: file.originalname,
       },
     };
   }

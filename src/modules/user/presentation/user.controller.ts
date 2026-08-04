@@ -1,6 +1,4 @@
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import * as crypto from 'crypto';
 import {
   BadRequestException,
@@ -13,7 +11,12 @@ import {
   Query,
   NotFoundException,
   Patch,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import * as path from 'path';
 import {
   IUserRepository,
   USER_REPOSITORY_TOKEN,
@@ -502,53 +505,47 @@ export class UserController {
     };
   }
 
-  @ApiOperation({ summary: 'Get presigned URL for avatar upload' })
-  @Post('avatar/presigned-url')
-  async getAvatarPresignedUrl(
-    @Body('mimeType') mimeType: string,
-    @Body('extension') extension: string,
-  ) {
+  @ApiOperation({ summary: 'Upload avatar image' })
+  @Post('avatar/upload')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: path.join(
+          __dirname,
+          '..',
+          '..',
+          '..',
+          '..',
+          'attachments',
+        ),
+        filename: (req, file, cb) => {
+          const uniqueSuffix = Date.now() + '-' + crypto.randomUUID();
+          const ext = path.extname(file.originalname);
+          cb(null, `avatars-${uniqueSuffix}${ext}`);
+        },
+      }),
+    }),
+  )
+  async uploadAvatar(@UploadedFile() file: Express.Multer.File) {
     const userId = this.requestParser.getUserId();
     if (!userId) {
       throw new BadRequestException('User ID가 유효하지 않습니다.');
     }
 
-    if (!mimeType.startsWith('image/')) {
+    if (!file) {
+      throw new BadRequestException('파일이 업로드되지 않았습니다.');
+    }
+
+    if (!file.mimetype.startsWith('image/')) {
       throw new BadRequestException('이미지 파일만 업로드할 수 있습니다.');
     }
 
-    const s3Bucket = process.env.AWS_S3_BUCKET || 'hactto-board-attachments';
-    const region = process.env.AWS_REGION || 'ap-northeast-2';
-    const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
-    const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
-
-    if (!accessKeyId || !secretAccessKey) {
-      throw new Error('S3 credentials not configured');
-    }
-
-    const s3Client = new S3Client({
-      region,
-      credentials: {
-        accessKeyId,
-        secretAccessKey,
-      },
-    });
-
-    const uniqueId = crypto.randomUUID();
-    const key = `avatars/${userId}/${uniqueId}.${extension.replace('.', '')}`;
-    const command = new PutObjectCommand({
-      Bucket: s3Bucket,
-      Key: key,
-      ContentType: mimeType,
-    });
-
-    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
-    const imageUrl = `https://${s3Bucket}.s3.${region}.amazonaws.com/${key}`;
+    const appUrl = process.env.APP_URL || 'http://localhost:3000';
+    const imageUrl = `${appUrl}/hactto/v1/attachments/${file.filename}`;
 
     return {
       success: true,
       data: {
-        uploadUrl,
         imageUrl,
       },
     };

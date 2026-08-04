@@ -3,10 +3,10 @@ services:
     image: mariadb:10.6
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: 1q2w3e4r # 원하는 루트 비밀번호
-      MYSQL_DATABASE: ht_db # 생성할 기본 DB 이름
-      MYSQL_USER: ht_user # 사용자명
-      MYSQL_PASSWORD: ht_password # 사용자 비밀번호
+      MYSQL_ROOT_PASSWORD: ${LOCAL_DB_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${LOCAL_DB_DATABASE:-ht_db}
+      MYSQL_USER: ${LOCAL_DB_USER:-ht_user}
+      MYSQL_PASSWORD: ${LOCAL_DB_PASSWORD:-password} # 사용자 비밀번호
     ports:
       - "3306:3306"
     volumes:
@@ -35,6 +35,8 @@ services:
     depends_on:
       - mysql
       - redis
+    volumes:
+      - ./attachments:/app/attachments
 
 volumes:
   mariadb_data:

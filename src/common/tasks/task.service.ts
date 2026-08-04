@@ -17,11 +17,8 @@ import {
 import { PortoneClient } from '../../modules/user/infrastructure/clients/portone.client';
 import { randomUUID } from 'crypto';
 import { prisma } from '../../libs/prisma';
-import {
-  S3Client,
-  ListObjectsV2Command,
-  DeleteObjectsCommand,
-} from '@aws-sdk/client-s3';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class TaskService {
@@ -374,27 +371,24 @@ export class TaskService {
   @Cron(CronExpression.EVERY_DAY_AT_3AM, {
     timeZone: 'Asia/Seoul',
   })
-  async cleanupOrphanedS3Images() {
-    this.logger.debug('🗑️ Starting orphaned S3 images cleanup...');
+  async cleanupOrphanedLocalImages() {
+    this.logger.debug('🗑️ Starting orphaned local images cleanup...');
     try {
-      const region = process.env.AWS_REGION || 'ap-northeast-2';
-      const s3Bucket = process.env.AWS_S3_BUCKET || 'hactto-board-attachments';
+      const attachmentsDir = path.join(
+        __dirname,
+        '..',
+        '..',
+        '..',
+        '..',
+        'attachments',
+      );
 
-      if (
-        !process.env.AWS_ACCESS_KEY_ID ||
-        !process.env.AWS_SECRET_ACCESS_KEY
-      ) {
-        this.logger.warn('Skipping S3 cleanup: AWS credentials not found.');
+      if (!fs.existsSync(attachmentsDir)) {
+        this.logger.warn(
+          'Skipping local cleanup: attachments directory not found.',
+        );
         return;
       }
-
-      const s3Client = new S3Client({
-        region: region,
-        credentials: {
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-        },
-      });
 
       // 1. Fetch all imageUrls from DB
       const postsWithImages = await prisma.post.findMany({
@@ -408,66 +402,54 @@ export class TaskService {
         if (post.imageUrl) {
           try {
             const url = new URL(post.imageUrl);
-            activeKeys.add(url.pathname.substring(1)); // Remove leading '/'
+            activeKeys.add(path.basename(url.pathname));
           } catch (e) {
             console.error(e);
           }
         }
       });
 
-      // 2. Paginate over S3 objects
-      let isTruncated = true;
-      let continuationToken: string | undefined;
+      // Also get avatars to prevent deleting user profile pictures
+      const usersWithAvatars = await prisma.user.findMany({
+        where: { avatarUrl: { not: null } },
+        select: { avatarUrl: true },
+      });
+      usersWithAvatars.forEach((user) => {
+        if (user.avatarUrl) {
+          try {
+            const url = new URL(user.avatarUrl);
+            activeKeys.add(path.basename(url.pathname));
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      });
+
+      // 2. Iterate over local files
+      const files = await fs.promises.readdir(attachmentsDir);
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
       let totalDeleted = 0;
 
-      while (isTruncated) {
-        const listCmd = new ListObjectsV2Command({
-          Bucket: s3Bucket,
-          Prefix: 'uploads/',
-          ContinuationToken: continuationToken,
-        });
+      for (const file of files) {
+        // Skip hidden files
+        if (file.startsWith('.')) continue;
 
-        const response = await s3Client.send(listCmd);
-        const objects = response.Contents || [];
+        const filePath = path.join(attachmentsDir, file);
+        const stats = await fs.promises.stat(filePath);
 
-        const keysToDelete: { Key: string }[] = [];
-
-        for (const obj of objects) {
-          if (
-            obj.Key &&
-            obj.LastModified &&
-            obj.LastModified < twentyFourHoursAgo
-          ) {
-            if (!activeKeys.has(obj.Key)) {
-              keysToDelete.push({ Key: obj.Key });
-            }
+        if (stats.isFile() && stats.mtime < twentyFourHoursAgo) {
+          if (!activeKeys.has(file)) {
+            await fs.promises.unlink(filePath);
+            totalDeleted++;
           }
         }
-
-        // 3. Delete in batches of 1000 (S3 API limit)
-        if (keysToDelete.length > 0) {
-          for (let i = 0; i < keysToDelete.length; i += 1000) {
-            const chunk = keysToDelete.slice(i, i + 1000);
-            await s3Client.send(
-              new DeleteObjectsCommand({
-                Bucket: s3Bucket,
-                Delete: { Objects: chunk, Quiet: true },
-              }),
-            );
-            totalDeleted += chunk.length;
-          }
-        }
-
-        isTruncated = response.IsTruncated || false;
-        continuationToken = response.NextContinuationToken;
       }
 
       this.logger.debug(
-        `✅ S3 cleanup completed. Deleted ${totalDeleted} orphaned objects.`,
+        `✅ Local cleanup completed. Deleted ${totalDeleted} orphaned files.`,
       );
     } catch (err) {
-      this.logger.error('S3 cleanup job failed:', err);
+      this.logger.error('Local cleanup job failed:', err);
     }
   }
 }
