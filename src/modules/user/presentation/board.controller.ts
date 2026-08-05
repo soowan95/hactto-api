@@ -526,10 +526,12 @@ export class BoardController {
           'attachments',
         ),
         filename: (req, file, cb) => {
+          // Decode filename from latin1 (multer default) to utf8
+          file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
           const uniqueSuffix =
             Date.now() + '-' + Math.round(Math.random() * 1e9);
           const safeFilename = file.originalname.replace(
-            /[^a-zA-Z0-9.-]/g,
+            /[^a-zA-Z0-9.\-_가-힣ㄱ-ㅎㅏ-ㅣ]/g,
             '_',
           );
           cb(null, `${uniqueSuffix}-${safeFilename}`);
